@@ -6,14 +6,14 @@
 
 using namespace tools;
 
-class FBProtocolCMSerial : public FBProtocolCommMethod, public Serial {
+class FBProtocolCMSerial : public FBProtocol::FBProtocolCommMethod, public Serial {
 public:
   FBProtocolCMSerial(const char* path, Baud baud):Serial(path, baud){}
   virtual ~FBProtocolCMSerial()
   {
   }
   
-  virtual void onWrite(const char* buf, int length);
+  virtual int onWrite(const char* buf, int length);
   virtual int onRead(char* buf, int len);
 
 private:  

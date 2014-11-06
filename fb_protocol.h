@@ -3,9 +3,12 @@
 
 class FBProtocol {
 public:
+  enum Exception {
+    EXCEPTION_WRITE,
+  };
   class FBProtocolCommMethod {
   public:
-    virtual void onWrite(const char* buf, int length) = 0;
+    virtual int onWrite(const char* buf, int length) = 0;
     virtual int onRead(char* buf, int len) = 0;
   };
 
@@ -21,7 +24,7 @@ public:
   //bool dele();
 
 private:  
-  bool sendCommandNoData(const char* cmd);
+  bool sendCommandNoData(const char* cmd, char* receiveBuf, int receiveBufSize);
 
   FBProtocolCommMethod* m_cm;
 };

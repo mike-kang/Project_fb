@@ -6,9 +6,9 @@
 using namespace std;
 using namespace tools;
 
-void FBProtocolCMSerial::onWrite(const char* buf, int length)
+int FBProtocolCMSerial::onWrite(const char* buf, int length)
 {
-  write(buf, length);
+  return write(buf, length);
 }
 int FBProtocolCMSerial::onRead(char* buf, int len)
 {
