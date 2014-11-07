@@ -6,11 +6,15 @@ public:
   enum Exception {
     EXCEPTION_WRITE,
     EXCEPTION_NOT_ACK,
+    EXCEPTION_CHECKSUM,
+    EXCEPTION_POLL,
+    EXCEPTION_TIMEOUT,
   };
   class FBProtocolCommMethod {
   public:
     virtual int onWrite(const char* buf, int length) = 0;
     virtual int onRead(char* buf, int len) = 0;
+    virtual int onPoll(int timeout) = 0;
   };
 
 
@@ -25,7 +29,7 @@ public:
   //bool dele();
 
 private:  
-  bool sendCommandNoData(const char* cmd, char* receiveBuf, int receiveBufSize);
+  bool sendCommandNoData(const char* cmd, char* receiveBuf, int receiveBufSize, int timeout);
 
   FBProtocolCommMethod* m_cm;
 };

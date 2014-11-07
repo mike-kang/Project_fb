@@ -48,8 +48,8 @@ bool Serial::open()
   } 
   //set input mode (non-canonical, no echo,.....) 
   newtio.c_lflag = 0; 
-  newtio.c_cc[VTIME] = 10; // timeout 0.1초 단위
-  newtio.c_cc[VMIN] = 1; // 최소 n 문자 받을 때까진 대기
+  newtio.c_cc[VTIME] = 0; // timeout 0.1초 단위
+  newtio.c_cc[VMIN] = 0; // 최소 n 문자 받을 때까진 대기
   tcflush ( m_fd, TCIFLUSH ); 
   tcsetattr( m_fd, TCSANOW, &newtio ); 
 
