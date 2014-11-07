@@ -5,6 +5,7 @@ class FBProtocol {
 public:
   enum Exception {
     EXCEPTION_WRITE,
+    EXCEPTION_NOT_ACK,
   };
   class FBProtocolCommMethod {
   public:

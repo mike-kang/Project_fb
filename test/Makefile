@@ -21,7 +21,7 @@ OBJS = main.o
 OBJS_FBSERVICE = ../fbservice.o ../fbprotocolCMSerial.o ../fb_protocol.o test_fbservice.o
 
 
-all : $(EXE) test_fbservice 
+all :  test_fbservice 
 
 $(CAMERA_LIB) :
 	make -C ../camera
