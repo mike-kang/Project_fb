@@ -3,11 +3,18 @@
 
 #include "fbprotocolCMSerial.h"
 #include "fb_protocol.h"
+#include <iostream>
+#include <list>
 
 using namespace tools;
 
 class FBService {
 public:
+  class ScanDataNoti {
+  public:
+    virtual void onData(const char* buf) = 0;
+    //virtual void onSameData() = 0;
+  };
   FBService(const char* path, Serial::Baud baud);
 
   virtual ~FBService()
@@ -17,9 +24,9 @@ public:
   
   bool start();
   void stop();
-  int requestStartScan(int interval);
+  bool requestStartScan(int interval);
   int requestEndScan();
-
+  
 private:  
   void run();
 
@@ -29,6 +36,8 @@ private:
   Thread<FBService>* m_thread;
   bool m_running;
   int m_interval; //msec
+  std::list<std::string> listUserCode;
+  ScanDataNoti* m_dn;
 };
 
 

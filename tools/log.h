@@ -30,6 +30,7 @@ typedef enum II_LogPriority {
 #define LOGI(...) ((void)LOG(LOG_INFO, LOG_TAG, __VA_ARGS__))
 #define LOGW(...) ((void)LOG(LOG_WARN, LOG_TAG, __VA_ARGS__))
 #define LOGE(...) ((void)LOG(LOG_ERROR, LOG_TAG, __VA_ARGS__))
+#define LOGF(...) ((void)LOG(LOG_FATAL, LOG_TAG, __VA_ARGS__))
 
 
 

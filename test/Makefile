@@ -18,8 +18,8 @@ INI_LFLAGS = -L../inih_r29 -linih
 
 OBJS = main.o
 
-OBJS_FBSERVICE = ../fbservice.o ../fbprotocolCMSerial.o ../fb_protocol.o test_fbservice.o
-
+SRCS_FBSERVICE = test_fbservice.cpp
+OBJS_FBSERVICE =  ../fbservice.o ../fbprotocolCMSerial.o ../fb_protocol.o test_fbservice.o
 
 all :  test_fbservice 
 
@@ -33,11 +33,17 @@ main.o : ../maindelegator.h
 
 
 test_fbservice : ${OBJS_FBSERVICE} 
+	make -C ../
 	g++ -o $@ ${OBJS_FBSERVICE} -L..  -L../tools -ltool -lpthread -lrt
+
+
+depend : $(SRCS_FBSERVICE)
+	g++ -MM $(CPPFLAGS) $^ > $@
 
 
  .PHONY : clean
 clean :
 	-rm *.o main
 
+-include depend
 

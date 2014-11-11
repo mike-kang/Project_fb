@@ -48,8 +48,8 @@ bool Serial::open()
   } 
   //set input mode (non-canonical, no echo,.....) 
   newtio.c_lflag = 0; 
-  newtio.c_cc[VTIME] = 0; // timeout 0.1초 단위
-  newtio.c_cc[VMIN] = 0; // 최소 n 문자 받을 때까진 대기
+  newtio.c_cc[VTIME] = m_vtime; // timeout 0.1초 단위
+  newtio.c_cc[VMIN] = m_vmin; // 최소 n 문자 받을 때까진 대기
   tcflush ( m_fd, TCIFLUSH ); 
   tcsetattr( m_fd, TCSANOW, &newtio ); 
 
@@ -89,6 +89,17 @@ int Serial::write(const char* buf, int len)
 int Serial::read(char* buf, int len)
 {
   return ::read(m_fd, buf, len);
+}
+
+bool Serial::setTimeout(int timeout) //ms
+{
+  struct termios tp; 
+  if(tcgetattr(m_fd, &tp) == -1)
+    return false;
+  tp.c_cc[VTIME] = timeout/100;
+  if(tcsetattr(m_fd, TCSANOW, &tp) == -1)
+    return false;
+  return true;
 }
 
 };

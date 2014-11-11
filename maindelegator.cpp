@@ -162,6 +162,7 @@ void MainDelegator::onData(const char* serialNumber)
   m_redLed->off();
   m_el->onMessage("RfidNo", serialNumber);
   EmployeeInfoMgr::EmployeeInfo* ei = new EmployeeInfoMgr::EmployeeInfo;
+  checkNetwork();
   bool ret = m_employInfoMrg->getInfo(serialNumber, ei);
 
   if(!ret){
@@ -334,10 +335,12 @@ void MainDelegator::cbTimer(void* arg)
     LOGV("cbTimer returned by processing card\n");
     return;
   }
+
+  if(md->checkNetwork() && !md->m_bTimeAvailable)
+    md->m_bTimeAvailable = md->getSeverTime();
+
   switch(count){
     case 3:
-      if(md->checkNetwork() && !md->m_bTimeAvailable)
-        md->m_bTimeAvailable = md->getSeverTime();
       break;
 
     case 1:
@@ -391,18 +394,36 @@ bool MainDelegator::checkNetwork()
   }
   
   if(ret){
-    LOGV("Server ON\n");
-    m_el->onMessage("Server", "Server ON");
-    m_yellowLed->off();
+    displayNetworkStatus(true);
     return true;
   }
 
 error:  
-  LOGV("Server OFF\n");
-  m_el->onMessage("Server", "Server OFF");
-  int arr[] = {1000, 1000, 0};
-  m_yellowLed->on(arr, true);
+  displayNetworkStatus(false);
   return false;
+}
+
+void MainDelegator::displayNetworkStatus(bool val)
+{
+  static bool bInitialized = false;
+  
+  if(!bInitialized || val != m_bNetworkAvailable){
+    if(val){
+      LOGV("Server ON\n");
+      m_el->onMessage("Server", "Server ON");
+      m_yellowLed->off();
+    }
+    else{
+      LOGV("Server OFF\n");
+      m_el->onMessage("Server", "Server OFF");
+      int arr[] = {1000, 1000, 0};
+      m_yellowLed->on(arr, true);
+    }
+    m_bNetworkAvailable = val;
+  }
+  
+  if(!bInitialized)
+    bInitialized = true;
 }
 
 bool MainDelegator::SettingInit()

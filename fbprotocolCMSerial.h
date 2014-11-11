@@ -14,8 +14,8 @@ public:
   }
   
   virtual int onWrite(const char* buf, int length);
-  virtual int onRead(char* buf, int len);
-  virtual int onPoll(int timeout);
+  virtual int onRead(char* buf, int len, int timeout);
+  //virtual int onPoll(int timeout);
   
   
 private:  

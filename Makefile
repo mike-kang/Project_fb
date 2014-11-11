@@ -13,7 +13,7 @@ else
 endif
 
 
-SRCS =  maindelegator.cpp    web/webservice.cpp hardware/gpio.cpp hardware/switchgpio.cpp settings.cpp employeeinfomgr.cpp timesheetmgr.cpp
+SRCS =  maindelegator.cpp    web/webservice.cpp hardware/gpio.cpp hardware/switchgpio.cpp settings.cpp employeeinfomgr.cpp timesheetmgr.cpp fbservice.cpp fbprotocolCMSerial.cpp fb_protocol.cpp 
 OBJS = $(SRCS:.cpp=.o)
 
 all : $(LIB)

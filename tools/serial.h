@@ -18,7 +18,7 @@ public:
     virtual void onRead() = 0;
   };
 */  
-  Serial(const char* path, Baud baud, int vtime = 10, int vmin = 1):m_fd(-1), m_vtime(vtime), m_vmin(vmin){
+  Serial(const char* path, Baud baud, int vtime = 10, int vmin = 0):m_fd(-1), m_vtime(vtime), m_vmin(vmin){
     strcpy(m_dev_name, path);
     m_baud = baud;
   }
@@ -30,6 +30,7 @@ public:
   int write(const char* buf, int len);
   int read(char* buf, int len);
   //int getFD() const {return m_fd;}
+  bool setTimeout(int timeout); //ms
 
 protected:
   int m_fd;

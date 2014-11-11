@@ -68,7 +68,7 @@ bool TimeSheetMgr::upload()
     filesystem::getList(STORE_DIRECTORY, filelist);
   }
   catch(filesystem::Exception e){
-    LOGE("get List error:%s\n", strerror(errno));
+    LOGF("get List error:%s\n", strerror(errno));
     return false;
   }
   for(vector<string*>::size_type i=0; i< filelist.size(); i++){

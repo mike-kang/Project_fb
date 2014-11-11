@@ -1,5 +1,8 @@
 #include "serialRfid.h"
 #include "tools/log.h"
+#include <iostream>
+
+using namespace std;
 
 #define LOG_TAG "SerialRfid"
 
@@ -9,11 +12,13 @@ bool SerialRfid::open()
   LOGI("open +++\n");
   ret = m_serial.open();
   LOGI("open ---\n");
+  return ret;
 }
 
 int SerialRfid::close()
 {
   m_serial.close();
+  return 0;
 }
 
 void SerialRfid::start(int interval, SerialRfidDataNoti* dn)

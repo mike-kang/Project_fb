@@ -58,7 +58,8 @@ MainWindow::MainWindow(QWidget *parent) :
     
     connect(this, SIGNAL(employeeInfo()), this, SLOT(updateEmployeeInfo()));
     
-
+    m_timerEmployeeInfo = new QTimer(this);
+    connect(m_timerEmployeeInfo, SIGNAL(timeout()), this, SLOT(cleanEmployeeInfo()));
 
 
 }
@@ -117,6 +118,9 @@ void MainWindow::updateTime()
 void MainWindow::updateEmployeeInfo()
 {
   static QPixmap* pix = NULL;
+  if(m_timerEmployeeInfo->isActive())
+    m_timerEmployeeInfo->stop();
+  m_timerEmployeeInfo->start(5000);
   ui->labelCoName->setText(m_CoName);
   ui->labelName->setText(m_Name);
   //QMetaObject::invokeMethod(ui->labelPinNo, "setText", Q_ARG(QString, PinNo.c_str()));
@@ -137,5 +141,16 @@ void MainWindow::updateEmployeeInfo()
     }
   }
   ui->labelPhoto->clear();
+}
+
+void MainWindow::cleanEmployeeInfo()
+{
+  ui->labelCoName->setText("");
+  ui->labelName->setText("");
+  ui->labelPhoto->clear();
+  ui->labelRfidNo->setText("");
+  ui->labelResult->setText("");
+  ui->labelMsg->setText("");
+  m_timerEmployeeInfo->stop();
 }
 

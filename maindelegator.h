@@ -54,6 +54,7 @@ private:
   bool checkZone(string& sAuth);
   bool checkDate(Date* start, Date* end, string& msg);
   bool checkNetwork();
+  void displayNetworkStatus(bool val);
   bool getSeverTime();
   void setRebootTimer(const char* time_buf);
 #ifdef SIMULATOR  

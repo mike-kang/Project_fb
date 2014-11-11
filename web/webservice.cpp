@@ -480,13 +480,18 @@ bool WebService::request_TimeSheetInsertString(const char *sMemcoCd, const char*
 {
   bool ret;
   LOGV("request_TimeSheetInsertString\n");
-  int encoded_buf_sz = base64::base64e2_get_needbufSize(imageSz);
+  int encoded_buf_sz = 0;
+  if(imageBuf)
+    encoded_buf_sz = base64::base64e2_get_needbufSize(imageSz);
   char *cmd = new char[400 + encoded_buf_sz]; 
   char* cmd_content = cmd + 200; 
   sprintf(cmd_content,"sMemcoCd=%s&sSiteCd=%s&sLabNo=%s&sInOut=%c&sGateNo=%s&sGateLoc=%s&sUtype=%c&sAttendGb=&sEventfunctionkey=&sInTime=%s&sPhotoImage="
     , sMemcoCd, sSiteCd, sLabNo, cInOut, sGateNo, sGateLoc, cUtype, sInTime);
   int cmd_content_prefix = strlen(cmd_content);
-  int base64_encoded_len = base64::base64e2_http(imageBuf, imageSz, cmd_content + cmd_content_prefix);
+  
+  int base64_encoded_len = 0;
+  if(imageBuf)
+    base64_encoded_len = base64::base64e2_http(imageBuf, imageSz, cmd_content + cmd_content_prefix);
   int contentlen = cmd_content_prefix + base64_encoded_len;
   //LOGV("base64_encoded_len: %d\n", base64_encoded_len);
 
@@ -576,7 +581,7 @@ void WebService::WebApi::run()
   int send_length = 0;
   
   if((m_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0){
-    LOGE("RET_CREATE_SOCKET_FAIL\n");
+    LOGE("RET_CREATE_SOCKET_FAIL: %s\n", strerror(errno));
     m_status = RET_CREATE_SOCKET_FAIL;
     goto error;
   }

@@ -70,6 +70,8 @@ char* GetMacAddress(const char* if_name)
     close(fd);
     return NULL;
   }
+  
+  close(fd);
   mac[17] = '\0';
   return mac;
 }

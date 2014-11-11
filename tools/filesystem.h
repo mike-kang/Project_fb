@@ -15,6 +15,7 @@ bool dir_chdir(const char* path);
 
 enum Exception {
   EXCEPTION_NO_DIRECTORY,
+  EXCEPTION_OPEN_DIR,
   EXCEPTION_EBADF,
   
 };

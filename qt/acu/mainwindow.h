@@ -28,6 +28,7 @@ signals:
 private slots:
     void updateTime();
     void updateEmployeeInfo();
+    void cleanEmployeeInfo();
 
 
 private:
@@ -39,6 +40,7 @@ private:
     QString m_PinNo;
     unsigned char* m_img_buf;
     int m_img_sz;
+    QTimer *m_timerEmployeeInfo;
     
 };
 

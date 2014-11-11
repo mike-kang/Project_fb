@@ -12,16 +12,11 @@ int FBProtocolCMSerial::onWrite(const char* buf, int length)
   return write(buf, length);
 }
 
-int FBProtocolCMSerial::onRead(char* buf, int len)
-{
-  return read(buf, len);
-}
-
-bool FBProtocolCMSerial::onPoll(int timeout)
+int FBProtocolCMSerial::onRead(char* buf, int len, int timeout)
 {
   struct pollfd fds;
   int ret;
-  
+
   fds.fd = m_fd;
   fds.events = POLLIN;
   ret = poll(&fds, 1, timeout);
@@ -29,9 +24,15 @@ bool FBProtocolCMSerial::onPoll(int timeout)
     throw EXCEPTION_POLL;
   }
   else if(ret == 0){
-    return false;
+    throw EXCEPTION_TIMEOUT;
   }
-  return true;
+  
+  return read(buf, len);
 }
 
+/*
+int FBProtocolCMSerial::onPoll(int timeout)
+{
+}
+*/
 
