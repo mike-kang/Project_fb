@@ -33,7 +33,6 @@ main.o : ../maindelegator.h
 
 
 test_fbservice : ${OBJS_FBSERVICE} 
-	make -C ../
 	g++ -o $@ ${OBJS_FBSERVICE} -L..  -L../tools -ltool -lpthread -lrt
 
 

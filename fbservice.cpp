@@ -18,9 +18,10 @@ bool FBService::start()
 {
   m_serial->open();
   try{
-    char* version = m_protocol->vers();
-    cout << version << endl;
+    //char* version = m_protocol->vers();
+    //cout << version << endl;
     //get user list
+    sleep(1);
     m_protocol->user(listUserCode);
     for(list<string>::iterator itr = listUserCode.begin(); itr != listUserCode.end(); itr++)
       cout << *itr << endl;
@@ -59,7 +60,7 @@ void FBService::run()
   while(m_running){
     usleep(interval);
     ret = m_protocol->stat(buf, bLong);
-    //printf("result %c %d\n", ret, bLong);
+    printf("result %c %d\n", ret, bLong);
     if(bLong && ret == 'A')
       break;
   }

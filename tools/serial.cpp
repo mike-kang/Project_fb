@@ -72,7 +72,7 @@ void Serial::run()
 */
 int Serial::close()
 {
-  ::close(m_fd);
+  return ::close(m_fd);
 }
 
 /*
@@ -82,11 +82,11 @@ void Serial::startRead(SerialReadNoti* rn)
   m_thread = new Thread<Serial>(&Serial::run, this, "SerialThread");
 }
 */
-int Serial::write(const char* buf, int len)
+int Serial::write(const byte* buf, int len)
 {
   return ::write(m_fd, buf, len);
 }
-int Serial::read(char* buf, int len)
+int Serial::read(byte* buf, int len)
 {
   return ::read(m_fd, buf, len);
 }

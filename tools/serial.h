@@ -3,7 +3,7 @@
 
 #include <string.h>
 #include "thread.h"
-
+typedef unsigned char byte;
 namespace tools {
 
 class Serial {
@@ -27,8 +27,8 @@ public:
   //void run();
   int close();
   //void startRead(SerialReadNoti* rn);
-  int write(const char* buf, int len);
-  int read(char* buf, int len);
+  int write(const byte* buf, int len);
+  int read(byte* buf, int len);
   //int getFD() const {return m_fd;}
   bool setTimeout(int timeout); //ms
 

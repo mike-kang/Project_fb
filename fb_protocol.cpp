@@ -9,7 +9,7 @@ using namespace std;
 
 #define SYNC 0x7e
 #define NODE 0xb0
-#define USER_COUNT 14
+#define USER_COUNT 5
 #define FLAG 15
 #define STATUS 5
 #define BLOCKID 11
@@ -23,11 +23,13 @@ using namespace std;
 //#define BUF_SZ_AUTH 12
 
 
-void dump(char*str, char* buf, int length)
+void dump(const char*str, byte* buf, int length)
 {
   printf("[%s]\n", str);
-  if(!length)
+  if(!length){
     printf("size = 0\n");
+    return;
+  }
   for(int i=0; i<length; i++){
     printf("0x%02x ", buf[i]);
   }
@@ -39,7 +41,7 @@ void dump(char*str, char* buf, int length)
 char* FBProtocol::vers()
 {
   static char version[BUF_SZ_VERS];
-  char* receive_buf; 
+  byte* receive_buf; 
   try {
     receive_buf = processCommand("VERS", 9000);
     memcpy(version, &receive_buf[10], BUF_SZ_VERS);
@@ -56,7 +58,7 @@ char* FBProtocol::vers()
 char FBProtocol::stat()
 {
   char status;
-  char* receive_buf; 
+  byte* receive_buf; 
   try {
     receive_buf = processCommand("STAT", 9000);
     status = receive_buf[STATUS];
@@ -72,7 +74,7 @@ char FBProtocol::stat()
 char FBProtocol::stat(char* data, bool& bLong)
 {
   char status;
-  char* receive_buf; 
+  byte* receive_buf; 
   try {
     receive_buf = processCommand("STAT", 9000);
     //printf("STAT 0x%x('%c')\n", receive_buf[STATUS], receive_buf[STATUS]);
@@ -111,11 +113,12 @@ bool FBProtocol::auth()
 //
 bool FBProtocol::user(list<string>& li)
 {
-  char status;
+  byte status;
   int i;
 
   try {
     status = userS();
+    
     if(status != '2'){
       printf("users fails\n");
       return false;
@@ -156,41 +159,47 @@ bool FBProtocol::user(list<string>& li)
   return true;
 }
 
-char FBProtocol::userS()
+byte FBProtocol::userS()
 {
-  char status;
-  char* receive_buf; 
-  char data[2+ 20 + 20];
-  char* p = data;
+  byte status;
+  byte* receive_buf; 
+  byte data[2+ 20 + 20];
+  byte* p = data;
   short count = USER_COUNT;
   data[0] = count >> 8;
   data[1] = count & 0xff;
   memset(p+2, 0x00, 20);
   memset(p+22, 0xff, 20);
 
-  receive_buf = processCommand("USERS", data, 42, 9000);
-  status = receive_buf[STATUS];
-  delete receive_buf;
+  for(int i = 0; i < 3; i++){
+    receive_buf = processCommand("USERS", data, 42, 9000);
+    status = receive_buf[STATUS];
+    delete receive_buf;
+    if(status == '2')
+      break;
+    userE();
+  }
+
   return status;
 }
 
-char FBProtocol::userD(unsigned int id, list<string>& li, char& flag)
+byte FBProtocol::userD(unsigned int id, list<string>& li, char& flag)
 {
-  char status;
-  char* receive_buf; 
+  byte status;
+  byte* receive_buf; 
   char data[4];
   sprintf(data, "%04d",id);
 
- receive_buf = processCommand("USERD", data, 4, 9000);
+  receive_buf = processCommand("USERD", (byte*)data, 4, 9000);
   flag = receive_buf[FLAG];
   char temp[4+1+20+1];
   receive_buf[FLAG] = '\0';
-  strcpy(temp, &receive_buf[BLOCKID]);
-  temp[4] = ':';
+  memcpy(temp, &receive_buf[BLOCKID], 4);
   for(int i=16;i<LENGTH(receive_buf); i+=21){
-    char* p = &receive_buf[i];
+  temp[4] = ':';
+    byte* p = &receive_buf[i];
     p[20] = '\0';
-    strcpy(&temp[5], p);
+    memcpy(&temp[5], p, 20);
     li.push_back(temp);
   }
   status = receive_buf[STATUS];
@@ -199,11 +208,11 @@ char FBProtocol::userD(unsigned int id, list<string>& li, char& flag)
     
 }
 
-char FBProtocol::userE()
+byte FBProtocol::userE()
 {
   //static char receive_buf[BUF_SZ_USERE];
-  char* receive_buf; 
-  char status;
+  byte* receive_buf; 
+  byte status;
 
   receive_buf = processCommand("USERE", 9000);
   status = receive_buf[STATUS];
@@ -212,9 +221,9 @@ char FBProtocol::userE()
 }
 
 
-char* FBProtocol::processCommand(const char* cmd, int timeout/*ms*/)
+byte* FBProtocol::processCommand(const char* cmd, int timeout/*ms*/)
 {
-  char buf[255];
+  byte buf[255];
   char _xor=0xff;
   unsigned char sum=0;
 
@@ -223,8 +232,8 @@ char* FBProtocol::processCommand(const char* cmd, int timeout/*ms*/)
   buf[0] = SYNC;
   buf[1] = length >> 8;
   buf[2] = length & 0xff;
-  buf[3] = NODE;
-  strcpy(&buf[4], cmd);
+  buf[3] = 0xb0;
+  memcpy(&buf[4], cmd, 4);
 
   for(int i=3; i<length; i++){
     _xor ^= buf[i];
@@ -248,11 +257,11 @@ char* FBProtocol::processCommand(const char* cmd, int timeout/*ms*/)
   
 }
 
-char* FBProtocol::processCommand(const char* cmd, const char* data, int data_sz, int timeout)
+byte* FBProtocol::processCommand(const char* cmd, const byte* data, int data_sz, int timeout)
 {
-  char buf[255];
-  char _xor=0xff;
-  unsigned char sum=0;
+  byte buf[255];
+  byte _xor=0xff;
+  byte sum=0;
 
   //command
   int cmd_sz = strlen(cmd);
@@ -261,7 +270,7 @@ char* FBProtocol::processCommand(const char* cmd, const char* data, int data_sz,
   buf[1] = length >> 8;
   buf[2] = length & 0xff;
   buf[3] = NODE;
-  strcpy(&buf[4], cmd);
+  memcpy(&buf[4], cmd, strlen(cmd));
   memcpy(&buf[4 + strlen(cmd)], data, data_sz);
 
   for(int i=3; i<length; i++){
@@ -286,11 +295,11 @@ char* FBProtocol::processCommand(const char* cmd, const char* data, int data_sz,
     
 }
 
-char* FBProtocol::response(int timeout)
+byte* FBProtocol::response(int timeout)
 {
-  char _xor=0xff;
-  unsigned char sum=0;
-  char tempBuf[3];
+  byte _xor = 0xff;
+  byte sum = 0;
+  byte tempBuf[3];
   int readbyte = m_cm->onRead(tempBuf, 3, timeout);
   while(readbyte < 3){
     int t = m_cm->onRead(tempBuf + readbyte, 3 - readbyte, timeout);
@@ -301,13 +310,13 @@ char* FBProtocol::response(int timeout)
   printf("readbyte %d\n", readbyte);
   //dump("RECEIVE", receiveBuf, readbyte);
   short length = LENGTH(tempBuf) + 2;
-  char* receiveBuf = new char[length];
+  byte* receiveBuf = new byte[length];
   memcpy(receiveBuf, tempBuf, readbyte);
   
   //cout << "sendCommandNoData: readbyte: " << readbyte << ", length: " << length << endl;
   int leavebyte = length - readbyte;
   if(leavebyte){
-    char* p = receiveBuf + readbyte;
+    byte* p = receiveBuf + readbyte;
     while(leavebyte){
       readbyte = m_cm->onRead(p, leavebyte, timeout);
       //cout << "sendCommandNoData: readbyte: " << readbyte<< endl;

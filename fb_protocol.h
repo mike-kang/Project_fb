@@ -3,6 +3,7 @@
 #include <iostream>
 #include <list>
 
+typedef unsigned char byte;
 class FBProtocol {
 public:
   enum Exception {
@@ -14,12 +15,8 @@ public:
   };
   class FBProtocolCommMethod {
   public:
-    enum Exception {
-      EXCEPTION_POLL,
-      EXCEPTION_TIMEOUT,
-    };
-    virtual int onWrite(const char* buf, int length) = 0;
-    virtual int onRead(char* buf, int len, int timeout) = 0;
+    virtual int onWrite(const byte* buf, int length) = 0;
+    virtual int onRead(byte* buf, int len, int timeout) = 0;
   };
 
 
@@ -38,13 +35,13 @@ public:
   //bool dele();
 
 private:  
-  char* processCommand(const char* cmd, int timeout);
-  char* processCommand(const char* cmd, const char* data, int data_sz, int timeout);
-  char* response(int timeout);
+  byte* processCommand(const char* cmd, int timeout);
+  byte* processCommand(const char* cmd, const byte* data, int data_sz, int timeout);
+  byte* response(int timeout);
 
-  char userS();
-  char userD(unsigned int id, std::list<std::string>& li, char& flag);
-  char userE();
+  byte userS();
+  byte userD(unsigned int id, std::list<std::string>& li, char& flag);
+  byte userE();
 
   
   FBProtocolCommMethod* m_cm;
