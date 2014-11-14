@@ -386,10 +386,10 @@ bool MainDelegator::checkNetwork()
 {
   bool ret = false;
   try{
-    ret = m_ws->request_GetNetInfo(2000);  //blocked I/O
+    ret = m_ws->request_CheckNetwork(2000);  //blocked I/O
   }
   catch(WebService::Except e){
-    LOGE("request_GetNetInfo: %s\n", WebService::dump_error(e));
+    LOGE("request_CheckNetwork: %s\n", WebService::dump_error(e));
     goto error;
   }
   
@@ -653,8 +653,8 @@ bool MainDelegator::getSeverTime()
 {
   LOGV("getServerTime\n");
   try{
-    char* time_buf = m_ws->request_ServerTimeGet(3000);  //blocked I/O
-    //time_buf = m_ws->request_ServerTimeGet(cbServerTimeGet, NULL);  //blocked I/O
+    char* time_buf = m_ws->request_ServerTime(3000);  //blocked I/O
+    //time_buf = m_ws->request_ServerTime(cbServerTimeGet, NULL);  //blocked I/O
     if(time_buf){
       LOGV("getSeverTime %s\n", time_buf);
       char * tok = strtok(time_buf, "-T:");
@@ -689,7 +689,7 @@ bool MainDelegator::getSeverTime()
     }
   }
   catch(WebService::Except e){
-    LOGE("request_ServerTimeGet: %s\n", WebService::dump_error(e));
+    LOGE("request_ServerTime: %s\n", WebService::dump_error(e));
     return false;
   }
 }

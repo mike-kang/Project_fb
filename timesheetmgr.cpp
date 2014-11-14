@@ -104,11 +104,11 @@ bool TimeSheetMgr::upload()
   for(list<TimeSheet*>::iterator itr = m_listTS.begin(); itr != m_listTS.end(); itr++){
     bool ret = false;
     try{
-      ret = m_ws->request_TimeSheetInsertString(m_sMemcoCd.c_str(), m_sSiteCd.c_str(), (*itr)->m_lab_no.c_str(), m_cInOut, m_sDvNo.c_str(), m_sDvLoc.c_str(), (*itr)->m_utype, (*itr)->m_time.c_str(), 
+      ret = m_ws->request_UploadTimeSheet(m_sMemcoCd.c_str(), m_sSiteCd.c_str(), (*itr)->m_lab_no.c_str(), m_cInOut, m_sDvNo.c_str(), m_sDvLoc.c_str(), (*itr)->m_utype, (*itr)->m_time.c_str(), 
         (*itr)->m_photo_img, (*itr)->m_imgSz, 3000, STORE_DIRECTORY);
     }
     catch(WebService::Except e){
-      LOGE("request_TimeSheetInsertString: %s\n", WebService::dump_error(e));
+      LOGE("request_UploadTimeSheet: %s\n", WebService::dump_error(e));
     }
     vector_erase.push_back(itr);
   }

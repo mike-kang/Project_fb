@@ -260,7 +260,7 @@ bool WebService::ServerTimeGet_WebApi::parsing()
                                     case RET_PARSING_FAIL:          \
                                       throw EXCEPTION_PARSING_FAIL; \
                                   }
-
+/*
 char* WebService::request_CodeDataSelect(const char *sMemcoCd, const char* sSiteCd, const char* sDvLoc, int timelimit, CCBFunc cbfunc, void* client)
 {
   char* ret = NULL;
@@ -322,11 +322,11 @@ char* WebService::request_CodeDataSelect(const char *sMemcoCd, const char* sSite
   }
   return ret;
 }
-
-bool WebService::request_GetNetInfo(int timelimit, CCBFunc cbfunc, void* client)
+*/
+bool WebService::request_CheckNetwork(int timelimit, CCBFunc cbfunc, void* client)
 {
   bool ret = false;
-  LOGV("request_GetNetInfo\n");
+  LOGV("request_CheckNetwork\n");
   char *cmd = new char[100];
   sprintf(cmd,"GET /WebService/ItlogService.asmx/GetNetInfo? HTTP/1.1\r\nHost: %s\r\n\r\n", m_serverIP);
 
@@ -353,9 +353,9 @@ bool WebService::request_GetNetInfo(int timelimit, CCBFunc cbfunc, void* client)
   return ret;
 }
 
-void WebService::request_RfidInfoSelectAll(const char *sMemcoCd, const char* sSiteCd, int timelimit, CCBFunc cbfunc, void* client, const char* outFilename)
+void WebService::request_EmployeeInfoAll(const char *sMemcoCd, const char* sSiteCd, int timelimit, CCBFunc cbfunc, void* client, const char* outFilename)
 {
-  LOGV("request_RfidInfoSelectAll +++\n");
+  LOGV("request_EmployeeInfoAll +++\n");
   char *cmd = new char[300];
   sprintf(cmd,"GET /WebService/ItlogService.asmx/RfidInfoSelect?sMemcoCd=%s&sSiteCd=%s&sUtype=&sMode=A&sSearchValue= HTTP/1.1\r\nHost: %s\r\n\r\n"
     , sMemcoCd, sSiteCd, m_serverIP);
@@ -376,14 +376,14 @@ void WebService::request_RfidInfoSelectAll(const char *sMemcoCd, const char* sSi
     }
     delete wa;
   }
-  LOGV("request_RfidInfoSelectAll ---\n");
+  LOGV("request_EmployeeInfoAll ---\n");
   return;
 }
 
-char* WebService::request_RfidInfoSelect(const char *sMemcoCd, const char* sSiteCd, const char* serialnum, int timelimit, CCBFunc cbfunc, void* client)
+char* WebService::request_EmployeeInfo(const char *sMemcoCd, const char* sSiteCd, const char* serialnum, int timelimit, CCBFunc cbfunc, void* client)
 {
   char* ret = NULL;
-  LOGV("request_RfidInfoSelect\n");
+  LOGV("request_EmployeeInfo\n");
   char *cmd = new char[400]; 
   char* cmd_content = cmd + 200; 
   sprintf(cmd_content,"sMemcoCd=%s&sSiteCd=%s&sUtype=R&sMode=&sSearchValue=RFID_CAR='%s", sMemcoCd, sSiteCd, serialnum);
@@ -415,16 +415,16 @@ char* WebService::request_RfidInfoSelect(const char *sMemcoCd, const char* sSite
     ret = (char*)wa->m_pRet;
     delete wa;
   }
-  LOGV("request_RfidInfoSelect ---\n");
+  LOGV("request_EmployeeInfo ---\n");
   return ret;
 }
 
-char* WebService::request_ServerTimeGet(int timelimit, CCBFunc cbfunc, void* client)
+char* WebService::request_ServerTime(int timelimit, CCBFunc cbfunc, void* client)
 {
   char* ret = NULL;
-  LOGV("request_ServerTimeGet\n");
+  LOGV("request_ServerTime\n");
   char *cmd = new char[300];
-  sprintf(cmd,"GET /WebService/ItlogService.asmx/ServerTimeGet? HTTP/1.1\r\nHost: %s\r\n\r\n", m_serverIP);
+  sprintf(cmd,"GET /SafeIDService.asmx/getServerTime? HTTP/1.1\r\nHost: %s\r\n\r\n", m_serverIP);
   ServerTimeGet_WebApi* wa;
 
   if(cbfunc){
@@ -446,40 +446,11 @@ char* WebService::request_ServerTimeGet(int timelimit, CCBFunc cbfunc, void* cli
   return ret;
 }
 
-bool WebService::request_StatusUpdate(const char *sGateType, const char* sSiteCd, const char* sDvLoc, const char* sdvNo, const char* sIpAddress, const char* sMacAddress, int timelimit, CCBFunc cbfunc, void* client)
-{
-  bool ret;
-  LOGV("request_StatusUpdate\n");
-  char *cmd = new char[400];
-  sprintf(cmd,"GET /WebService/ItlogService.asmx/Status_Update?sMemcoCd=%s&sSiteCd=%s&sGateCode=%s&sGateNo=%s&sGateIp=%s&sGateMac=%s HTTP/1.1\r\nHost: %s\r\n\r\n"
-    , sGateType, sSiteCd, sDvLoc, sdvNo, sIpAddress, sMacAddress, m_serverIP);
-
-  StatusUpdate_WebApi* wa;
-
-  if(cbfunc){
-    wa = new StatusUpdate_WebApi(this, cmd, 0, cbfunc, client);
-    wa->processCmd();
-  }
-  else{
-    wa = new StatusUpdate_WebApi(this, cmd, 0, timelimit);
-  
-    int status = wa->processCmd();
-    if(status != RET_SUCCESS){
-      delete wa;
-      THROW_EXCEPTION(status);
-    }
-    
-    ret = wa->m_ret;
-    delete wa;
-  }
-  return ret;
-}
-
-bool WebService::request_TimeSheetInsertString(const char *sMemcoCd, const char* sSiteCd, const char* sLabNo, char cInOut, const char* sGateNo, const char* sGateLoc, char cUtype, const char* sInTime, char* imageBuf, int imageSz, int timelimit, CCBFunc cbfunc, void* 
+bool WebService::request_UploadTimeSheet(const char *sMemcoCd, const char* sSiteCd, const char* sLabNo, char cInOut, const char* sGateNo, const char* sGateLoc, char cUtype, const char* sInTime, char* imageBuf, int imageSz, int timelimit, CCBFunc cbfunc, void* 
   client, const char* outDirectory)
 {
   bool ret;
-  LOGV("request_TimeSheetInsertString\n");
+  LOGV("request_UploadTimeSheet\n");
   int encoded_buf_sz = 0;
   if(imageBuf)
     encoded_buf_sz = base64::base64e2_get_needbufSize(imageSz);
@@ -503,7 +474,7 @@ bool WebService::request_TimeSheetInsertString(const char *sMemcoCd, const char*
   
   cmd[200] = 's';
 
-  //ofstream oOut("request_TimeSheetInsertString.txt");
+  //ofstream oOut("request_UploadTimeSheet.txt");
   //oOut << (cmd+ cmd_offset) << endl;
   //oOut.close();
   

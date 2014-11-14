@@ -11,10 +11,10 @@
 #include <netdb.h>
 #include <string.h>
 #include <fstream>
-
+#include "iwebservice.h"
 //#define DEBUG
 
-class WebService {
+class WebService : public IWebService {
 public:
   static const int MAX_POLL_TIME = 3000;
   typedef  void (*CCBFunc)(void *client_data, int status, void* ret);
@@ -240,26 +240,6 @@ public:
   };
   
 
-  enum Except{
-    EXCEPTION_CREATE_SOCKET,
-    EXCEPTION_CONNECT,
-    EXCEPTION_SEND_COMMAND,
-    EXCEPTION_POLL_FAIL,
-    EXCEPTION_POLL_TIMEOUT,
-    EXCEPTION_PARSING_FAIL
-  };
-
-  enum Ret {
-    RET_SUCCESS,
-    RET_CREATE_SOCKET_FAIL,
-    RET_CONNECT_FAIL,
-    RET_SEND_CMD_FAIL,
-    RET_FCNTL_FAIL,
-    RET_POLL_FAIL,
-    RET_POLL_TIMEOUT,
-    RET_PARSING_FAIL
-  };
-
   WebService(const char* ip, int port);
   ~WebService(){};
   //int start();
@@ -268,101 +248,19 @@ public:
   static const char* dump_error(Except e);
 
 //request
-  char* request_CodeDataSelect(const char *sMemcoCd, const char* sSiteCd, const char* sDvLoc, int timelimit, CCBFunc cbfunc, void* client);
-  char* request_CodeDataSelect(const char *sMemcoCd, const char* sSiteCd, const char* sDvLoc, int timelimit)
-  {
-    return request_CodeDataSelect(sMemcoCd, sSiteCd, sDvLoc, timelimit, NULL, NULL);
-  }
-  char* request_CodeDataSelect(const char *sMemcoCd, const char* sSiteCd, const char* sDvLoc, CCBFunc cbfunc, void* client)
-  {
-    return request_CodeDataSelect(sMemcoCd, sSiteCd, sDvLoc, 0, cbfunc, client);
-  }
-
-  bool request_GetNetInfo(int timelimit, CCBFunc cbfunc, void* client);
-  bool request_GetNetInfo(int timelimit)
-  {
-    return request_GetNetInfo(timelimit, NULL, NULL);
-  }
-  bool request_GetNetInfo(CCBFunc cbfunc, void* client)
-  {
-    return request_GetNetInfo(0, cbfunc, client);
-  }
-  void request_RfidInfoSelectAll(const char *sMemcoCd, const char* sSiteCd, int timelimit, CCBFunc cbfunc, void* client, 
+  bool request_CheckNetwork(int timelimit, CCBFunc cbfunc, void* client);
+  void request_EmployeeInfoAll(const char *sMemcoCd, const char* sSiteCd, int timelimit, CCBFunc cbfunc, void* client, 
   const char* outFilename);
-  void request_RfidInfoSelectAll(const char *sMemcoCd, const char* sSiteCd, int timelimit, 
-  const char* outFilename)
-  {
-    request_RfidInfoSelectAll(sMemcoCd, sSiteCd, timelimit, NULL, NULL, outFilename);
-  }
-  void request_RfidInfoSelectAll(const char *sMemcoCd, const char* sSiteCd, CCBFunc cbfunc, void* client, 
-  const char* outFilename)
-  {
-    request_RfidInfoSelectAll(sMemcoCd, sSiteCd, 0, cbfunc, client, outFilename);
-  }
 
-  char* request_RfidInfoSelect(const char *sMemcoCd, const char* sSiteCd, const char* serialnum, int timelimit, CCBFunc cbfunc, void* 
+  char* request_EmployeeInfo(const char *sMemcoCd, const char* sSiteCd, const char* serialnum, int timelimit, CCBFunc cbfunc, void* 
   client);
-  char* request_RfidInfoSelect(const char *sMemcoCd, const char* sSiteCd, const char* serialnum, int timelimit)
-  {
-    return request_RfidInfoSelect(sMemcoCd, sSiteCd, serialnum, timelimit, NULL, NULL);
-  }
-  char* request_RfidInfoSelect(const char *sMemcoCd, const char* sSiteCd, const char* serialnum, CCBFunc cbfunc, void* 
-  client)
-  {
-    return request_RfidInfoSelect(sMemcoCd, sSiteCd, serialnum, 0, cbfunc, client);
-  }
-  char* request_ServerTimeGet(int timelimit, CCBFunc cbfunc, void* client);
-  char* request_ServerTimeGet(int timelimit)
-  {
-    return request_ServerTimeGet(timelimit, NULL, NULL);
-  }
-  char* request_ServerTimeGet(CCBFunc cbfunc, void* client)
-  {
-    return request_ServerTimeGet(0, cbfunc, client);
-  }
+  char* request_ServerTime(int timelimit, CCBFunc cbfunc, void* client);
 
-  bool request_StatusUpdate(const char *sGateType, const char* sSiteCd, const char* sDvLoc, const char* sdvNo, const char* sIpAddress, const char* sMacAddress, int timelimit, CCBFunc cbfunc, void* 
-  client);
-  bool request_StatusUpdate(const char *sGateType, const char* sSiteCd, const char* sDvLoc, const char* sdvNo, const char* sIpAddress, const char* sMacAddress, int timelimit)
-  {
-    return request_StatusUpdate(sGateType, sSiteCd, sDvLoc, sdvNo, sIpAddress, sMacAddress, timelimit, NULL, NULL);
-  }
-  bool request_StatusUpdate(const char *sGateType, const char* sSiteCd, const char* sDvLoc, const char* sdvNo, const char* sIpAddress, const char* sMacAddress, CCBFunc cbfunc, void* 
-  client)
-  {
-    return request_StatusUpdate(sGateType, sSiteCd, sDvLoc, sdvNo, sIpAddress, sMacAddress, 0, cbfunc, client);
-  }
-  
-  bool request_TimeSheetInsertString(const char *sMemcoCd, const char* sSiteCd, const char* sLabNo, char cInOut, const char* sGateNo, const char* sGateLoc, char cUtype, const char* sInTime, char* imageBuf, int imageSz, int timelimit, CCBFunc cbfunc, void* 
+  bool request_UploadTimeSheet(const char *sMemcoCd, const char* sSiteCd, const char* sLabNo, char cInOut, const char* sGateNo, const char* sGateLoc, char cUtype, const char* sInTime, char* imageBuf, int imageSz, int timelimit, CCBFunc cbfunc, void* 
   client, const char* outDirectory);
-  bool request_TimeSheetInsertString(const char *sMemcoCd, const char* sSiteCd, const char* sLabNo, char cInOut, const char* sGateNo, const char* sGateLoc, char cUtype, const char* sInTime, char* imageBuf, int imageSz, int timelimit, const char* outDirectory)
-  {
-    return request_TimeSheetInsertString(sMemcoCd, sSiteCd, sLabNo, cInOut, sGateNo, sGateLoc, cUtype, sInTime, 
-    imageBuf, imageSz, timelimit, NULL, NULL, outDirectory);
-  }
-  bool request_TimeSheetInsertString(const char *sMemcoCd, const char* sSiteCd, const char* sLabNo, char cInOut, const char* sGateNo, const char* sGateLoc, char cUtype, const char* sInTime, char* imageBuf, int imageSz, CCBFunc cbfunc, void* 
-  client, const char* outDirectory)
-  {
-    return request_TimeSheetInsertString(sMemcoCd, sSiteCd, sLabNo, cInOut, sGateNo, sGateLoc, cUtype, sInTime, imageBuf, imageSz, 0, cbfunc, 
-    client, outDirectory);
-  }
   bool request_SendFile(const char *filename, int timelimit, CCBFunc cbfunc, void* client);
-  bool request_SendFile(const char *filename, int timelimit)
-  {
-    return request_SendFile(filename, timelimit, NULL, NULL);
-  }
-  bool request_SendFile(const char *filename, CCBFunc cbfunc, void* client)
-  {
-    return request_SendFile(filename, 0, cbfunc, client);
-  }
+
 private:
-  //void run(); 
-  
-  void _processRequest(void* arg);
-
-  int send_command(char *cmd);
-
-  
   Thread<WebService> *m_thread;
   TEvent<WebService>* m_event;
   tools::Queue<TEvent< WebService> > m_requestQ;

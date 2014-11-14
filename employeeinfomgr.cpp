@@ -39,7 +39,7 @@ bool EmployeeInfoMgr::createLocalDB()
   if(!filesystem::file_exist(DB_FILE)){
     LOGV("download %s\n", DB_FILE);
     try{
-      m_ws->request_RfidInfoSelectAll(m_sMemcoCd.c_str(), m_sSiteCd.c_str(), 8000, DB_FILE);
+      m_ws->request_EmployeeInfoAll(m_sMemcoCd.c_str(), m_sSiteCd.c_str(), 8000, DB_FILE);
       LOGV("downloaded %s\n", DB_FILE);
     }
     catch(WebService::Except e){
@@ -73,10 +73,10 @@ bool EmployeeInfoMgr::getInfo(const char* serialNumber, EmployeeInfo* ei)
   }
 /*
   try{
-    bNetAvailable = m_ws->request_GetNetInfo(1000);
+    bNetAvailable = m_ws->request_CheckNetwork(1000);
   }
   catch(WebService::Except e){
-    LOGE("request_GetNetInfo: %s\n", WebService::dump_error(e));
+    LOGE("request_CheckNetwork: %s\n", WebService::dump_error(e));
   }
   if(!bNetAvailable){
     LOGE("nwtwork not available\n");
@@ -84,7 +84,7 @@ bool EmployeeInfoMgr::getInfo(const char* serialNumber, EmployeeInfo* ei)
   }
 */  
   try{
-    char* xml_buf = m_ws->request_RfidInfoSelect(m_sMemcoCd.c_str(), m_sSiteCd.c_str(), serialNumber, 3000);
+    char* xml_buf = m_ws->request_EmployeeInfo(m_sMemcoCd.c_str(), m_sSiteCd.c_str(), serialNumber, 3000);
     if(xml_buf){
       //cout << xml_buf << endl;
       bool ret = fillEmployeeInfo(xml_buf, ei);
@@ -94,7 +94,7 @@ bool EmployeeInfoMgr::getInfo(const char* serialNumber, EmployeeInfo* ei)
     return false;
   }
   catch(WebService::Except e){
-    LOGE("request_RfidInfoSelect: %s\n", WebService::dump_error(e));
+    LOGE("request_EmployeeInfo: %s\n", WebService::dump_error(e));
   }
 
 localDB:
