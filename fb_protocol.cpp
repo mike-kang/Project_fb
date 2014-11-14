@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <cstring>
 #include <iostream>
+#include <fstream>
 using namespace std;
 
 #define LOG_TAG "FBProtocol"
@@ -10,10 +11,16 @@ using namespace std;
 #define SYNC 0x7e
 #define NODE 0xb0
 #define USER_COUNT 5
+
+/* index */
 #define FLAG 15
 #define STATUS 5
 #define BLOCKID 11
-#define LENGTH(buf) ((buf[1] << 8) + buf[2])
+
+#define ENCRYPTION '2'
+#define FINGER_COUNT_IN_FILE 3
+
+#define TOSHORT(buf) (((buf)[0] << 8) + (buf)[1])
 //beffer size
 #define BUF_SZ_VERS 70 
 //#define BUF_SZ_STAT_NORMAL 20
@@ -21,7 +28,10 @@ using namespace std;
 //#define BUF_SZ_USERD (16+21*USER_COUNT+2) //4+1+1+5+4+1+21*USER_COUNT + 2
 //#define BUF_SZ_USERE 13
 //#define BUF_SZ_AUTH 12
-
+#define STAT_LOOP_CHECK(k)    do {                    \
+                                usleep(100000);       \
+                                status = stat();      \
+                              } while(status != (k))
 
 void dump(const char*str, byte* buf, int length)
 {
@@ -59,16 +69,10 @@ char FBProtocol::stat()
 {
   char status;
   byte* receive_buf; 
-  try {
-    receive_buf = processCommand("STAT", 9000);
-    status = receive_buf[STATUS];
-    delete receive_buf;
-    return status;  
-  }
-  catch(Exception e){
-    cout << "[stat]exception fail! " << e << endl;
-    return 0;
-  }
+  receive_buf = processCommand("STAT", 9000);
+  status = receive_buf[STATUS];
+  delete receive_buf;
+  return status;  
 }
 
 char FBProtocol::stat(char* data, bool& bLong)
@@ -80,7 +84,7 @@ char FBProtocol::stat(char* data, bool& bLong)
     //printf("STAT 0x%x('%c')\n", receive_buf[STATUS], receive_buf[STATUS]);
     status = receive_buf[STATUS];
     if(data){
-      short length = LENGTH(receive_buf);
+      short length = TOSHORT(receive_buf + 1);
       bLong = (length == 30);
       memcpy(data, &receive_buf[10], length - 10); 
     }
@@ -117,49 +121,72 @@ bool FBProtocol::user(list<string>& li)
   int i;
 
   try {
-    status = userS();
+    userS();
     
-    if(status != '2'){
-      printf("users fails\n");
-      return false;
-    }
-
-    for(i=0;i<3;i++){
-      usleep(500000);
-      status = stat();
-      if(status == '3')
-        break;
-    }
-    if(i == 3){
-      printf("users fails\n");
-      return false;
-    }
-
     int blockId = 1;
     char flag;
     do {
       status = userD(blockId, li, flag);
-      if(flag == 'F')
+      printf("flag %c\n", flag);
+      if(status == 'A' && flag == 'F')
         blockId++;
-    }while(status != 'A');
+    }while(status != 'A' || flag != 'f');
     
-    status = userE();
-    if(status != 'A'){
-      printf("userE fails\n");
-      return false;
-    }
+    userE();
   }
   catch(Exception e){
     cout << "[user]exception fail! " << e << endl;
-    status = userE();
-    printf("userE %c\n", status);
     return false;
   }
 
   return true;
 }
 
-byte FBProtocol::userS()
+bool FBProtocol::save(const char* filename)
+{
+  byte status;
+  int i;
+
+  try {
+    saveS();
+    saveD(filename);
+    saveE();
+  }
+  catch(Exception e){
+    cout << "[save]exception fail! " << e << endl;
+    return false;
+  }
+
+  return true;
+}
+
+bool FBProtocol::dele(unsigned short usercode)
+{
+  char status;
+  byte* receive_buf; 
+  char sUsercode[21];
+  int i;
+  sprintf(sUsercode, "%016d0000",usercode);
+
+  try {
+    receive_buf = processCommand("DELE", (byte*)sUsercode, 20, 1000);
+    status = receive_buf[STATUS];
+    delete receive_buf;
+
+    if(status != '2')
+      return false;
+    STAT_LOOP_CHECK('A');
+    return true;  
+  }
+  catch(Exception e){
+    cout << "[dele]exception fail! " << e << endl;
+    return false;
+  }
+}
+
+
+
+void FBProtocol::userS()
 {
   byte status;
   byte* receive_buf; 
@@ -171,34 +198,33 @@ byte FBProtocol::userS()
   memset(p+2, 0x00, 20);
   memset(p+22, 0xff, 20);
 
-  for(int i = 0; i < 3; i++){
-    receive_buf = processCommand("USERS", data, 42, 9000);
-    status = receive_buf[STATUS];
-    delete receive_buf;
-    if(status == '2')
-      break;
-    userE();
-  }
-
-  return status;
+  receive_buf = processCommand("USERS", data, 42, 9000);
+  status = receive_buf[STATUS];
+  delete receive_buf;
+  if(status != '2')
+    throw EXCEPTION_USERS;
+  STAT_LOOP_CHECK('3');
 }
 
-byte FBProtocol::userD(unsigned int id, list<string>& li, char& flag)
+byte FBProtocol::userD(unsigned int block_id, list<string>& li, char& flag)
 {
   byte status;
   byte* receive_buf; 
   char data[4];
-  sprintf(data, "%04d",id);
+  sprintf(data, "%04d",block_id);
 
   receive_buf = processCommand("USERD", (byte*)data, 4, 9000);
   flag = receive_buf[FLAG];
   char temp[4+1+20+1];
   receive_buf[FLAG] = '\0';
   memcpy(temp, &receive_buf[BLOCKID], 4);
-  for(int i=16;i<LENGTH(receive_buf); i+=21){
   temp[4] = ':';
+  temp[25] = '\0';
+  int length = TOSHORT(receive_buf+1);
+  for(int i=16;i < length; i+=21){
+  
     byte* p = &receive_buf[i];
-    p[20] = '\0';
+
     memcpy(&temp[5], p, 20);
     li.push_back(temp);
   }
@@ -208,7 +234,7 @@ byte FBProtocol::userD(unsigned int id, list<string>& li, char& flag)
     
 }
 
-byte FBProtocol::userE()
+void FBProtocol::userE()
 {
   //static char receive_buf[BUF_SZ_USERE];
   byte* receive_buf; 
@@ -217,7 +243,116 @@ byte FBProtocol::userE()
   receive_buf = processCommand("USERE", 9000);
   status = receive_buf[STATUS];
   delete receive_buf;
-  return status;
+  if(status != 'A')
+    STAT_LOOP_CHECK('A');
+}
+
+void FBProtocol::saveS()
+{
+  byte* receive_buf; 
+  byte status;
+
+  receive_buf = processCommand("SAVES", 1000);
+  status = receive_buf[STATUS];
+  delete receive_buf;
+  if(status != '3')
+    STAT_LOOP_CHECK('3');
+}
+
+
+void FBProtocol::saveD(const char* filename)
+{
+  int i;
+  byte status;
+  byte* receive_buf; 
+  ifstream infile (filename, ofstream::binary);
+  // get size of file
+  infile.seekg (0,infile.end);
+  long fingerinfo_size = infile.tellg() / FINGER_COUNT_IN_FILE;
+  infile.seekg (0);
+
+  int length = 12 + fingerinfo_size;
+  byte* buf = new byte[length + 2];
+  byte _xor = 0xff;
+  byte sum = 0;
+  unsigned short serial = 0;
+
+  //command
+  buf[0] = SYNC;
+  buf[1] = length >> 8;
+  buf[2] = length & 0xff;
+  buf[3] = NODE;
+  memcpy(&buf[4], "SAVED", 5);
+  buf[9] = ENCRYPTION;
+
+  do {
+
+    buf[10] = serial >> 8;
+    buf[11] = serial & 0xff;
+    
+
+    infile.read ((char*)&buf[12], fingerinfo_size);
+
+
+    for(int i=3; i<length; i++){
+      _xor ^= buf[i];
+      sum += buf[i];
+    }
+
+    sum += _xor;
+    buf[length] = _xor;
+    buf[length+1] = sum;
+    
+    cout << "processCommand" << endl;
+    dump("SEND SAVED", buf, length + 2);
+    try{
+      receive_buf = processCommand(buf, length + 2, 9000); //delete buf;
+    }
+    catch(Exception e){
+      infile.close();
+      delete buf;
+      throw EXCEPTION_SAVED;
+    }
+    
+    //serial = TOSHORT(receive_buf+12);
+    //errCode = TOSHORT(receive_buf+14);
+    //restCmd = TOSHORT(receive_buf+16);
+    //printf("serial %d, errCode %d, restCmd %d\n", serial, errCode, restCmd);
+
+    status = receive_buf[STATUS];
+    delete receive_buf;
+
+    if(status == '3'){
+      serial++;
+      printf("1. serial %d\n", serial);
+      if(serial == FINGER_COUNT_IN_FILE)
+        break;
+
+    }
+    else{
+      STAT_LOOP_CHECK('3');
+      serial++;
+      printf("2. serial %d\n", serial);
+      if(serial == FINGER_COUNT_IN_FILE)
+        break;
+    }
+    
+    usleep(200000);
+  }while(1);
+  delete buf;
+  infile.close();
+}
+
+void FBProtocol::saveE()
+{
+  byte* receive_buf; 
+  byte status;
+
+  receive_buf = processCommand("SAVEE", 1000);
+  status = receive_buf[STATUS];
+  delete receive_buf;
+  if(status != 'A')
+    STAT_LOOP_CHECK('A');
 }
 
 
@@ -232,8 +367,8 @@ byte* FBProtocol::processCommand(const char* cmd, int timeout/*ms*/)
   buf[0] = SYNC;
   buf[1] = length >> 8;
   buf[2] = length & 0xff;
-  buf[3] = 0xb0;
-  memcpy(&buf[4], cmd, 4);
+  buf[3] = NODE;
+  memcpy(&buf[4], cmd, strlen(cmd));
 
   for(int i=3; i<length; i++){
     _xor ^= buf[i];
@@ -295,21 +430,35 @@ byte* FBProtocol::processCommand(const char* cmd, const byte* data, int data_sz,
     
 }
 
+byte* FBProtocol::processCommand(const byte* chunk, int chunk_sz, int timeout)
+{
+  int writebyte = m_cm->onWrite(chunk, chunk_sz);
+  if(writebyte < chunk_sz)
+    throw EXCEPTION_COMMAND;
+  
+  //response
+  return response(timeout);
+    
+}
+
 byte* FBProtocol::response(int timeout)
 {
   byte _xor = 0xff;
   byte sum = 0;
-  byte tempBuf[3];
-  int readbyte = m_cm->onRead(tempBuf, 3, timeout);
+  byte tempBuf[10];
+  int readbyte = m_cm->onRead(tempBuf, 10, timeout);
   while(readbyte < 3){
     int t = m_cm->onRead(tempBuf + readbyte, 3 - readbyte, timeout);
     readbyte += t;
   }
-  if(tempBuf[0] != SYNC)
+  
+  if(tempBuf[0] != SYNC){
+    dump("RECEIVE", tempBuf, readbyte);
     throw EXCEPTION_NOT_ACK;
+  }
   printf("readbyte %d\n", readbyte);
   //dump("RECEIVE", receiveBuf, readbyte);
-  short length = LENGTH(tempBuf) + 2;
+  short length = TOSHORT(tempBuf+1) + 2;
   byte* receiveBuf = new byte[length];
   memcpy(receiveBuf, tempBuf, readbyte);
   
@@ -339,5 +488,8 @@ byte* FBProtocol::response(int timeout)
     delete receiveBuf;
     throw EXCEPTION_CHECKSUM;  
   }
+
+  if(receiveBuf[STATUS] == 'B')
+    throw EXCEPTION_ERROR;
   return receiveBuf;
 }

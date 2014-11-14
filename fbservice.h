@@ -26,6 +26,8 @@ public:
   void stop();
   bool requestStartScan(int interval);
   int requestEndScan();
+  bool save(const char* filename);
+  bool deleteUsercode(unsigned short usercode);
   
 private:  
   void run();

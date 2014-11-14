@@ -50,6 +50,16 @@ int FBService::requestEndScan()
   m_thread = NULL;
 }
 
+bool FBService::save(const char* filename)
+{
+  return m_protocol->save(filename);
+}
+
+bool FBService::deleteUsercode(unsigned short usercode)
+{
+  return m_protocol->dele(usercode);
+}
+
 void FBService::run()
 {
   int interval = m_interval * 1000;
@@ -62,7 +72,7 @@ void FBService::run()
     ret = m_protocol->stat(buf, bLong);
     printf("result %c %d\n", ret, bLong);
     if(bLong && ret == 'A')
-      break;
+      printf("*******************Good*****************\n");
   }
 
 }
