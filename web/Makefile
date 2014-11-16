@@ -2,7 +2,7 @@ $(warning os: $(shell uname -s))
 $(info current dir is ${CURDIR})
 
 
-OBJS = main.o webservice.o
+OBJS = main.o webservice.o safemanwebservice.o
 
 EXE = webservice
 all : ${EXE}
@@ -15,6 +15,7 @@ ${EXE} :  ${OBJS}
 
 main.o : webservice.h
 webservice.o : webservice.h
+safemanwebservice.o : safemanwebservice.h webservice.h
 
 .PHONY : clean
 clean :

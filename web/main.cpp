@@ -1,10 +1,10 @@
 #include <iostream>
 #include <fstream>
-#include "webservice.h"
+#include "safemanwebservice.h"
 #include "../tools/log.h"
 
 using namespace std;
-
+using namespace web;
 #define LOG_TAG "TEST_MAIN"
 
 #define RCVHEADERBUFSIZE 1024
@@ -16,18 +16,6 @@ IWebService* iws;
 
 char* image_buffer;
 
-char* dump_error(WebService::Except e)
-{
-  switch(e){
-    DUMP_CASE (WebService::EXCEPTION_CREATE_SOCKET)
-    DUMP_CASE (WebService::EXCEPTION_CONNECT)
-    DUMP_CASE (WebService::EXCEPTION_SEND_COMMAND)
-    DUMP_CASE (WebService::EXCEPTION_POLL_FAIL)
-    DUMP_CASE (WebService::EXCEPTION_POLL_TIMEOUT)
-    DUMP_CASE (WebService::EXCEPTION_PARSING_FAIL)
-  }
-
-}
 
 void cbGetNetInfo(void *client_data, int status, void* ret)
 {
@@ -78,7 +66,7 @@ int main()
 {
   log_init(true, 1, "/dev/pts/2", false, 3, "Log");
   //iws = new WebService("112.216.243.146", 8080);
-  iws = new WebService("125.141.204.31", 80); //dev.safeman.co.kr
+  iws = new SafemanWebService("125.141.204.31", 80); //dev.safeman.co.kr
   //m_ws = new WebService("192.168.0.7", 8080);
 
   bool ret;
@@ -122,8 +110,8 @@ int main()
       delete time_buf;
     }
   }
-  catch(WebService::Except e){
-    LOGE("request_ServerTime: %s\n", dump_error(e));
+  catch(Except e){
+    LOGE("request_ServerTime: %s\n", WebService::dump_error(e));
   }
 /*
   try{
