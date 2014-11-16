@@ -17,8 +17,6 @@ namespace web {
 
 class SafemanWebService : public WebService {
 public:
-  static const int MAX_POLL_TIME = 3000;
-  typedef  void (*CCBFunc)(void *client_data, int status, void* ret);
 
   class CodeDataSelect_WebApi : public WebApi {
   //friend class WebService;
@@ -221,16 +219,6 @@ public:
   bool request_SendFile(const char *filename, int timelimit, CCBFunc cbfunc, void* client);
 
 private:
-  /*
-  Thread<WebService> *m_thread;
-  TEvent<WebService>* m_event;
-  tools::Queue<TEvent< WebService> > m_requestQ;
-  Condition m_request_completed;
-  Mutex mtx;
-  char m_serverIP[16]; //XXX.XXX.XXX.XXX
-  int m_port;
-  struct sockaddr_in m_remote;
-  */
 };
 
 

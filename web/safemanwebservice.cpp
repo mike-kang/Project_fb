@@ -21,13 +21,6 @@ using namespace web;
 
 SafemanWebService::SafemanWebService(const char* ip, int port) : WebService(ip, port)
 {
-  strcpy(m_serverIP, ip);
-  inet_pton(AF_INET, m_serverIP, (void *)(&(m_remote.sin_addr.s_addr)));
-
-  m_port = port;
-  m_remote.sin_port = htons(m_port);
-
-  m_remote.sin_family = AF_INET;
 }
 
 /***********************************************************************************/
