@@ -8,6 +8,8 @@ enum Exception {
 
 };
 
+bool isIPv4(const char* str);
+char* ResolveName(char* name);  //getIP
 char* GetIpAddress(const char* if_name);
   
 

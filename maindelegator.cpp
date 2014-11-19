@@ -530,16 +530,8 @@ MainDelegator::MainDelegator(EventListener* el) : m_el(el), m_bProcessingRfidDat
   //m_ws = new WebService("192.168.0.7", 8080);
   m_sServerURL = m_settings->get("Server::URL");
   LOGV("m_sServerURL= %s\n", m_sServerURL.c_str()); 
-  char ip[21];
-  strncpy(ip, m_sServerURL.c_str() + 7, 20);
-  for(int i=0;i<21;i++){
-    if(ip[i] == ':'){
-      ip[i] = '\0';
-      break;
-    }
-  }
-  LOGV("Server IP: %s\n", ip);
-  m_ws = new WebService(ip, 8080);
+
+  m_ws = new WebService(m_sServerURL);
   //m_ws = new WebService(ip, 17552);
   checkNetwork();
   m_employInfoMrg = new EmployeeInfoMgr(m_settings, m_ws);

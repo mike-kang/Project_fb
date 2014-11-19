@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include "safemanwebservice.h"
+#include "dwwebservice.h"
 #include "../tools/log.h"
 
 using namespace std;
@@ -10,7 +11,7 @@ using namespace web;
 #define RCVHEADERBUFSIZE 1024
 #define RCVBUFSIZE 4096
 
-IWebService* iws;
+IWebService* iws, *iws2;
 
 #define DUMP_CASE(x) case x: return #x;
 
@@ -62,46 +63,39 @@ void cbTimeSheetInsertString(void *client_data, int status, void* ret)
     delete image_buffer;
 }
 
+#define LOTT
+//#define DW
+
 int main()
 {
-  log_init(true, 1, "/dev/pts/2", false, 3, "Log");
+  log_init(true, 1, "/dev/pts/3", false, 3, "Log");
   //iws = new WebService("112.216.243.146", 8080);
-  iws = new SafemanWebService("125.141.204.31", 80); //dev.safeman.co.kr
-  //m_ws = new WebService("192.168.0.7", 8080);
-
+  //iws = new SafemanWebService("http://lottedev.safeman.co.kr/LotteIDService.asmx", "MC00000007", "ST00000024", "0000000008"); //dev.safeman.co.kr
+  //iws = new SafemanWebService("http://dev.safeman.co.kr/SafeIDService.asmx", "MC00000007", "ST00000024", "0000000008"); //dev.safeman.co.kr
+#ifdef LOTT
+  iws = new SafemanWebService("http://lottedev.safeman.co.kr/LotteIDService.asmx", "MC00000007", "ST00000024", "0000000008", "1", 'I'); //dev.safeman.co.kr
+#elif defined DW
+  iws = new DWWebService("http://112.175.10.40/WebService.asmx", "MC00000007", "ST00000024", "KMUD0", "1", 'I'); //dev.safeman.co.kr
+  iws2 = new SafemanWebService("http://dev.safeman.co.kr/SafeIDService.asmx", "MC00000007", "ST00000024", "KMUD0", "1", 'I'); //dev.safeman.co.kr
+#else
+  iws = new SafemanWebService("http://dev.safeman.co.kr/SafeIDService.asmx", "MC00000007", "ST00000024", "0000000008", "1", 'I'); //dev.safeman.co.kr
+#endif
   bool ret;
   char* xml_buf;
   char* time_buf;
-/*
   try{
-    //ret = m_ws->request_CheckNetwork(3000);  //blocked I/O
-    ret = m_ws->request_CheckNetwork(cbGetNetInfo, NULL);  //blocked I/O
-    LOGV("***GetNetInfo: %d\n", ret);
+    ret = iws->request_CheckNetwork(3000);  //blocked I/O
+    //ret = m_ws->request_CheckNetwork(cbGetNetInfo, NULL);  //blocked I/O
+    printf("***GetNetInfo: %d\n", ret);
   }
-  catch(WebService::Except e){
-    LOGE("request_CheckNetwork: %s\n", dump_error(e));
-  }
-
-  try{
-    m_ws->request_EmployeeInfoAll("MC00000003", "ST00000005", 7000, "employee.xml");  //blocked I/O
-    //m_ws->request_EmployeeInfoAll("MC00000003", "ST00000005", cbRfidInfoSelectAll, NULL, "employee.xml");  //blocked I/O
-  }
-  catch(WebService::Except e){
-    LOGE("request_EmployeeInfoAll: %s\n", dump_error(e));
-  }
-
-  try{
-    xml_buf = m_ws->request_EmployeeInfo("MC00000003", "ST00000005", "253153215009", 3000);  //blocked I/O
-    //xml_buf = m_ws->request_EmployeeInfo("MC00000003", "ST00000005", "253153215009", cbRfidInfoSelect, NULL);  //blocked I/O
-    if(xml_buf){
-      cout << "***RfidInfoSelect: " << xml_buf << endl;
-      delete xml_buf;
+  catch(Except e){
+    printf("request_CheckNetwork: %s\n", WebService::dump_error(e));
+    if(e == EXCEPTION_NOT_SUPPORTED && iws2){
+      ret = iws2->request_CheckNetwork(3000);  //blocked I/O
+      printf("***GetNetInfo: %d\n", ret);
     }
   }
-  catch(WebService::Except e){
-    LOGE("request_EmployeeInfo: %s\n", dump_error(e));
-  }
-*/
+
   try{
     time_buf = iws->request_ServerTime(3000);  //blocked I/O
     //time_buf = m_ws->request_ServerTime(cbServerTimeGet, NULL);  //blocked I/O
@@ -112,6 +106,33 @@ int main()
   }
   catch(Except e){
     LOGE("request_ServerTime: %s\n", WebService::dump_error(e));
+  }
+
+  try{
+    iws->request_EmployeeInfoAll("", 0, 7000, "employee.xml");  //blocked I/O
+  }
+  catch(Except e){
+    printf("request_EmployeeInfoAll: %s\n", WebService::dump_error(e));
+    if(e == EXCEPTION_NOT_SUPPORTED && iws2){
+      iws2->request_EmployeeInfoAll("", 1, 7000, "employee.xml");  //blocked I/O
+    }
+  }
+  
+  try{
+#ifdef DW
+    xml_buf = iws->request_EmployeeInfo("4716", 3000);  //blocked I/O
+#else    
+    xml_buf = iws->request_EmployeeInfo("4321", 3000);  //blocked I/O
+#endif
+    //xml_buf = m_ws->request_EmployeeInfo("MC00000003", "ST00000005", "253153215009", cbRfidInfoSelect, NULL);  //blocked I/O
+    if(xml_buf){
+      cout << "***RfidInfoSelect: " << endl;
+      cout <<  xml_buf << endl;
+      delete xml_buf;
+    }
+  }
+  catch(Except e){
+    printf("Except: request_EmployeeInfo: %s\n", WebService::dump_error(e));
   }
 /*
   try{
@@ -132,19 +153,22 @@ int main()
   // read content of infile
   infile.read (image_buffer,size);
   infile.close();
-
-  try{
-    ret = m_ws->request_UploadTimeSheet("MC00000003", "ST00000005", "LM00000811", 'I', "1", "0001",'L', "2014-10-18+09:00:00", image_buffer, size, 8000, "timesheets");  //blocked I/O
-    if(ret)
-      delete image_buffer;
-    //ret = m_ws->request_UploadTimeSheet("MC00000003", "ST00000005", "LM00000811", 'I', "1", "0001",'L', "2014-10-18+09:00:00", image_buffer, size, TimeSheetInsertString, NULL, "timesheets");  //blocked I/O
-    LOGV("***request_UploadTimeSheet: %d\n", ret);
-  }
-  catch(WebService::Except e){
-    LOGE("request_UploadTimeSheet: %s\n", dump_error(e));
-  }
   */
 
+  try{
+#ifdef DW
+    ret = iws->request_UploadTimeSheet("2014-11-19 09:00:00", "4716", 8000, "timesheets");  //blocked I/O
+#else
+    ret = iws->request_UploadTimeSheet("2014-11-19 09:00:00", "4321", 8000, "timesheets");  //blocked I/O
+#endif
+    //ret = m_ws->request_UploadTimeSheet("MC00000003", "ST00000005", "LM00000811", 'I', "1", "0001",'L', "2014-10-18+09:00:00", image_buffer, size, TimeSheetInsertString, NULL, "timesheets");  //blocked I/O
+    printf("***request_UploadTimeSheet: %d\n", ret);
+  }
+  catch(Except e){
+    printf("request_UploadTimeSheet: %s\n", WebService::dump_error(e));
+  }
+
+  printf("end!\n");
   
   while(1)
     sleep(1);

@@ -9,14 +9,76 @@
 #include <errno.h>
 #include <string.h>
 #include <fcntl.h>
+#include <netdb.h>
+
 #include "network.h"
 #include "log.h"
 
 #define LOG_TAG "network"
+#define ISNUM(x) ((x) >= '0' && (x) <= '9' )
 
 namespace tools {
 namespace network {
+
+bool isIPv4(const char* str)
+{
+  int count = 0;
+  const char* p = str;
+  int state = 0;
   
+  while(p){
+    switch(state){
+      case 0:
+        if(ISNUM(*p)){
+          state = 1;
+        }
+        else
+          return false;
+        break;
+      case 1:
+      case 2:
+        if(ISNUM(*p)){
+          state++;
+        }
+        else if(*p == '.'){
+          state = 0;
+          count ++;
+        }
+        else
+          return false;
+        break;
+      case 3:
+        if(*p == '.'){
+          state = 0;
+          count ++;
+        }
+        else
+          return false;
+        break;
+    }
+    p++;
+  }
+  if(count == 3)
+    return true;
+  return false;
+}
+
+char* ResolveName(char* name)  //getIP
+{
+  static char ip[21];
+  
+  struct hostent *host;            /* Structure containing host information */
+
+  if ((host = gethostbyname(name)) == NULL){
+      printf("gethostbyname() failed\n");
+  }
+  printf("host=%p\n", host);
+  /* Return the binary, network byte ordered address */
+  inet_ntop(AF_INET, host->h_addr_list[0], ip, 20);
+
+  return ip;
+}
+
 char* GetIpAddress(const char* if_name)
 {
   static char ip[INET_ADDRSTRLEN];

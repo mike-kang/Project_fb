@@ -19,7 +19,8 @@ using namespace web;
 #define DUMP_CASE(x) case x: return #x;
 
 
-SafemanWebService::SafemanWebService(const char* ip, int port) : WebService(ip, port)
+SafemanWebService::SafemanWebService(const char* url, const char *sMemcoCode, const char* sSiteCode, const char* 
+  sEmbed, const char* gateCode, char inout) : WebService(url, sMemcoCode, sSiteCode, sEmbed, gateCode, inout)
 {
 }
 
@@ -28,39 +29,32 @@ SafemanWebService::SafemanWebService(const char* ip, int port) : WebService(ip, 
 /*   parsing functions                                                             */
 /*                                                                                 */
 /***********************************************************************************/
-bool SafemanWebService::CodeDataSelect_WebApi::parsing()
+void SafemanWebService::ServerTimeGet_WebApi::parsing()
 {
   char headerbuf[RCVHEADERBUFSIZE];
   char* startContent;
   int contentLength;
   int readByteContent;
 
-  if(!parsingHeader(headerbuf, &startContent, &contentLength, &readByteContent))
-    return false;
+  parsingHeader(headerbuf, &startContent, &contentLength, &readByteContent);
 
   //contents
-  char* buf = new char[contentLength+1];
+  char* p;
+  p = strstr(startContent, "\n");
+  p = strstr(p, "tempuri");
+  p = strstr(p, ">");
   
-  memcpy(buf, startContent, readByteContent);
-  int nleaved = contentLength - readByteContent;
-  while(nleaved){
-    int readlen = recv(m_sock, buf + readByteContent, nleaved, 0);
-#ifdef DEBUG
-    buf[readByteContent + readlen] = '\0';
-    oOut << buf + readByteContent;
-#endif
-    nleaved -= readlen;
-    readByteContent += readlen;
-    LOGV("read:%d, readByteContent:%d, nleaved:%d\n", readlen, readByteContent, nleaved);
-  }
-        
-  buf[contentLength] = '\0';
-  m_pRet = buf;
+  char* start = p + 1;
+  
+  p = strstr(start, "<");
+  *p = '\0';
+  int len = strlen(start);
+  m_pRet = new char[len+1];
+  strcpy((char*)m_pRet, start);
 
-  return true;
 }
 
-bool SafemanWebService::RfidInfoSelectAll_WebApi::parsing()
+void SafemanWebService::RfidInfoSelectAll_WebApi::parsing()
 {
   char headerbuf[RCVHEADERBUFSIZE];
   char* startContent;
@@ -68,8 +62,7 @@ bool SafemanWebService::RfidInfoSelectAll_WebApi::parsing()
   int readByteContent;
   ofstream oRet(m_filename);
   
-  if(!parsingHeader(headerbuf, &startContent, &contentLength, &readByteContent))
-    return false;
+  parsingHeader(headerbuf, &startContent, &contentLength, &readByteContent);
 
   headerbuf[startContent - headerbuf + readByteContent] = '\0';
   oRet << startContent;
@@ -91,18 +84,16 @@ bool SafemanWebService::RfidInfoSelectAll_WebApi::parsing()
   delete buf;
   oRet.close();
   
-  return true;
 }
 
-bool SafemanWebService::RfidInfoSelect_WebApi::parsing()
+void SafemanWebService::RfidInfoSelect_WebApi::parsing()
 {
   char headerbuf[RCVHEADERBUFSIZE];
   char* startContent;
   int contentLength;
   int readByteContent;
   
-  if(!parsingHeader(headerbuf, &startContent, &contentLength, &readByteContent))
-    return false;
+  parsingHeader(headerbuf, &startContent, &contentLength, &readByteContent);
 
   //contents
   char* buf = new char[contentLength+1];
@@ -111,11 +102,10 @@ bool SafemanWebService::RfidInfoSelect_WebApi::parsing()
   int nleaved = contentLength - readByteContent;
   while(nleaved){
     int readlen = recv(m_sock, buf + readByteContent, nleaved, 0);
-#ifdef DEBUG
-    buf[readByteContent + readlen] = '\0';
-    oOut << buf + readByteContent;
-    cout << buf + readByteContent;
-#endif
+    if(m_debug_file){
+      buf[readByteContent + readlen] = '\0';
+      oOut << buf + readByteContent;
+    }
     nleaved -= readlen;
     readByteContent += readlen;
     LOGV("read:%d, readByteContent:%d, nleaved:%d\n", readlen, readByteContent, nleaved);
@@ -123,37 +113,30 @@ bool SafemanWebService::RfidInfoSelect_WebApi::parsing()
         
   buf[contentLength] = '\0';
   m_pRet = buf;
-
-  return true;
 }
 
-bool SafemanWebService::ServerTimeGet_WebApi::parsing()
+void SafemanWebService::TimeSheetInsertString_WebApi::parsing()
 {
   char headerbuf[RCVHEADERBUFSIZE];
   char* startContent;
   int contentLength;
   int readByteContent;
 
-  if(!parsingHeader(headerbuf, &startContent, &contentLength, &readByteContent))
-    return false;
+  parsingHeader(headerbuf, &startContent, &contentLength, &readByteContent);
 
   //contents
   char* p;
+  //cout << "parsing:" << startContent << endl;
   p = strstr(startContent, "\n");
-  p = strstr(p, "tempuri");
+  p = strstr(p, "int");
   p = strstr(p, ">");
-  
+
   char* start = p + 1;
-  
   p = strstr(start, "<");
   *p = '\0';
-  int len = strlen(start);
-  m_pRet = new char[len+1];
-  strcpy((char*)m_pRet, start);
 
-  return true;
+  m_ret = atoi(start) > 0;
 }
-
 
 /***********************************************************************************/
 /*                                                                                 */
@@ -240,44 +223,47 @@ char* SafemanWebService::request_CodeDataSelect(const char *sMemcoCd, const char
   return ret;
 }
 */
-bool SafemanWebService::request_CheckNetwork(int timelimit, CCBFunc cbfunc, void* client)
-{
-  bool ret = false;
-  LOGV("request_CheckNetwork\n");
-  char *cmd = new char[100];
-  sprintf(cmd,"GET /SafemanWebService/ItlogService.asmx/GetNetInfo? HTTP/1.1\r\nHost: %s\r\n\r\n", m_serverIP);
 
-  GetNetInfo_WebApi* wa;
+char* SafemanWebService::request_ServerTime(int timelimit, CCBFunc cbfunc, void* client)
+{
+  char* ret = NULL;
+  LOGV("request_ServerTime\n");
+  char *cmd = new char[500];
+  sprintf(cmd,"GET %s/getServerTime? HTTP/1.1\r\nHost: %s\r\n\r\n", m_service_name, m_url_addr);
+  ServerTimeGet_WebApi* wa;
 
   if(cbfunc){
-    wa = new GetNetInfo_WebApi(this, cmd, 0, cbfunc, client);
+    wa = new ServerTimeGet_WebApi(this, cmd, 0, cbfunc, client);
     wa->processCmd();
   }
   else{
-    wa = new GetNetInfo_WebApi(this, cmd, 0, timelimit);
+    wa = new ServerTimeGet_WebApi(this, cmd, 0, timelimit);
   
     int status = wa->processCmd();
     if(status != RET_SUCCESS){
       delete wa;
       THROW_EXCEPTION(status);
     }
-    ret = wa->m_ret;
-    printf("delete webapi\n");
+    
+    ret = (char*)wa->m_pRet;
     delete wa;
   }
-
-  
   return ret;
 }
 
-void SafemanWebService::request_EmployeeInfoAll(const char *sMemcoCd, const char* sSiteCd, int timelimit, CCBFunc cbfunc, void* client, const char* outFilename)
+//flag 1 -> daewoo
+void SafemanWebService::request_EmployeeInfoAll(const char *startTime, char flag, int timelimit, CCBFunc cbfunc, void* client, const char* outFilename)
 {
   LOGV("request_EmployeeInfoAll +++\n");
   char *cmd = new char[300];
-  sprintf(cmd,"GET /SafemanWebService/ItlogService.asmx/RfidInfoSelect?sMemcoCd=%s&sSiteCd=%s&sUtype=&sMode=A&sSearchValue= HTTP/1.1\r\nHost: %s\r\n\r\n"
-    , sMemcoCd, sSiteCd, m_serverIP);
-  
-  RfidInfoSelectAll_WebApi* wa;
+  if(!flag)
+    sprintf(cmd,"GET %s/LaborID_DownCheck?EMBEDDED=%s&OPTION=&UPDDATE=%s HTTP/1.1\r\nHost: %s\r\n\r\n"
+      , m_service_name, m_sEmbed, startTime, m_url_addr);
+  else
+    sprintf(cmd,"GET %s/LaborDW_Down?EMBEDDED=%s&OPTION=&UPDDATE=%s HTTP/1.1\r\nHost: %s\r\n\r\n"
+      , m_service_name, m_sEmbed, startTime, m_url_addr);
+
+  WebApi* wa;
 
   if(cbfunc){
     wa = new RfidInfoSelectAll_WebApi(this, cmd, 0, cbfunc, client, outFilename);
@@ -297,22 +283,22 @@ void SafemanWebService::request_EmployeeInfoAll(const char *sMemcoCd, const char
   return;
 }
 
-char* SafemanWebService::request_EmployeeInfo(const char *sMemcoCd, const char* sSiteCd, const char* serialnum, int timelimit, CCBFunc cbfunc, void* client)
+char* SafemanWebService::request_EmployeeInfo(const char* serialnum, int timelimit, CCBFunc cbfunc, void* client)
 {
   char* ret = NULL;
   LOGV("request_EmployeeInfo\n");
   char *cmd = new char[400]; 
   char* cmd_content = cmd + 200; 
-  sprintf(cmd_content,"sMemcoCd=%s&sSiteCd=%s&sUtype=R&sMode=&sSearchValue=RFID_CAR='%s", sMemcoCd, sSiteCd, serialnum);
+  sprintf(cmd_content,"EMBEDDED=%s&PIN_NO=%s", m_sEmbed, serialnum);
   int contentlen = strlen(cmd_content);
 
-  int headerlength = 137 + strlen(m_serverIP) + strlen(utils::itoa(contentlen,10));
+  int headerlength = 106 + strlen(m_service_name) + strlen(m_url_addr) + strlen(utils::itoa(contentlen,10));
   int cmd_offset = 200 - headerlength;
-  sprintf(cmd + cmd_offset,"POST /SafemanWebService/ItlogService.asmx/RfidInfoSelect HTTP/1.1\r\nHost: %s\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: %d\r\n\r\n"
-    , m_serverIP, contentlen);
+  sprintf(cmd + cmd_offset,"POST %s/LaborID_Info HTTP/1.1\r\nHost: %s\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: %d\r\n\r\n"
+    , m_service_name, m_url_addr, contentlen);
   //LOGV("cmd_offset:%d, header length:%d\n", cmd_offset, strlen(cmd + cmd_offset));
   
-  cmd[200] = 's';
+  cmd[200] = 'E';
   //printf("\ncmd:%s\n\n", cmd + cmd_offset);
   RfidInfoSelect_WebApi* wa;
 
@@ -336,67 +322,32 @@ char* SafemanWebService::request_EmployeeInfo(const char *sMemcoCd, const char* 
   return ret;
 }
 
-char* SafemanWebService::request_ServerTime(int timelimit, CCBFunc cbfunc, void* client)
-{
-  char* ret = NULL;
-  LOGV("request_ServerTime\n");
-  char *cmd = new char[500];
-  //sprintf(cmd,"GET /SafeIDService.asmx/getServerTime? HTTP/1.1\r\nHost: %s\r\n\r\n", m_serverIP);
-  sprintf(cmd,"GET /SafeIDService.asmx/getServerTime? HTTP/1.1\r\nHost: %s\r\n\r\n", "dev.safeman.co.kr");
-  ServerTimeGet_WebApi* wa;
 
-  if(cbfunc){
-    wa = new ServerTimeGet_WebApi(this, cmd, 0, cbfunc, client);
-    wa->processCmd();
-  }
-  else{
-    wa = new ServerTimeGet_WebApi(this, cmd, 0, timelimit);
-  
-    int status = wa->processCmd();
-    if(status != RET_SUCCESS){
-      delete wa;
-      THROW_EXCEPTION(status);
-    }
-    
-    ret = (char*)wa->m_pRet;
-    delete wa;
-  }
-  return ret;
-}
-
-bool SafemanWebService::request_UploadTimeSheet(const char *sMemcoCd, const char* sSiteCd, const char* sLabNo, char cInOut, const char* sGateNo, const char* sGateLoc, char cUtype, const char* sInTime, char* imageBuf, int imageSz, int timelimit, CCBFunc cbfunc, void* 
+bool SafemanWebService::request_UploadTimeSheet(const char* sTime, const char* pinno, int timelimit, CCBFunc cbfunc, void* 
   client, const char* outDirectory)
 {
   bool ret;
   LOGV("request_UploadTimeSheet\n");
-  int encoded_buf_sz = 0;
-  if(imageBuf)
-    encoded_buf_sz = base64::base64e2_get_needbufSize(imageSz);
-  char *cmd = new char[400 + encoded_buf_sz]; 
+  char *cmd = new char[400]; 
   char* cmd_content = cmd + 200; 
-  sprintf(cmd_content,"sMemcoCd=%s&sSiteCd=%s&sLabNo=%s&sInOut=%c&sGateNo=%s&sGateLoc=%s&sUtype=%c&sAttendGb=&sEventfunctionkey=&sInTime=%s&sPhotoImage="
-    , sMemcoCd, sSiteCd, sLabNo, cInOut, sGateNo, sGateLoc, cUtype, sInTime);
-  int cmd_content_prefix = strlen(cmd_content);
+  sprintf(cmd_content,"EMBEDDED=%s&PIN_NO=%s&EVENT_TIME=%s&GateCode=%s&EventFunctionKey="
+    , m_sEmbed, pinno, sTime, m_sGateCode);
+  int contentlen = strlen(cmd_content);
   
-  int base64_encoded_len = 0;
-  if(imageBuf)
-    base64_encoded_len = base64::base64e2_http(imageBuf, imageSz, cmd_content + cmd_content_prefix);
-  int contentlen = cmd_content_prefix + base64_encoded_len;
-  //LOGV("base64_encoded_len: %d\n", base64_encoded_len);
-
-  int headerlength = 144 + strlen(m_serverIP) + strlen(utils::itoa(contentlen,10));
+  int headerlength = 110 + strlen(m_service_name) + strlen(m_url_addr) + strlen(utils::itoa(contentlen,10));
   int cmd_offset = 200 - headerlength;
-  sprintf(cmd + cmd_offset,"POST /SafemanWebService/ItlogService.asmx/TimeSheetInsertString HTTP/1.1\r\nHost: %s\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: %d\r\n\r\n"
-    , m_serverIP, contentlen);
+  sprintf(cmd + cmd_offset,"POST %s/LaborerEvent_All HTTP/1.1\r\nHost: %s\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: %d\r\n\r\n"
+    , m_service_name, m_url_addr, contentlen);
   //LOGV("cmd_offset:%d, header length:%d\n", cmd_offset, strlen(cmd + cmd_offset));
   
-  cmd[200] = 's';
+  cmd[200] = 'E';
 
   //ofstream oOut("request_UploadTimeSheet.txt");
   //oOut << (cmd+ cmd_offset) << endl;
   //oOut.close();
   
-  TimeSheetInsertString_WebApi* wa;
+  printf("cmd:%s\n", cmd + cmd_offset);
+  WebApi* wa;
 
   if(cbfunc){
     wa = new TimeSheetInsertString_WebApi(this, cmd, cmd_offset, cbfunc, client);
@@ -406,9 +357,9 @@ bool SafemanWebService::request_UploadTimeSheet(const char *sMemcoCd, const char
     wa = new TimeSheetInsertString_WebApi(this, cmd, cmd_offset, timelimit);
   
     int status = wa->processCmd();
-    if(status != RET_SUCCESS){
+    if(status != RET_SUCCESS && !wa->m_ret){
       char filename[255];
-      sprintf(filename, "%s/%s", outDirectory, sInTime);
+      sprintf(filename, "%s/%s", outDirectory, sTime);
       LOGV("save file: %s\n", filename);
       ofstream oRet(filename);
       oRet << (cmd + cmd_offset);
@@ -423,43 +374,5 @@ bool SafemanWebService::request_UploadTimeSheet(const char *sMemcoCd, const char
   return ret;
 }
 
-bool SafemanWebService::request_SendFile(const char *filename, int timelimit, CCBFunc cbfunc, void* client)
-{
-  bool ret = false;
-  LOGV("request_SendFile\n");
-
-  ifstream infile (filename);
-  // get size of file
-  infile.seekg (0,infile.end);
-  long size = infile.tellg();
-  infile.seekg (0);
-  // allocate memory for file content
-  cout << "size:" << size << endl;
-  char* cmd = new char[size];
-  // read content of infile
-  infile.read (cmd, size);
-  infile.close();
-
-  WebApi* wa;
-
-  if(cbfunc){
-    wa = new WebApi(this, cmd, 0, cbfunc, client);
-    wa->processCmd();
-  }
-  else{
-    wa = new WebApi(this, cmd, 0, timelimit);
-  
-    int status = wa->processCmd();
-    if(status != RET_SUCCESS){
-      delete wa;
-      THROW_EXCEPTION(status);
-    }
-    ret = wa->m_ret;
-    printf("delete webapi %d\n", ret);
-    delete wa;
-  }
-  
-  return ret;
-}
 
 

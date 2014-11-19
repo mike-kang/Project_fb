@@ -3,6 +3,7 @@
 
 namespace web {
 enum Except{
+  EXCEPTION_PARSING_URL,
   EXCEPTION_NOT_SUPPORTED,
   EXCEPTION_CREATE_SOCKET,
   EXCEPTION_CONNECT,
@@ -29,13 +30,10 @@ class IWebService {
 public:
 //request
   virtual bool request_CheckNetwork(int timelimit, CCBFunc cbfunc, void* client) = 0;
-  virtual void request_EmployeeInfoAll(const char *sMemcoCd, const char* sSiteCd, int timelimit, CCBFunc cbfunc, void* client, 
-  const char* outFilename) = 0;
-  virtual char* request_EmployeeInfo(const char *sMemcoCd, const char* sSiteCd, const char* serialnum, int timelimit, CCBFunc cbfunc, void* 
-  client) = 0;
+  virtual void request_EmployeeInfoAll(const char *startTime, char flag, int timelimit, CCBFunc cbfunc, void* client, const char* outFilename) = 0;
+  virtual char* request_EmployeeInfo(const char* serialnum, int timelimit, CCBFunc cbfunc, void* client) = 0;
   virtual char* request_ServerTime(int timelimit, CCBFunc cbfunc, void* client) = 0;
-  virtual bool request_UploadTimeSheet(const char *sMemcoCd, const char* sSiteCd, const char* sLabNo, char cInOut, const char* sGateNo, const char* sGateLoc, char cUtype, const char* sInTime, char* imageBuf, int imageSz, int timelimit, CCBFunc cbfunc, void* 
-  client, const char* outDirectory) = 0;
+  virtual bool request_UploadTimeSheet(const char* sTime, const char* pinno, int timelimit, CCBFunc cbfunc, void* client, const char* outDirectory) = 0;
   virtual bool request_SendFile(const char *filename, int timelimit, CCBFunc cbfunc, void* client) = 0;
 
 
@@ -49,25 +47,25 @@ public:
     return request_CheckNetwork(0, cbfunc, client);
   }
   
-  void request_EmployeeInfoAll(const char *sMemcoCd, const char* sSiteCd, int timelimit, 
+  void request_EmployeeInfoAll(const char *startTime, char flag, int timelimit, 
   const char* outFilename)
   {
-    request_EmployeeInfoAll(sMemcoCd, sSiteCd, timelimit, NULL, NULL, outFilename);
+    request_EmployeeInfoAll(startTime, flag, timelimit, NULL, NULL, outFilename);
   }
-  void request_EmployeeInfoAll(const char *sMemcoCd, const char* sSiteCd, CCBFunc cbfunc, void* client, 
+  void request_EmployeeInfoAll(const char *startTime, char flag, CCBFunc cbfunc, void* client, 
   const char* outFilename)
   {
-    request_EmployeeInfoAll(sMemcoCd, sSiteCd, 0, cbfunc, client, outFilename);
+    request_EmployeeInfoAll(startTime, flag, 0, cbfunc, client, outFilename);
   }
 
-  char* request_EmployeeInfo(const char *sMemcoCd, const char* sSiteCd, const char* serialnum, int timelimit)
+  char* request_EmployeeInfo(const char* serialnum, int timelimit)
   {
-    return request_EmployeeInfo(sMemcoCd, sSiteCd, serialnum, timelimit, NULL, NULL);
+    return request_EmployeeInfo(serialnum, timelimit, NULL, NULL);
   }
-  char* request_EmployeeInfo(const char *sMemcoCd, const char* sSiteCd, const char* serialnum, CCBFunc cbfunc, void* 
+  char* request_EmployeeInfo(const char* serialnum, CCBFunc cbfunc, void* 
   client)
   {
-    return request_EmployeeInfo(sMemcoCd, sSiteCd, serialnum, 0, cbfunc, client);
+    return request_EmployeeInfo(serialnum, 0, cbfunc, client);
   }
 
   char* request_ServerTime(int timelimit)
@@ -77,6 +75,24 @@ public:
   char* request_ServerTime(CCBFunc cbfunc, void* client)
   {
     return request_ServerTime(0, cbfunc, client);
+  }
+
+  bool request_UploadTimeSheet(const char* sTime, const char* pinno, int timelimit, const char* outDirectory)
+  {
+    return request_UploadTimeSheet(sTime, pinno, timelimit, NULL, NULL, outDirectory);
+  }
+  bool request_UploadTimeSheet(const char* sTime, const char* pinno, CCBFunc cbfunc, void* client, const char* outDirectory)
+  {
+    return request_UploadTimeSheet(sTime, pinno, 0, NULL, NULL, outDirectory);
+  }
+
+  bool request_SendFile(const char *filename, int timelimit)
+  {
+    return request_SendFile(filename, timelimit, NULL, NULL);
+  }
+  bool request_SendFile(const char *filename, CCBFunc cbfunc, void* client)
+  {
+    return request_SendFile(filename, 0, cbfunc, client);
   }
 
 /*
@@ -92,26 +108,6 @@ public:
     return request_StatusUpdate(sGateType, sSiteCd, sDvLoc, sdvNo, sIpAddress, sMacAddress, 0, cbfunc, client);
   }
 */
-  bool request_UploadTimeSheet(const char *sMemcoCd, const char* sSiteCd, const char* sLabNo, char cInOut, const char* sGateNo, const char* sGateLoc, char cUtype, const char* sInTime, char* imageBuf, int imageSz, int timelimit, const char* outDirectory)
-  {
-    return request_UploadTimeSheet(sMemcoCd, sSiteCd, sLabNo, cInOut, sGateNo, sGateLoc, cUtype, sInTime, 
-    imageBuf, imageSz, timelimit, NULL, NULL, outDirectory);
-  }
-  bool request_UploadTimeSheet(const char *sMemcoCd, const char* sSiteCd, const char* sLabNo, char cInOut, const char* sGateNo, const char* sGateLoc, char cUtype, const char* sInTime, char* imageBuf, int imageSz, CCBFunc cbfunc, void* 
-  client, const char* outDirectory)
-  {
-    return request_UploadTimeSheet(sMemcoCd, sSiteCd, sLabNo, cInOut, sGateNo, sGateLoc, cUtype, sInTime, imageBuf, imageSz, 0, cbfunc, 
-    client, outDirectory);
-  }
-
-  bool request_SendFile(const char *filename, int timelimit)
-  {
-    return request_SendFile(filename, timelimit, NULL, NULL);
-  }
-  bool request_SendFile(const char *filename, CCBFunc cbfunc, void* client)
-  {
-    return request_SendFile(filename, 0, cbfunc, client);
-  }
 };
 
 

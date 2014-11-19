@@ -7,6 +7,7 @@
 #include "tools/utils.h"
 #include <fcntl.h>
 #include <errno.h>
+#include "tools/network.h"
 
 using namespace tools;
 using namespace web;
@@ -21,6 +22,7 @@ using namespace web;
 const char* WebService::dump_error(Except e)
 {
   switch(e){
+    DUMP_CASE (EXCEPTION_NOT_SUPPORTED)
     DUMP_CASE (EXCEPTION_CREATE_SOCKET)
     DUMP_CASE (EXCEPTION_CONNECT)
     DUMP_CASE (EXCEPTION_SEND_COMMAND)
@@ -31,48 +33,90 @@ const char* WebService::dump_error(Except e)
 
 }
 
-WebService::WebService(const char* ip, int port)
+WebService::WebService(const char* url, const char *sMemcoCode, const char* sSiteCode, const char* 
+  sEmbed, const char* gateCode, char inout) : m_port(80), m_cInOut(inout)
 {
-  strcpy(m_serverIP, ip);
-  inet_pton(AF_INET, m_serverIP, (void *)(&(m_remote.sin_addr.s_addr)));
+  strncpy(m_sMemcoCd, sMemcoCode, 10);
+  strncpy(m_sSiteCd, sSiteCode, 10);
+  strncpy(m_sEmbed, sEmbed, 10);
+  strncpy(m_sGateCode, gateCode, 4);
 
-  m_port = port;
+  char* start = strstr((char*)url, "//");
+  if(!start) 
+    throw EXCEPTION_PARSING_URL;
+
+  start += 2;
+  char *end = strstr((char*)start, "/");
+  if(!end) 
+    throw EXCEPTION_PARSING_URL;
+
+  char *p;
+  for(p = start+1; p<end; p++)
+    if(*p == ':')
+      break;
+  
+  if(p != end){
+    m_port = atoi(p+1);
+  }
+
+  strncpy(m_url_addr, start, end - start);  //000.000.000.000 or aaa.sssssss.ss
+
+  printf("m_url_addr %s\n", m_url_addr); 
+  //ar ip[21];
+  char* pIP;
+  if(network::isIPv4(m_url_addr)){
+    pIP = m_url_addr;
+  }
+  else{
+    pIP = network::ResolveName(m_url_addr);
+  }
+  strcpy(m_serverIP, pIP);
+  
+  LOGV("Server IP: %s\n", pIP);
+  printf("Server IP: %s\n", pIP);
+
+  inet_pton(AF_INET, pIP, (void *)(&(m_remote.sin_addr.s_addr)));
+
   m_remote.sin_port = htons(m_port);
 
   m_remote.sin_family = AF_INET;
+
+  strcpy(m_service_name, end);
+  
 }
 
 WebService::WebApi::~WebApi()
 {
   LOGV("~WebApi+++\n");
   close(m_sock);
+  if(m_debug_file) oOut.close();
   delete m_thread;
   delete m_cmd;
   LOGV("~WebApi---\n");
 }
 
-bool WebService::WebApi::parsingHeader(char* buf, char **startContent, int* contentLength, int* readByteContent)
+void WebService::WebApi::parsingHeader(char* buf, char **startContent, int* contentLength, int* readByteContent)
 {
   int readlen = recv(m_sock, buf, RCVHEADERBUFSIZE - 1, 0);
   //header
   if(readlen <= 0){
     LOGE("Parsing fail: receive=<0\n"); 
-    return false;
+    throw EXCEPTION_PARSING;
   }
       
   LOGV("received: %d\n", readlen);
 
-#ifdef DEBUG
-  buf[readlen] = '\0';
-  oOut << buf;
-#endif  
+  if(m_debug_file){
+    buf[readlen] = '\0';
+    oOut << buf;
+  }
   char* p = strstr(buf, " ");  // buf is "HTTP/1.1 200 OK ..."
   char* e = strstr(p+1, " "); *e = '\0';
   int retVal = atoi(p+1);
   //LOGV("return val: %d\n", retVal);
   if(retVal != HTTP_OK){
     LOGE("not HTTP_OK %d\n", retVal); 
-    return false;
+    throw EXCEPTION_NOT_HTTP_OK;
   }
   p = strstr(e+1, "\nContent-Length:");
   //LOGV("p: %x\n", p);
@@ -83,7 +127,6 @@ bool WebService::WebApi::parsingHeader(char* buf, char **startContent, int* cont
   *startContent = e + 4;  // \r\n\r\n
   *readByteContent = readlen - (*startContent - buf);
   LOGV("parsingHeader: contentLength=%d, readByteContent=%d\n", *contentLength, *readByteContent);
-  return true;
 }
 
 /***********************************************************************************/
@@ -91,15 +134,14 @@ bool WebService::WebApi::parsingHeader(char* buf, char **startContent, int* cont
 /*   parsing function                                                             */
 /*                                                                                 */
 /***********************************************************************************/
-bool WebService::WebApi::parsing()
+void WebService::WebApi::parsing()
 {
   char headerbuf[RCVHEADERBUFSIZE];
   char* startContent;
   int contentLength;
   int readByteContent;
 
-  if(!parsingHeader(headerbuf, &startContent, &contentLength, &readByteContent))
-    return false;
+  parsingHeader(headerbuf, &startContent, &contentLength, &readByteContent);
 
   //contents
   char* p;
@@ -109,7 +151,6 @@ bool WebService::WebApi::parsing()
   p = strstr(p, ">");
   
   m_ret = (*(p+1)=='t');
-  return true;
 }
 
 
@@ -280,11 +321,14 @@ void WebService::WebApi::run()
   }
 
   //receive & parsing
-  if(!parsing()){
+  try{
+    parsing();
+    m_status = RET_SUCCESS;
+  }
+  catch(WebApi::Exception e){
     m_status = RET_PARSING_FAIL;
     goto error;
   }
-  m_status = RET_SUCCESS;
 
 error:
   if(m_cbfunc){
@@ -306,5 +350,75 @@ int WebService::WebApi::processCmd()
     m_thread->detach();
   
   return m_status;
+}
+
+
+bool WebService::request_CheckNetwork(int timelimit, CCBFunc cbfunc, void* client)
+{
+  bool ret = false;
+  LOGV("request_CheckNetwork\n");
+  char *cmd = new char[100];
+  sprintf(cmd,"GET %s/NetworkOn? HTTP/1.1\r\nHost: %s\r\n\r\n", m_service_name, m_url_addr);
+
+  GetNetInfo_WebApi* wa;
+
+  if(cbfunc){
+    wa = new GetNetInfo_WebApi(this, cmd, 0, cbfunc, client);
+    wa->processCmd();
+  }
+  else{
+    wa = new GetNetInfo_WebApi(this, cmd, 0, timelimit);
+  
+    int status = wa->processCmd();
+    if(status != RET_SUCCESS){
+      delete wa;
+      THROW_EXCEPTION(status);
+    }
+    ret = wa->m_ret;
+    printf("delete webapi\n");
+    delete wa;
+  }
+
+  
+  return ret;
+}
+
+bool WebService::request_SendFile(const char *filename, int timelimit, CCBFunc cbfunc, void* client)
+{
+  bool ret = false;
+  LOGV("request_SendFile\n");
+
+  ifstream infile (filename);
+  // get size of file
+  infile.seekg (0,infile.end);
+  long size = infile.tellg();
+  infile.seekg (0);
+  // allocate memory for file content
+  cout << "size:" << size << endl;
+  char* cmd = new char[size];
+  // read content of infile
+  infile.read (cmd, size);
+  infile.close();
+
+  WebApi* wa;
+
+  if(cbfunc){
+    wa = new WebApi(this, cmd, 0, cbfunc, client);
+    wa->processCmd();
+  }
+  else{
+    wa = new WebApi(this, cmd, 0, timelimit);
+  
+    int status = wa->processCmd();
+    if(status != RET_SUCCESS){
+      delete wa;
+      THROW_EXCEPTION(status);
+    }
+    ret = wa->m_ret;
+    printf("delete webapi %d\n", ret);
+    delete wa;
+  }
+  
+  return ret;
 }
 

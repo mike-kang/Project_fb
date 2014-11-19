@@ -21,16 +21,27 @@ public:
   //friend class WebService;
   public:
     enum Exception{
-      Exception_Parsing,
+      EXCEPTION_PARSING,
+      EXCEPTION_NOT_HTTP_OK
     };
 
-    WebApi(WebService* ws, char* cmd, int cmd_offset, int t):m_ws(ws), m_cmd(cmd), m_cmd_offset(cmd_offset), 
-    timelimit(t), m_pRet(&m_ret) { m_cbfunc=NULL;} //sync
-    WebApi(WebService* ws, char* cmd, int cmd_offset, CCBFunc cbfunc, void* client):m_ws(ws), m_cmd(cmd), m_cmd_offset(cmd_offset), m_cbfunc(cbfunc), m_client(client), m_pRet(&m_ret){timelimit=-1;};  //async
+    WebApi(WebService* ws, char* cmd, int cmd_offset, int t, const char* 
+    debug_file=NULL):m_ws(ws), m_cmd(cmd), m_cmd_offset(cmd_offset), 
+    timelimit(t), m_pRet(&m_ret), m_debug_file(debug_file) 
+    {
+      m_cbfunc=NULL;
+      if(m_debug_file) oOut.open(m_debug_file);
+    } //sync
+    WebApi(WebService* ws, char* cmd, int cmd_offset, CCBFunc cbfunc, void* client, const char* 
+    debug_file = NULL):m_ws(ws), m_cmd(cmd), m_cmd_offset(cmd_offset), m_cbfunc(cbfunc), m_client(client), m_pRet(&m_ret), m_debug_file(debug_file)
+    {
+      timelimit=-1;
+      if(m_debug_file) oOut.open(m_debug_file);
+    }  //async
     virtual ~WebApi();
-    virtual bool parsing();
+    virtual void parsing();
     
-    bool parsingHeader(char* buf, char **startContent, int* contentLength, int* readByteContent);
+    void parsingHeader(char* buf, char **startContent, int* contentLength, int* readByteContent);
     int processCmd();
     int getStatus() const { return m_status; }
 
@@ -47,9 +58,8 @@ public:
     Mutex mtx;
     char* m_cmd;
     int m_cmd_offset;
-#ifdef DEBUG
+    const char* m_debug_file;
     ofstream oOut; //for debug
-#endif    
 
   private:
     void run();
@@ -57,31 +67,46 @@ public:
     WebService* m_ws;
     Thread<WebApi>* m_thread;
   };
+
+  class GetNetInfo_WebApi : public WebApi {
+  //friend class WebService;
+  public:
+    GetNetInfo_WebApi(WebService* ws, char* cmd, int cmd_offset, int t):WebApi(ws, cmd, cmd_offset, t)  //sync
+    {
+    }
+    GetNetInfo_WebApi(WebService* ws, char* cmd, int cmd_offset, CCBFunc cbfunc, void* client):WebApi(ws, cmd, cmd_offset, cbfunc, client) //async
+    {
+    }
+    virtual ~GetNetInfo_WebApi()
+    {
+    }
+
+
+  };
   
-  WebService(const char* ip, int port);
+  WebService(const char* url, const char *sMemcoCode, const char* sSiteCode, const char* 
+  sEmbed, const char* gateCode, char inout);
   ~WebService(){};
   //int start();
 
   //dump
   static const char* dump_error(Except e);
 
-//request
-/*
   bool request_CheckNetwork(int timelimit, CCBFunc cbfunc, void* client);
-  void request_EmployeeInfoAll(const char *sMemcoCd, const char* sSiteCd, int timelimit, CCBFunc cbfunc, void* client, 
-  const char* outFilename);
-
-  char* request_EmployeeInfo(const char *sMemcoCd, const char* sSiteCd, const char* serialnum, int timelimit, CCBFunc cbfunc, void* 
-  client);
-  char* request_ServerTime(int timelimit, CCBFunc cbfunc, void* client);
-
-  bool request_UploadTimeSheet(const char *sMemcoCd, const char* sSiteCd, const char* sLabNo, char cInOut, const char* sGateNo, const char* sGateLoc, char cUtype, const char* sInTime, char* imageBuf, int imageSz, int timelimit, CCBFunc cbfunc, void* 
-  client, const char* outDirectory);
   bool request_SendFile(const char *filename, int timelimit, CCBFunc cbfunc, void* client);
-*/
+
 protected:
+  char m_url_addr[255];
+  char m_service_name[255];
   char m_serverIP[16]; //XXX.XXX.XXX.XXX
   int m_port;
+  
+  char m_sMemcoCd[11];
+  char m_sSiteCd[11];
+  char m_sEmbed[11];
+  char m_sGateCode[5];
+  char m_cInOut;
+  
   struct sockaddr_in m_remote;
 };
 

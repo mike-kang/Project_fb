@@ -12,7 +12,7 @@ public:
   struct TimeSheet {
     std::string m_lab_no;
     char m_utype;
-		std::string m_time;
+    std::string m_time;
     char* m_photo_img;
     int m_imgSz;
     TimeSheet(std::string lab_no, char utype, char* img, int img_sz);
