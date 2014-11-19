@@ -63,8 +63,14 @@ void cbTimeSheetInsertString(void *client_data, int status, void* ret)
     delete image_buffer;
 }
 
-#define LOTT
-//#define DW
+//#define LOTT
+#define DW
+
+#ifdef DW
+const char pinno[] = "4716";
+#else
+const char pinno[] = "4321";
+#endif
 
 int main()
 {
@@ -119,11 +125,7 @@ int main()
   }
   
   try{
-#ifdef DW
-    xml_buf = iws->request_EmployeeInfo("4716", 3000);  //blocked I/O
-#else    
-    xml_buf = iws->request_EmployeeInfo("4321", 3000);  //blocked I/O
-#endif
+    xml_buf = iws->request_EmployeeInfo(pinno, 3000);  //blocked I/O
     //xml_buf = m_ws->request_EmployeeInfo("MC00000003", "ST00000005", "253153215009", cbRfidInfoSelect, NULL);  //blocked I/O
     if(xml_buf){
       cout << "***RfidInfoSelect: " << endl;
@@ -156,11 +158,7 @@ int main()
   */
 
   try{
-#ifdef DW
-    ret = iws->request_UploadTimeSheet("2014-11-19 09:00:00", "4716", 8000, "timesheets");  //blocked I/O
-#else
-    ret = iws->request_UploadTimeSheet("2014-11-19 09:00:00", "4321", 8000, "timesheets");  //blocked I/O
-#endif
+    ret = iws->request_UploadTimeSheet("2014-11-19 09:00:00", pinno, 8000, "timesheets");  //blocked I/O
     //ret = m_ws->request_UploadTimeSheet("MC00000003", "ST00000005", "LM00000811", 'I', "1", "0001",'L', "2014-10-18+09:00:00", image_buffer, size, TimeSheetInsertString, NULL, "timesheets");  //blocked I/O
     printf("***request_UploadTimeSheet: %d\n", ret);
   }
