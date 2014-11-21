@@ -97,6 +97,25 @@ char FBProtocol::stat(char* data, bool& bLong)
   }
 }
 
+bool FBProtocol::init()
+{
+  char status;
+  byte* receive_buf; 
+  
+  try {
+    receive_buf = processCommand("INIT", 9000);
+    status = receive_buf[STATUS];
+    if(status == '2')
+      return true;
+  }
+  catch(Exception e){
+    cout << "[init]exception fail! " << e << endl;
+    return false;
+  }
+  return false;
+}
+
+
 /*
 bool FBProtocol::auth()
 {

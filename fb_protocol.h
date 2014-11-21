@@ -31,6 +31,7 @@ public:
   char* vers();
   char stat();
   char stat(char* data, bool& bLong);
+  bool init();
   bool user(std::list<std::string>& li);
   bool save(const char* filename);
   bool dele(unsigned short usercode);
