@@ -14,7 +14,12 @@ int FBProtocolCMSerial::onWrite(const byte* buf, int length)
 
 int FBProtocolCMSerial::onRead(byte* buf, int len, int timeout)
 {
-  return read(buf, len, timeout);
+  try {
+    return read(buf, len, timeout);
+  }
+  catch(FBProtocol::FBProtocolCommMethod::Exception e){
+    throw FBProtocol::FBProtocolCommMethod::EXCEPTION_READ;
+  }
 }
 
 /*

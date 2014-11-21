@@ -15,9 +15,14 @@ public:
     EXCEPTION_ERROR,
     EXCEPTION_USERS,
     EXCEPTION_SAVED,
+    EXCEPTION_COMMMETHOD,
   };
   class FBProtocolCommMethod {
   public:
+    enum Exception {
+      EXCEPTION_WRITE,
+      EXCEPTION_READ,
+    };
     virtual int onWrite(const byte* buf, int length) = 0;
     virtual int onRead(byte* buf, int len, int timeout) = 0;
   };

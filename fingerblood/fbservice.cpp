@@ -13,21 +13,25 @@ FBService::FBService(const char* path, Serial::Baud baud)
   m_protocol = new FBProtocol(m_serial);
 
 }
+char* FBService::getVersion()
+{
+  try {
+    char* ret =  m_protocol->vers();
+    return ret;
+  }
+  catch(FBProtocol::Exception e){
+    cout << "[vers]exception fail! " << e << endl;
+    return NULL;
+  }
+}
 
 bool FBService::start()
 {
   m_serial->open();
   try{
-    //char* version = m_protocol->vers();
-    //cout << version << endl;
-    //get user list
-    sleep(1);
     m_protocol->user(listUserCode);
     for(list<string>::iterator itr = listUserCode.begin(); itr != listUserCode.end(); itr++)
       cout << *itr << endl;
-
-    
-    //m_protocol->auth();
     return true;
   }
   catch (FBProtocol::Exception e){
@@ -36,17 +40,25 @@ bool FBService::start()
   return false;
 }
 
+bool FBService::format()
+{
+  bool ret = m_protocol->init();
+  m_thread_foramt = new Thread<FBService>(&FBService::run_format, this, "FormatThread");
+  return ret;
+}
+
+
 bool FBService::requestStartScan(int interval)
 {
   m_running = true;
   m_interval = interval;
-  m_thread = new Thread<FBService>(&FBService::run, this, "ScanThread");
+  m_thread_scan = new Thread<FBService>(&FBService::run_scan, this, "ScanThread");
 }
 
 int FBService::requestEndScan()
 {
   m_running = false;
-  delete m_thread;
+  delete m_thread_scan;
   m_thread = NULL;
 }
 
@@ -60,7 +72,7 @@ bool FBService::deleteUsercode(unsigned short usercode)
   return m_protocol->dele(usercode);
 }
 
-void FBService::run()
+void FBService::run_scan()
 {
   int interval = m_interval * 1000;
   bool bNeedInterval = true;
@@ -73,6 +85,19 @@ void FBService::run()
     printf("result %c %d\n", ret, bLong);
     if(bLong && ret == 'A')
       printf("*******************Good*****************\n");
+  }
+
+}
+
+void FBService::run_format()
+{
+  sleep(3);
+  while(true){
+    if(getVersion()){
+      
+      break;
+    }
+    sleep(1);
   }
 
 }

@@ -52,24 +52,18 @@ char* FBProtocol::vers()
 {
   static char version[BUF_SZ_VERS];
   byte* receive_buf; 
-  try {
-    receive_buf = processCommand("VERS", 9000);
-    memcpy(version, &receive_buf[10], BUF_SZ_VERS);
-    printf("VERS:%s\n", version);
-    delete receive_buf;
-    return version;
-  }
-  catch(Exception e){
-    cout << "[vers]exception fail! " << e << endl;
-    return NULL;
-  }
+  receive_buf = processCommand("VERS", 1000);
+  memcpy(version, &receive_buf[10], BUF_SZ_VERS);
+  printf("VERS:%s\n", version);
+  delete receive_buf;
+  return version;
 }
 
 char FBProtocol::stat()
 {
   char status;
   byte* receive_buf; 
-  receive_buf = processCommand("STAT", 9000);
+  receive_buf = processCommand("STAT", 1000);
   status = receive_buf[STATUS];
   delete receive_buf;
   return status;  
@@ -80,7 +74,7 @@ char FBProtocol::stat(char* data, bool& bLong)
   char status;
   byte* receive_buf; 
   try {
-    receive_buf = processCommand("STAT", 9000);
+    receive_buf = processCommand("STAT", 2000);
     //printf("STAT 0x%x('%c')\n", receive_buf[STATUS], receive_buf[STATUS]);
     status = receive_buf[STATUS];
     if(data){
@@ -103,7 +97,7 @@ bool FBProtocol::init()
   byte* receive_buf; 
   
   try {
-    receive_buf = processCommand("INIT", 9000);
+    receive_buf = processCommand("INIT", 5000);
     status = receive_buf[STATUS];
     if(status == '2')
       return true;
@@ -411,7 +405,7 @@ byte* FBProtocol::processCommand(const char* cmd, int timeout/*ms*/)
   
 }
 
-byte* FBProtocol::processCommand(const char* cmd, const byte* data, int data_sz, int timeout)
+byte* FBProtocol::processCommand(const char* cmd, const byte* data, int data_sz, int timeout/*ms*/)
 {
   byte buf[255];
   byte _xor=0xff;
@@ -449,7 +443,7 @@ byte* FBProtocol::processCommand(const char* cmd, const byte* data, int data_sz,
     
 }
 
-byte* FBProtocol::processCommand(const byte* chunk, int chunk_sz, int timeout)
+byte* FBProtocol::processCommand(const byte* chunk, int chunk_sz, int timeout/*ms*/)
 {
   int writebyte = m_cm->onWrite(chunk, chunk_sz);
   if(writebyte < chunk_sz)
@@ -482,15 +476,21 @@ byte* FBProtocol::response(int timeout)
   memcpy(receiveBuf, tempBuf, readbyte);
   
   //cout << "sendCommandNoData: readbyte: " << readbyte << ", length: " << length << endl;
-  int leavebyte = length - readbyte;
-  if(leavebyte){
-    byte* p = receiveBuf + readbyte;
-    while(leavebyte){
-      readbyte = m_cm->onRead(p, leavebyte, timeout);
-      //cout << "sendCommandNoData: readbyte: " << readbyte<< endl;
-      leavebyte -= readbyte;
-      p += readbyte;
+  try{
+    int leavebyte = length - readbyte;
+    if(leavebyte){
+      byte* p = receiveBuf + readbyte;
+      while(leavebyte){
+        readbyte = m_cm->onRead(p, leavebyte, timeout);
+        //cout << "sendCommandNoData: readbyte: " << readbyte<< endl;
+        leavebyte -= readbyte;
+        p += readbyte;
+      }
     }
+  }
+  catch(FBProtocolCommMethod::Exception e){
+    delete receiveBuf;
+    throw EXCEPTION_COMMMETHOD;
   }
   dump("RECEIVE", receiveBuf, length);
   printf("status 0x%x('%c')\n", receiveBuf[STATUS], receiveBuf[STATUS]);
@@ -508,7 +508,9 @@ byte* FBProtocol::response(int timeout)
     throw EXCEPTION_CHECKSUM;  
   }
 
-  if(receiveBuf[STATUS] == 'B')
+  if(receiveBuf[STATUS] == 'B'){
+    delete receiveBuf;
     throw EXCEPTION_ERROR;
+  }
   return receiveBuf;
 }
