@@ -423,7 +423,7 @@ bool MainDelegator::SettingInit()
   m_sDvNo = m_settings->get("App::DV_NO"); // = "1";
   m_sInOut = m_settings->get("App::IN_OUT");
   m_sEmbedCd = m_settings->get("App::EMBED"); // = "0000000008";
-  m_sOption = m_settings->get("App::OPTION");
+  m_bCheck = m_settings->get("App::CHECK");
   m_sAuthCode = m_settings->get("App::AUTH_CODE");
   m_bTestSignal = m_settings->getBool("App::TEST_SIGNAL");
   

@@ -34,7 +34,7 @@ Settings::Settings(const char* filename)
      mapStrInsert(App, DV_NO, 1);
      mapStrInsert(App, IN_OUT, I);
      mapStrInsert(App, AUTH_CODE, );
-     mapStrInsert(App, OPTION, );
+     mapBoolInsert(App, CHECK, );
      mapStrInsert(App, REBOOT_TIME, );
      mapStrInsert(App, WORKING_DIRECTORY, /home/pi/acu);
      //mapBoolInsert(App, DISPLAY_PHOTO, true);
@@ -95,7 +95,7 @@ Settings::Settings(const char* filename)
   mapStrInsertFromReader(App, DV_NO, 1);
   mapStrInsertFromReader(App, IN_OUT, I);
   mapStrInsertFromReader(App, AUTH_CODE, );
-  mapStrInsertFromReader(App, OPTION, );
+  mapBoolInsertFromReader(App, CHECK, true);
   mapStrInsertFromReader(App, REBOOT_TIME, );
   mapStrInsertFromReader(App, WORKING_DIRECTORY, /home/pi/acu);
   //mapBoolInsertFromReader(App, DISPLAY_PHOTO, true);

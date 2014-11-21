@@ -111,7 +111,7 @@ private:
   //string m_sDvLoc; // = "0001";
   string m_sDvNo; // = "1";
   string m_sInOut; // = "I";
-  string m_sOption;
+  bool m_bCheck;
   string m_sAuthCode;
   int m_rfidCheckInterval; //ms
   int m_rfid_processMaxTime; //ms
