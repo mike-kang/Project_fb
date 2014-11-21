@@ -13,71 +13,42 @@ using namespace tools;
 using namespace std;
 using namespace web;
 
-//#define DB_FILE "employee.xml"
-#define DB_NAME "employee.db"
-#define CREATE_TABLE_EMPLOYEE "create table employee( pinno INTEGER, usercode TEXT, userdata BLOB)"
-#define CREATE_TABLE_TIME "create table time( lastsync TEXT )"
+#define DB_FILE "employee.xml"
 
-EmployeeInfoMgr::EmployeeInfoMgr(Settings* settings, IWebService* ws): m_settings(settings), m_ws(ws)
+EmployeeInfoFixMgr::EmployeeInfoFixMgr(Settings* settings, IWebService* ws): m_settings(settings), m_ws(ws)
 {
   try{
-    //m_bUseLocalDB = settings->getBool("App::LOCAL_DATABASE");
+    m_bUseLocalDB = settings->getBool("App::LOCAL_DATABASE");
     m_sMemcoCd = m_settings->get("App::MEMCO_CD");
     m_sSiteCd = m_settings->get("App::SITE_CD");
     m_bDisplayPhoto = settings->getBool("App::DISPLAY_PHOTO");
   }
   catch(int e)
   {
-    //m_bUseLocalDB = false;
+    m_bUseLocalDB = false;
     m_sMemcoCd = "MC00000003";
     m_sSiteCd = "ST00000005";
   }
-  OpenOrCreateLocalDB();
-  
+  createLocalDB();
 }
 
-bool EmployeeInfoMgr::OpenOrCreateLocalDB()
+bool EmployeeInfoFixMgr::createLocalDB()
 {
-  char* err;
+  if(m_vectorEmployeeInfo.size() > 0)
+    return true;
 
-  int rc = sqlite3_open(DB_NAME,&m_db) ;
-  if (rc != SQLITE_OK) {
-    printf("Failed to open database : %s\n", sqlite3_errmsg(m_db));
-    return false;
-  }
-  printf("Opened db %s OK!\n", DB_NAME);
-  
-  int db_size = filesystem::file_size(DB_NAME);
-  printf("db size: %d\n", db_size);
-  if(!db_size){
-    printf("create table\n");
-    rc = sqlite3_exec(m_db, CREATE_TABLE_EMPLOYEE, NULL, NULL, &err);
-    if (rc != SQLITE_OK) {
-      printf("Failed to creat table : %s\n", err);
-      return false;
+  if(!filesystem::file_exist(DB_FILE)){
+    LOGV("download %s\n", DB_FILE);
+    try{
+      m_ws->request_EmployeeInfoAll(m_lastSyncTime.toString().c_str(), 8000, DB_FILE);
+      LOGV("downloaded %s\n", DB_FILE);
     }
-    rc = sqlite3_exec(m_db, CREATE_TABLE_TIME, NULL, NULL, &err);
-    if (rc != SQLITE_OK) {
-      printf("Failed to creat table : %s\n", err);
+    catch(web::Except e){
+      LOGE("download %s fail\n", DB_FILE);
       return false;
     }
   }
   
-  return true;
-}
-
-
-bool EmployeeInfoMgr::updateLocalDB()
-{
-  try{
-    m_ws->request_EmployeeInfoAll(m_lastSyncTime.toString().c_str(), 8000, DB_FILE);
-    LOGV("downloaded %s\n", DB_FILE);
-  }
-  catch(web::Except e){
-    LOGE("download %s fail\n", DB_FILE);
-    return false;
-  }
-
   ifstream infile (DB_FILE, ofstream::binary);
   // get size of file
   infile.seekg (0,infile.end);
@@ -92,19 +63,27 @@ bool EmployeeInfoMgr::updateLocalDB()
   cout << "members = " << num << endl;
   delete xml_buf;
   return true;
-
 }
 
-
-
-bool EmployeeInfoMgr::getInfo(const char* serialNumber, EmployeeInfo* ei)
+bool EmployeeInfoFixMgr::getInfo(const char* serialNumber, EmployeeInfo* ei)
 {
   //bool bNetAvailable = false;
   //cout << "getInfo" << endl;
   if(m_bUseLocalDB){
     goto localDB;
   }
-
+/*
+  try{
+    bNetAvailable = m_ws->request_CheckNetwork(1000);
+  }
+  catch(WebService::Except e){
+    LOGE("request_CheckNetwork: %s\n", WebService::dump_error(e));
+  }
+  if(!bNetAvailable){
+    LOGE("nwtwork not available\n");
+    goto localDB;
+  }
+*/  
   try{
     char* xml_buf = m_ws->request_EmployeeInfo(serialNumber, 3000);
     if(xml_buf){
@@ -141,7 +120,7 @@ localDB:
     
 }
 
-int EmployeeInfoMgr::fillEmployeeInfoes(char *xml_buf, vector<EmployeeInfo*>& elems)
+int EmployeeInfoFixMgr::fillEmployeeInfoes(char *xml_buf, vector<EmployeeInfo*>& elems)
 {
   char *p = xml_buf;
   char *end;
@@ -213,7 +192,85 @@ int EmployeeInfoMgr::fillEmployeeInfoes(char *xml_buf, vector<EmployeeInfo*>& el
   return elems.size();
 }
 
-EmployeeInfoMgr::EmployeeInfo* EmployeeInfoMgr::searchDB(const char* serialNumber)
+bool EmployeeInfoFixMgr::fillEmployeeInfo(char *xml_buf, EmployeeInfo* ei)
+{
+  char *p;
+  //cout << xml_buf << endl;
+  //LOGV("***fillEmployeeInfo:%s\n", xml_buf);
+  if(!(p = strstr(xml_buf, "<Table"))){
+    LOGV("The Serial# is not exist!\n");
+    return false;
+  }
+  //cout << "getInfo 1:" << p << endl;
+  try {
+    ei->pin_no = utils::getElementData(p, "PIN_NO");
+    p += strlen(p) + 1;
+  }
+  catch(int e){}
+  try {
+    ei->lab_no = p = utils::getElementData(p, "LAB_NO");
+    p += strlen(p) + 1;
+  }
+  catch(int e){}
+  try {
+    ei->lab_name = p = utils::getElementData(p, "LAB_NM");
+    p += strlen(p) + 1;
+  }
+  catch(int e){}
+  try {
+    ei->company_name = p = utils::getElementData(p, "CO_NM");
+    p += strlen(p) + 1;
+  }
+  catch(int e){}
+/*  
+  try {
+    p = utils::getElementData(p, "RFID_CAR");
+    strcpy(ei->serial_number, p); 
+    p += strlen(p) + 1;
+  }
+  catch(int e){}
+*/
+  try {
+    ei->in_out_gb = p = utils::getElementData(p, "IN_OUT_GB");
+    p += strlen(p) + 1;
+  }
+  catch(int e){}
+  try {
+    ei->zone_code = p = utils::getElementData(p, "ZONE_CD");
+    p += strlen(p) + 1;
+  }
+  catch(int e){}
+  if(m_bDisplayPhoto){
+    try {
+      printf("img_buf\n"); 
+      p = utils::getElementData(p, "PHOTO_IMAGE");  //base64 encoded
+      int length = strlen(p);
+      ei->img_buf = new unsigned char[length];
+      base64::base64d(p, (char*)(ei->img_buf), &ei->img_size);
+      printf("img_buf:%x\n", ei->img_buf); 
+      p += length + 1;
+    }
+    catch(int e){}
+  }
+  try {
+    ei->ent_co_ymd = new Date(p = utils::getElementData(p, "ENT_CO_YMD"));
+    p += strlen(p) + 1;
+  }
+  catch(int e){}
+  try {
+    ei->rtr_co_ymd = new Date(p = utils::getElementData(p, "RTR_CO_YMD"));
+    p += strlen(p) + 1;
+  }
+  catch(int e){}
+  try {
+    ei->utype = *utils::getElementData(p, "UTYPE");
+  }
+  catch(int e){}
+
+  return true;
+}
+
+EmployeeInfoFixMgr::EmployeeInfo* EmployeeInfoFixMgr::searchDB(const char* serialNumber)
 {
   mtx.lock();
 

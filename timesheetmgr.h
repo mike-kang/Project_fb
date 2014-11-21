@@ -4,13 +4,13 @@
 #include <iostream>
 #include <list>
 #include "tools/mutex.h"
+#include "web/iwebservice.h"
 
-class WebService;
 class Settings;
 class TimeSheetMgr {
 public:
   struct TimeSheet {
-    std::string m_lab_no;
+    std::string m_pinno;
     char m_utype;
     std::string m_time;
     char* m_photo_img;
@@ -18,7 +18,7 @@ public:
     TimeSheet(std::string lab_no, char utype, char* img, int img_sz);
     ~TimeSheet();
   };
-  TimeSheetMgr(Settings* settings, WebService* ws);
+  TimeSheetMgr(Settings* settings, web::IWebService* ws);
   virtual ~TimeSheetMgr();
 
   void insert(std::string lab_no, char utype, char* img, int img_sz);
@@ -28,7 +28,7 @@ private:
   //void dump();
   
   std::list<TimeSheet*> m_listTS;
-  WebService* m_ws;
+  web::IWebService* m_ws;
   Settings* m_settings;
   std::string m_sMemcoCd; // = "MC00000003";
   std::string m_sSiteCd; //"ST00000005";

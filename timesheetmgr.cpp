@@ -1,18 +1,21 @@
 #include "timesheetmgr.h"
 #include "tools/log.h"
-#include "web/webservice.h"
 #include "settings.h"
 #include <sys/time.h>
 #include "tools/filesystem.h"
 #include <errno.h>
+#include <web/webservice.h>
+
 
 #define LOG_TAG "TimeSheetMgr"
 #define STORE_DIRECTORY "timesheets"
 
 using namespace std;
 using namespace tools;
+using namespace web;
 
-TimeSheetMgr::TimeSheetMgr(Settings* settings, WebService* ws):m_settings(settings), m_ws(ws)
+
+TimeSheetMgr::TimeSheetMgr(Settings* settings, IWebService* ws):m_settings(settings), m_ws(ws)
 {
   m_sMemcoCd = m_settings->get("App::MEMCO_CD");
   m_sSiteCd = m_settings->get("App::SITE_CD");
@@ -31,8 +34,8 @@ TimeSheetMgr::~TimeSheetMgr()
     delete *itr;
 }
 
-TimeSheetMgr::TimeSheet::TimeSheet(string lab_no, char utype, char* img, int img_sz)
-  :m_lab_no(lab_no), m_utype(utype), m_imgSz(img_sz)
+TimeSheetMgr::TimeSheet::TimeSheet(string pinno, char utype, char* img, int img_sz)
+  :m_pinno(pinno), m_utype(utype), m_imgSz(img_sz)
 {
   struct tm _tm;
   time_t t = time(NULL);
@@ -51,9 +54,9 @@ TimeSheetMgr::TimeSheet::~TimeSheet()
     delete m_photo_img;
 }
 
-void TimeSheetMgr::insert(string lab_no, char utype, char* img, int img_sz)
+void TimeSheetMgr::insert(string pinno, char utype, char* img, int img_sz)
 {
-  TimeSheet* ts = new TimeSheet(lab_no, utype, img, img_sz);
+  TimeSheet* ts = new TimeSheet(pinno, utype, img, img_sz);
   mtx.lock();
   m_listTS.push_back(ts);
   mtx.unlock();
@@ -88,7 +91,7 @@ bool TimeSheetMgr::upload()
       }
         
     }
-    catch(WebService::Except e){
+    catch(web::Except e){
       LOGE("request_SendFile: %s\n", WebService::dump_error(e));
       for(vector<string*>::size_type i=0; i < filelist.size(); i++){
         delete filelist[i];
@@ -104,10 +107,10 @@ bool TimeSheetMgr::upload()
   for(list<TimeSheet*>::iterator itr = m_listTS.begin(); itr != m_listTS.end(); itr++){
     bool ret = false;
     try{
-      ret = m_ws->request_UploadTimeSheet(m_sMemcoCd.c_str(), m_sSiteCd.c_str(), (*itr)->m_lab_no.c_str(), m_cInOut, m_sDvNo.c_str(), m_sDvLoc.c_str(), (*itr)->m_utype, (*itr)->m_time.c_str(), 
-        (*itr)->m_photo_img, (*itr)->m_imgSz, 3000, STORE_DIRECTORY);
+      ret = m_ws->request_UploadTimeSheet((*itr)->m_time.c_str(), (*itr)->m_pinno.c_str()
+        , 3000, STORE_DIRECTORY);
     }
-    catch(WebService::Except e){
+    catch(web::Except e){
       LOGE("request_UploadTimeSheet: %s\n", WebService::dump_error(e));
     }
     vector_erase.push_back(itr);

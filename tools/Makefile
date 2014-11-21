@@ -1,7 +1,7 @@
 $(warning os: $(shell uname -s))
 $(info current dir is ${CURDIR})
 
-SRCS = filesystem.cpp log.cpp logservice.cpp serial.cpp asyncserial.cpp timer.cpp network.cpp date.cpp base64.cpp utils.cpp wavplayer.cpp
+SRCS = filesystem.cpp log.cpp logservice.cpp serial.cpp asyncserial.cpp timer.cpp network.cpp date.cpp base64.cpp utils.cpp wavplayer.cpp datetime.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 LIB = libtool.so

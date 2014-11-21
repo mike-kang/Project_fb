@@ -1,17 +1,17 @@
 #include <iostream>
 #include <fstream>
 #include "safemanwebservice.h"
-#include "dwwebservice.h"
+#include "mydwwebservice.h"
 #include "../tools/log.h"
 
 using namespace std;
 using namespace web;
+
 #define LOG_TAG "TEST_MAIN"
 
 #define RCVHEADERBUFSIZE 1024
 #define RCVBUFSIZE 4096
 
-IWebService* iws, *iws2;
 
 #define DUMP_CASE(x) case x: return #x;
 
@@ -64,7 +64,7 @@ void cbTimeSheetInsertString(void *client_data, int status, void* ret)
 }
 
 //#define LOTT
-#define DW
+//#define DW
 
 #ifdef DW
 const char pinno[] = "4716";
@@ -74,6 +74,8 @@ const char pinno[] = "4321";
 
 int main()
 {
+  IWebService* iws;
+
   log_init(true, 1, "/dev/pts/3", false, 3, "Log");
   //iws = new WebService("112.216.243.146", 8080);
   //iws = new SafemanWebService("http://lottedev.safeman.co.kr/LotteIDService.asmx", "MC00000007", "ST00000024", "0000000008"); //dev.safeman.co.kr
@@ -81,8 +83,11 @@ int main()
 #ifdef LOTT
   iws = new SafemanWebService("http://lottedev.safeman.co.kr/LotteIDService.asmx", "MC00000007", "ST00000024", "0000000008", "1", 'I'); //dev.safeman.co.kr
 #elif defined DW
-  iws = new DWWebService("http://112.175.10.40/WebService.asmx", "MC00000007", "ST00000024", "KMUD0", "1", 'I'); //dev.safeman.co.kr
+  DWWebService* iws1;
+  SafemanWebService* iws2;
+  iws1 = new DWWebService("http://112.175.10.40/WebService.asmx", "MC00000007", "ST00000024", "KMUD0", "1", 'I'); //dev.safeman.co.kr
   iws2 = new SafemanWebService("http://dev.safeman.co.kr/SafeIDService.asmx", "MC00000007", "ST00000024", "KMUD0", "1", 'I'); //dev.safeman.co.kr
+  iws = new MyDWWebService(iws1, iws2);
 #else
   iws = new SafemanWebService("http://dev.safeman.co.kr/SafeIDService.asmx", "MC00000007", "ST00000024", "0000000008", "1", 'I'); //dev.safeman.co.kr
 #endif
@@ -96,10 +101,6 @@ int main()
   }
   catch(Except e){
     printf("request_CheckNetwork: %s\n", WebService::dump_error(e));
-    if(e == EXCEPTION_NOT_SUPPORTED && iws2){
-      ret = iws2->request_CheckNetwork(3000);  //blocked I/O
-      printf("***GetNetInfo: %d\n", ret);
-    }
   }
 
   try{
@@ -115,13 +116,10 @@ int main()
   }
 
   try{
-    iws->request_EmployeeInfoAll("", 0, 7000, "employee.xml");  //blocked I/O
+    iws->request_EmployeeInfoAll("", 7000, "employee.xml");  //blocked I/O
   }
   catch(Except e){
     printf("request_EmployeeInfoAll: %s\n", WebService::dump_error(e));
-    if(e == EXCEPTION_NOT_SUPPORTED && iws2){
-      iws2->request_EmployeeInfoAll("", 1, 7000, "employee.xml");  //blocked I/O
-    }
   }
   
   try{

@@ -93,7 +93,9 @@ public:
 
 //request
   char* request_ServerTime(int timelimit, CCBFunc cbfunc, void* client);
-  void request_EmployeeInfoAll(const char *startTime, char flag, int timelimit, CCBFunc cbfunc, void* client, const char* outFilename);
+  void request_EmployeeInfoAll(const char *startTime, int timelimit, CCBFunc cbfunc, void* client, const char* outFilename);
+  void request_EmployeeInfoAllDW(const char *startTime, int timelimit, CCBFunc cbfunc, void* client, const char* 
+  outFilename);
 
   char* request_EmployeeInfo(const char* serialnum, int timelimit, CCBFunc cbfunc, void* client);
 

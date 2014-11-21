@@ -1,6 +1,6 @@
 
-#ifndef _EMPLOYEEINFOMGR_HEADER
-#define _EMPLOYEEINFOMGR_HEADER
+#ifndef _EMPLOYEEINFOMGRFIX_HEADER
+#define _EMPLOYEEINFOMGRFIX_HEADER
 
 #include "tools/date.h"
 #include "tools/datetime.h"
@@ -8,12 +8,11 @@
 #include <string>
 #include "tools/mutex.h"
 #include "web/iwebservice.h"
-#include "sqlite3.h"
 
 class Settings;
 //class web::IWebService;
 
-class EmployeeInfoMgr {
+class EmployeeInfoFixMgr {
 public:
   struct EmployeeInfo {
     char serial_number[16]; //rfcard
@@ -34,18 +33,16 @@ public:
     ~EmployeeInfo(){
       if(ent_co_ymd) delete ent_co_ymd;
       if(rtr_co_ymd) delete rtr_co_ymd;
-      sqlite3_close(m_db) 
       //if(img_buf) delete img_buf;
     }
   };
-  EmployeeInfoMgr(Settings* settings, web::IWebService* ws);
-  virtual ~EmployeeInfoMgr(){}
+  EmployeeInfoFixMgr(Settings* settings, web::IWebService* ws);
+  virtual ~EmployeeInfoFixMgr(){}
 
-  bool updateLocalDB();
+  bool createLocalDB();
   bool getInfo(const char* serialNumber, EmployeeInfo* ei);
   
 private:  
-  bool OpenOrCreateLocalDB();
   int fillEmployeeInfoes(char *xml_buf, vector<EmployeeInfo*>& elems);
   bool fillEmployeeInfo(char *xml_buf, EmployeeInfo* ei);
   EmployeeInfo* searchDB(const char* serialNumber);
@@ -59,7 +56,6 @@ private:
   std::vector<EmployeeInfo*> m_vectorEmployeeInfo;
   tools::DateTime m_lastSyncTime;
   Mutex mtx;
-  sqlite3 * m_db;
 };
 
 

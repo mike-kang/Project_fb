@@ -13,9 +13,10 @@
 #include "tools/filesystem.h"
 #include "timesheetmgr.h"
 #include <errno.h>
-
+#include "web/mydwwebservice.h"
 using namespace tools;
 using namespace std;
+using namespace web;
 
 #define LOG_TAG "MainDelegator"
 
@@ -73,6 +74,7 @@ bool MainDelegator::checkValidate(EmployeeInfoMgr::EmployeeInfo* ei, string& msg
   return true;
 }
 
+#ifdef LOCATION
 bool MainDelegator::checkZone(string& sAuth)
 {
   string sLoc = m_sDvLoc;
@@ -123,6 +125,7 @@ bool MainDelegator::checkZone(string& sAuth)
   }
   return false;
 }
+#endif
 
 bool MainDelegator::checkDate(Date* start, Date* end, string& msg)
 {
@@ -343,31 +346,8 @@ void MainDelegator::cbTimer(void* arg)
     case 3:
       break;
 
-    case 1:
-    case 6:
-      if(md->m_sLocalIP == ""){
-        try{
-          char* p = network::GetIpAddress("eth0");  // or lo
-          md->m_sLocalIP = p;
-        }
-        catch(Exception e)
-        {
-          md->m_sLocalIP = "";
-        }
-      }
-      try{
-        //ret = m_ws->request_StatusUpdate((m_sInOut == "I")?"IN":"OUT", m_sSiteCd, m_sDvLoc, m_sDvNo, m_sLocalIP, m_sLocalMacAddr, 8000);  //blocked I/O
-        //LOGV("***StatusUpdate: %d\n", ret);
-        md->m_ws->request_StatusUpdate((md->m_sInOut == "I")?"IN":"OUT", md->m_sSiteCd.c_str(), md->m_sDvLoc.c_str(), md->m_sDvNo.c_str(), md->m_sLocalIP.c_str()
-          , md->m_sLocalMacAddr.c_str(), cbStatusUpdate, NULL);  //blocked I/O
-      }
-      catch(WebService::Except e){
-        LOGE("request_StatusUpdate: %s\n", WebService::dump_error(e));
-      }
-      break;
-
     case 8:
-      md->m_employInfoMrg->createLocalDB();
+      md->m_employInfoMrg->updateLocalDB();
       break;
       
     case 9:
@@ -388,7 +368,7 @@ bool MainDelegator::checkNetwork()
   try{
     ret = m_ws->request_CheckNetwork(2000);  //blocked I/O
   }
-  catch(WebService::Except e){
+  catch(Except e){
     LOGE("request_CheckNetwork: %s\n", WebService::dump_error(e));
     goto error;
   }
@@ -436,27 +416,36 @@ bool MainDelegator::SettingInit()
   m_bSavePictureFile = m_settings->getBool("Camera::SAVE_PICTURE_FILE");
 #endif
   //App
-  m_sAuthCd = m_settings->get("App::AUTH_CD");
+  //m_sAuthCd = m_settings->get("App::AUTH_CD");
   m_sMemcoCd = m_settings->get("App::MEMCO_CD");
   m_sSiteCd = m_settings->get("App::SITE_CD");
-  m_sDvLoc = m_settings->get("App::DV_LOC"); // = "0001";
-  m_sDvNo = m_settings->get("App::DV_NO"); // = "6";
-  m_bDatabase = m_settings->getBool("App::LOCAL_DATABASE");
+  //m_sDvLoc = m_settings->get("App::DV_LOC"); // = "0001";
+  m_sDvNo = m_settings->get("App::DV_NO"); // = "1";
   m_sInOut = m_settings->get("App::IN_OUT");
-
+  m_sEmbedCd = m_settings->get("App::EMBED"); // = "0000000008";
+  m_sOption = m_settings->get("App::OPTION");
+  m_sAuthCode = m_settings->get("App::AUTH_CODE");
+  m_bTestSignal = m_settings->getBool("App::TEST_SIGNAL");
+  
   //Action
   m_bCapture = m_settings->getBool("Action::CAPTURE");
-  //m_bRelay = m_settings->getBool("Action::RELAY");
   m_bSound = m_settings->getBool("Action::SOUND");
 
   //Rfid
+#ifdef RFID  
   m_sRfidMode = m_settings->get("Rfid::MODE"); //="1356M";
   m_rfidCheckInterval = m_settings->getInt("Rfid::CHECK_INTERVAL"); //300 ms
   m_sRfid1356Port = m_settings->get("Rfid::RFID1356_PORT"); // /dev/ttyAMA0
   m_sRfid900Port = m_settings->get("Rfid::RFID800_PORT"); // /dev/ttyUSB0
+#endif
+  m_fbCheckInterval = m_settings->getInt("FB::CHECK_INTERVAL"); //300 ms
+  m_fbPort = m_settings->get("FB::PORT"); // /dev/ttyUSB0
 
   //Server
-  m_sUrl = m_settings->get("Server::URL");
+  m_sServerType = m_settings->get("Server::TYPE");
+  m_sSafeIdServerUrl = m_settings->get("Server::SAFEIDSVC_URL");
+  m_sLotteIdServerUrl = m_settings->get("Server::LOTTEIDSVC_URL");
+  m_sDWServerUrl = m_settings->get("Server::DWSVC_URL");
 
   //Local IP.Mac Address
   try{
@@ -507,7 +496,7 @@ MainDelegator::MainDelegator(EventListener* el) : m_el(el), m_bProcessingRfidDat
   
   //m_thread = new Thread<MainDelegator>(&MainDelegator::run, this, "MainDelegatorThread");
   //LOGV("MainDelegator tid=%lu\n", m_thread->getId());
-#ifndef SIMULATOR
+#ifdef RFID
   if(m_sRfidMode == "1356M")
     m_serialRfid = new SerialRfid1356(m_sRfid1356Port.c_str());
   else if(m_sRfidMode == "1356M2")
@@ -524,14 +513,26 @@ MainDelegator::MainDelegator(EventListener* el) : m_el(el), m_bProcessingRfidDat
   }
   m_serialRfid->start(m_rfidCheckInterval, this); //interval=300ms  
 #endif  
+
   m_el->onMessage("Rfid", m_sRfidMode + " ON");
 
-  m_el->onStatus("WebService Url:" + m_sUrl);
+  //m_el->onStatus("WebService Url:" + m_sServerUrl);
   //m_ws = new WebService("192.168.0.7", 8080);
-  m_sServerURL = m_settings->get("Server::URL");
-  LOGV("m_sServerURL= %s\n", m_sServerURL.c_str()); 
 
-  m_ws = new WebService(m_sServerURL);
+  LOGV("m_sServerURL= %s\n", m_sDWServerUrl.c_str()); 
+  LOGV("m_sServerURL= %s\n", m_sLotteIdServerUrl.c_str()); 
+  LOGV("m_sServerURL= %s\n", m_sSafeIdServerUrl.c_str()); 
+
+  if(m_sServerType == "DW"){
+    DWWebService* dw = new DWWebService(m_sDWServerUrl.c_str(), m_sMemcoCd.c_str(), m_sSiteCd.c_str(), m_sEmbedCd.c_str(), m_sDvNo.c_str(), m_sInOut.c_str()[0]);
+    SafemanWebService* sm = new SafemanWebService(m_sSafeIdServerUrl.c_str(), m_sMemcoCd.c_str(), m_sSiteCd.c_str(), m_sEmbedCd.c_str(), m_sDvNo.c_str(), m_sInOut.c_str()[0]);
+    m_ws = new MyDWWebService(dw, sm);
+  }
+  else if(m_sServerType == "LT")
+    m_ws = new SafemanWebService(m_sLotteIdServerUrl.c_str(), m_sMemcoCd.c_str(), m_sSiteCd.c_str(), m_sEmbedCd.c_str(), m_sDvNo.c_str(), m_sInOut.c_str()[0]);
+  else
+    m_ws = new SafemanWebService(m_sSafeIdServerUrl.c_str(), m_sMemcoCd.c_str(), m_sSiteCd.c_str(), m_sEmbedCd.c_str(), m_sDvNo.c_str(), m_sInOut.c_str()[0]);
+    
   //m_ws = new WebService(ip, 17552);
   checkNetwork();
   m_employInfoMrg = new EmployeeInfoMgr(m_settings, m_ws);
@@ -541,11 +542,12 @@ MainDelegator::MainDelegator(EventListener* el) : m_el(el), m_bProcessingRfidDat
   m_cameraStill = new CameraStill(m_cameraDelayOffTime);
 #endif
 
-#ifdef SIMULATOR
-  signal(SIGUSR1, test_signal_handler);
-  signal(SIGUSR2, test_signal_handler);
-  mTimerForTest = new Timer(cbTestTimer, this);
-#endif
+  if(m_bTestSignal){
+    signal(SIGUSR1, test_signal_handler);
+    signal(SIGUSR2, test_signal_handler);
+    mTimerForTest = new Timer(cbTestTimer, this);
+  }
+  
   string locationName = getLocationName();
   m_el->onMessage("GateLoc", locationName);
   m_el->onMessage("GateNo", "No." + m_sDvNo);
@@ -571,7 +573,7 @@ MainDelegator::~MainDelegator()
   m_timer->stop();
 } 
 
-#ifdef SIMULATOR
+//#ifdef SIMULATOR
 void MainDelegator::cbTestTimer(void* arg)
 {
    my->onData(my->m_test_serial_number.c_str());
@@ -591,8 +593,9 @@ void MainDelegator::test_signal_handler(int signo)
     my->mTimerForTest->start(1);
   }
 }
-#endif
+//#endif
 
+#ifdef LOCATION
 string MainDelegator::getLocationName()
 {
   string locationName;
@@ -628,6 +631,7 @@ string MainDelegator::getLocationName()
 
   return locationName;
 }
+#endif
 
 /*
 void MainDelegator::cb_ServerTimeGet(void* arg)
@@ -680,7 +684,7 @@ bool MainDelegator::getSeverTime()
       return true;  
     }
   }
-  catch(WebService::Except e){
+  catch(web::Except e){
     LOGE("request_ServerTime: %s\n", WebService::dump_error(e));
     return false;
   }

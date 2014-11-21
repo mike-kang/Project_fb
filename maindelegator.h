@@ -5,7 +5,7 @@
 #include "tools/thread.h"
 #include "tools/event.h"
 #include "serialRfid.h"
-#include "web/webservice.h"
+#include "web/iwebservice.h"
 #ifdef CAMERA
 #include "camera/camerastill.h"
 #endif
@@ -57,12 +57,12 @@ private:
   void displayNetworkStatus(bool val);
   bool getSeverTime();
   void setRebootTimer(const char* time_buf);
-#ifdef SIMULATOR  
+//#ifdef SIMULATOR  
   static void cbTestTimer(void* arg);
   static void test_signal_handler(int signo);
   tools::Timer* mTimerForTest;
   std::string m_test_serial_number;
-#endif
+//#endif
   static void cbStatusUpdate(void *client_data, int status, void* ret);
   static void cbTimer(void* arg);
   //static void cb_ServerTimeGet(void* arg);
@@ -76,7 +76,8 @@ private:
   tools::Queue<TEvent< MainDelegator> > m_eventQ;
   Condition m_rfid_process_completed;
   Mutex m_rfid_mtx;
-  WebService* m_ws;
+  web::IWebService* m_ws;
+  //web::IWebService* m_subws;
   SerialRfid* m_serialRfid;  
   Settings* m_settings;
   EmployeeInfoMgr* m_employInfoMrg;
@@ -96,18 +97,30 @@ private:
   bool m_bRelay;
   bool m_bSound; //true
   bool m_bDatabase;
-  string m_sUrl; 
-  string m_sAuthCd; 
+
+  //server
+  string m_sServerType; 
+  string m_sSafeIdServerUrl; 
+  string m_sLotteIdServerUrl; 
+  string m_sDWServerUrl; 
+  
+  //string m_sAuthCd; 
   string m_sMemcoCd; // = "MC00000003";
   string m_sSiteCd; //"ST00000005";
-  string m_sDvLoc; // = "0001";
+  string m_sEmbedCd; //"0000000008";
+  //string m_sDvLoc; // = "0001";
   string m_sDvNo; // = "1";
   string m_sInOut; // = "I";
+  string m_sOption;
+  string m_sAuthCode;
   int m_rfidCheckInterval; //ms
   int m_rfid_processMaxTime; //ms
   string m_sRfidMode; //="1356M";
   string m_sRfid1356Port; // /dev/ttyAMA0
   string m_sRfid900Port; // /dev/ttyUSB0
+
+  int m_fbCheckInterval; //ms
+  string m_fbPort; // /dev/ttyUSB0
 #ifdef CAMERA  
   CameraStill* m_cameraStill;
   int m_takePictureMaxWaitTime; //sec
@@ -116,12 +129,12 @@ private:
 #endif
   string m_sLocalIP;
   string m_sLocalMacAddr;
-  string m_sServerURL;
+  //string m_sServerURL;
   //string m_consolePath;
   
   bool m_bProcessingRfidData;
   bool m_bTimeAvailable;
-  
+  bool m_bTestSignal; //for debug
   //Led
   SwitchGpio* m_yellowLed;
   SwitchGpio* m_blueLed;

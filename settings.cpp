@@ -27,29 +27,35 @@ Settings::Settings(const char* filename)
      cout << "Can't load " << filename << endl;
      //default settings
      //App
-     mapStrInsert(App, AUTH_CD, );
-     mapStrInsert(App, MEMCO_CD, MC00000003);
-     mapStrInsert(App, SITE_CD, ST00000005);
-     mapStrInsert(App, DV_LOC, 0001);
-     mapStrInsert(App, DV_NO, 6);
-     mapBoolInsert(App, LOCAL_DATABASE, false);
+     //mapStrInsert(App, AUTH_CODE, );
+     mapStrInsert(App, MEMCO, MC00000003);
+     mapStrInsert(App, SITE, ST00000005);
+     mapStrInsert(App, EMBED, 0001);
+     mapStrInsert(App, DV_NO, 1);
      mapStrInsert(App, IN_OUT, I);
+     mapStrInsert(App, AUTH_CODE, );
+     mapStrInsert(App, OPTION, );
      mapStrInsert(App, REBOOT_TIME, );
      mapStrInsert(App, WORKING_DIRECTORY, /home/pi/acu);
-     mapBoolInsert(App, DISPLAY_PHOTO, true);
+     //mapBoolInsert(App, DISPLAY_PHOTO, true);
      mapIntInsert(App, TIMER_INTERVAL, 60);  //60 sec
+     mapBoolInsert(App, TEST_SIGNAL, false);
      
      //Action
      mapBoolInsert(Action, CAPTURE, true);
-     //mapBoolInsert(Action, RELAY, true);
      mapBoolInsert(Action, SOUND, true);
      
      //Rfid
+#ifdef RFID     
      mapStrInsert(Rfid, MODE, 1356M); 
      mapIntInsert(Rfid, CHECK_INTERVAL, 300);  // 300 ms
      mapStrInsert(Rfid, RFID1356_PORT, /dev/ttyAMA0); 
      mapStrInsert(Rfid, RFID800_PORT, /dev/ttyUSB0); 
-     
+#endif 
+     //FB
+     mapIntInsert(FB, CHECK_INTERVAL, 300);  // 300 ms
+     mapStrInsert(FB, PORT, /dev/ttyUSB0); 
+
      //Camera
      mapIntInsert(Camera, DELAY_OFF_TIME, 600);  //600 sec
      mapBoolInsert(Camera, SAVE_PICTURE_FILE, false);
@@ -65,7 +71,10 @@ Settings::Settings(const char* filename)
      mapStrInsert(Log, FILE_DIRECTORY, Log);
 
      //Server
-     mapStrInsert(Server, URL, http:\/\/10.9.0.2:8080/WebService/ItlogService.asmx);
+     mapStrInsert(Server, TYPE, SM);
+     mapStrInsert(Server, SAFEIDSVC_URL, http:\47/dev.safeman.co.kr/SafeIDService.asmx);
+     mapStrInsert(Server, LOTTEIDSVC_URL, http:\47/lottedev.safeman.co.kr/LotteIDService.asmx);
+     mapStrInsert(Server, DWSVC_URL, http:\47/112.175.10.40/WebService.asmx);
 
      //Gpio
      mapIntInsert(Gpio, YELLOW, 27);
@@ -79,27 +88,34 @@ Settings::Settings(const char* filename)
   }
 
   //App
-  mapStrInsertFromReader(App, AUTH_CD, );
-  mapStrInsertFromReader(App, MEMCO_CD, MC00000003);
-  mapStrInsertFromReader(App, SITE_CD, ST00000005);
-  mapStrInsertFromReader(App, DV_LOC, 0001);
-  mapStrInsertFromReader(App, DV_NO, 6);
-  mapBoolInsertFromReader(App, LOCAL_DATABASE, false);
+  //mapStrInsertFromReader(App, AUTH_CODE, );
+  mapStrInsertFromReader(App, MEMCO, MC00000003);
+  mapStrInsertFromReader(App, SITE, ST00000005);
+  mapStrInsertFromReader(App, EMBED, 0001);
+  mapStrInsertFromReader(App, DV_NO, 1);
   mapStrInsertFromReader(App, IN_OUT, I);
+  mapStrInsertFromReader(App, AUTH_CODE, );
+  mapStrInsertFromReader(App, OPTION, );
   mapStrInsertFromReader(App, REBOOT_TIME, );
   mapStrInsertFromReader(App, WORKING_DIRECTORY, /home/pi/acu);
-  mapBoolInsertFromReader(App, DISPLAY_PHOTO, true);
+  //mapBoolInsertFromReader(App, DISPLAY_PHOTO, true);
   mapIntInsertFromReader(App, TIMER_INTERVAL, 60);  //60 sec
+  mapBoolInsertFromReader(App, TEST_SIGNAL, false);
+
   //Action
   mapBoolInsertFromReader(Action, CAPTURE, true);
-  //mapBoolInsertFromReader(Action, RELAY, true);
   mapBoolInsertFromReader(Action, SOUND, true);
 
   //Rfid
+#ifdef RFID     
   mapStrInsertFromReader(Rfid, MODE, 1356M); 
   mapIntInsertFromReader(Rfid, CHECK_INTERVAL, 300);  // 300 ms
   mapStrInsertFromReader(Rfid, RFID1356_PORT, /dev/ttyAMA0); 
   mapStrInsertFromReader(Rfid, RFID800_PORT, /dev/ttyUSB0); 
+#endif
+  //FB
+  mapIntInsertFromReader(FB, CHECK_INTERVAL, 300);  // 300 ms
+  mapStrInsertFromReader(FB, PORT, /dev/ttyUSB0); 
 
   //Camera
   mapIntInsertFromReader(Camera, DELAY_OFF_TIME, 600);  //600 sec
@@ -115,7 +131,10 @@ Settings::Settings(const char* filename)
   mapStrInsertFromReader(Log, FILE_DIRECTORY, Log);
 
   //Server
-  mapStrInsertFromReader(Server, URL, http:\/\/10.9.0.2:8080/WebService/ItlogService.asmx);
+  mapStrInsertFromReader(Server, TYPE, SM);
+  mapStrInsertFromReader(Server, SAFEIDSVC_URL, http:\47/dev.safeman.co.kr/SafeIDService.asmx);
+  mapStrInsertFromReader(Server, LOTTEIDSVC_URL, http:\47/lottedev.safeman.co.kr/LotteIDService.asmx);
+  mapStrInsertFromReader(Server, DWSVC_URL, http:\47/112.175.10.40/WebService.asmx);
 
   //Gpio
   mapIntInsertFromReader(Gpio, YELLOW, 27);

@@ -1,36 +1,15 @@
 #ifndef _IWEBSERVICE_HEADER
 #define _IWEBSERVICE_HEADER
 
+#include "web.h"
+
 namespace web {
-enum Except{
-  EXCEPTION_PARSING_URL,
-  EXCEPTION_NOT_SUPPORTED,
-  EXCEPTION_CREATE_SOCKET,
-  EXCEPTION_CONNECT,
-  EXCEPTION_SEND_COMMAND,
-  EXCEPTION_POLL_FAIL,
-  EXCEPTION_POLL_TIMEOUT,
-  EXCEPTION_PARSING_FAIL
-};
-
-enum Ret {
-  RET_SUCCESS,
-  RET_CREATE_SOCKET_FAIL,
-  RET_CONNECT_FAIL,
-  RET_SEND_CMD_FAIL,
-  RET_FCNTL_FAIL,
-  RET_POLL_FAIL,
-  RET_POLL_TIMEOUT,
-  RET_PARSING_FAIL
-};
-
-typedef  void (*CCBFunc)(void *client_data, int status, void* ret);
 
 class IWebService {
 public:
 //request
   virtual bool request_CheckNetwork(int timelimit, CCBFunc cbfunc, void* client) = 0;
-  virtual void request_EmployeeInfoAll(const char *startTime, char flag, int timelimit, CCBFunc cbfunc, void* client, const char* outFilename) = 0;
+  virtual void request_EmployeeInfoAll(const char *startTime, int timelimit, CCBFunc cbfunc, void* client, const char* outFilename) = 0;
   virtual char* request_EmployeeInfo(const char* serialnum, int timelimit, CCBFunc cbfunc, void* client) = 0;
   virtual char* request_ServerTime(int timelimit, CCBFunc cbfunc, void* client) = 0;
   virtual bool request_UploadTimeSheet(const char* sTime, const char* pinno, int timelimit, CCBFunc cbfunc, void* client, const char* outDirectory) = 0;
@@ -47,15 +26,15 @@ public:
     return request_CheckNetwork(0, cbfunc, client);
   }
   
-  void request_EmployeeInfoAll(const char *startTime, char flag, int timelimit, 
+  void request_EmployeeInfoAll(const char *startTime, int timelimit, 
   const char* outFilename)
   {
-    request_EmployeeInfoAll(startTime, flag, timelimit, NULL, NULL, outFilename);
+    request_EmployeeInfoAll(startTime, timelimit, NULL, NULL, outFilename);
   }
-  void request_EmployeeInfoAll(const char *startTime, char flag, CCBFunc cbfunc, void* client, 
+  void request_EmployeeInfoAll(const char *startTime, CCBFunc cbfunc, void* client, 
   const char* outFilename)
   {
-    request_EmployeeInfoAll(startTime, flag, 0, cbfunc, client, outFilename);
+    request_EmployeeInfoAll(startTime, 0, cbfunc, client, outFilename);
   }
 
   char* request_EmployeeInfo(const char* serialnum, int timelimit)

@@ -252,16 +252,12 @@ char* SafemanWebService::request_ServerTime(int timelimit, CCBFunc cbfunc, void*
 }
 
 //flag 1 -> daewoo
-void SafemanWebService::request_EmployeeInfoAll(const char *startTime, char flag, int timelimit, CCBFunc cbfunc, void* client, const char* outFilename)
+void SafemanWebService::request_EmployeeInfoAll(const char *startTime, int timelimit, CCBFunc cbfunc, void* client, const char* outFilename)
 {
   LOGV("request_EmployeeInfoAll +++\n");
   char *cmd = new char[300];
-  if(!flag)
-    sprintf(cmd,"GET %s/LaborID_DownCheck?EMBEDDED=%s&OPTION=&UPDDATE=%s HTTP/1.1\r\nHost: %s\r\n\r\n"
-      , m_service_name, m_sEmbed, startTime, m_url_addr);
-  else
-    sprintf(cmd,"GET %s/LaborDW_Down?EMBEDDED=%s&OPTION=&UPDDATE=%s HTTP/1.1\r\nHost: %s\r\n\r\n"
-      , m_service_name, m_sEmbed, startTime, m_url_addr);
+  sprintf(cmd,"GET %s/LaborID_DownCheck?EMBEDDED=%s&OPTION=&UPDDATE=%s HTTP/1.1\r\nHost: %s\r\n\r\n"
+    , m_service_name, m_sEmbed, startTime, m_url_addr);
 
   WebApi* wa;
 
@@ -280,6 +276,33 @@ void SafemanWebService::request_EmployeeInfoAll(const char *startTime, char flag
     delete wa;
   }
   LOGV("request_EmployeeInfoAll ---\n");
+  return;
+}
+
+void SafemanWebService::request_EmployeeInfoAllDW(const char *startTime, int timelimit, CCBFunc cbfunc, void* client, const char* outFilename)
+{
+  LOGV("request_EmployeeInfoAll +++\n");
+  char *cmd = new char[300];
+  sprintf(cmd,"GET %s/LaborDW_Down?EMBEDDED=%s&OPTION=&UPDDATE=%s HTTP/1.1\r\nHost: %s\r\n\r\n"
+    , m_service_name, m_sEmbed, startTime, m_url_addr);
+
+  WebApi* wa;
+
+  if(cbfunc){
+    wa = new RfidInfoSelectAll_WebApi(this, cmd, 0, cbfunc, client, outFilename);
+    wa->processCmd();
+  }
+  else{
+    wa = new RfidInfoSelectAll_WebApi(this, cmd, 0, timelimit, outFilename);
+  
+    int status = wa->processCmd();
+    if(status != RET_SUCCESS){
+      delete wa;
+      THROW_EXCEPTION(status);
+    }
+    delete wa;
+  }
+  LOGV("request_EmployeeInfoAllDW ---\n");
   return;
 }
 
