@@ -79,12 +79,13 @@ void base64e(const char *src, char *result, int length){
     }
 }
  
-void base64d(const char *src, char *result, int *length){
-    int i, j = 0, src_length, blank = 0;
+void base64d(const char *src, int src_length, char *result, int *length){
+    int i, j = 0, blank = 0;
     BF temp;
- 
-    src_length = strlen(src);
- 
+
+    if(src_length < 0)
+      src_length = strlen(src);
+    
     for(i = 0 ; i < src_length ; i = i+4, j = j+3){
         temp.e4 = DecodeMimeBase64[src[i]];
         temp.e3 = DecodeMimeBase64[src[i+1]];
@@ -154,14 +155,6 @@ int base64e2(const char *src, int length, char *result){
     *o = '\0';
     return (o - result);
 }
-
-#define CHECK_PLUS(x) \ 
-    if(*x == '+'){            \
-      *x++ = '&';*x++ = '#';*x++ = '4';*x++ = '3';      \
-    }   \
-    else{    \
-      x++;    \
-    }    
 
 int base64e2_http(const char *src, int length, char *result){
   int i, j = 0;

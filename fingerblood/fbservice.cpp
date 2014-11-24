@@ -7,12 +7,23 @@ using namespace tools;
 
 #define LOG_TAG "FBService"
 
-FBService::FBService(const char* path, Serial::Baud baud)
+FBService::FBService(const char* path, Serial::Baud baud, FBServiceNoti* fn):m_fn(fn)
 {
   m_serial = new FBProtocolCMSerial(path, baud);
   m_protocol = new FBProtocol(m_serial);
+  m_TimerRestart = new Timer(cbTimerFormat, this);
+  start();
 
 }
+
+FBService::~FBService()
+{
+  stop();
+  delete m_serial;
+  delete m_protocol;
+  delete m_TimerRestart;
+}
+
 char* FBService::getVersion()
 {
   try {
@@ -27,10 +38,33 @@ char* FBService::getVersion()
 
 bool FBService::start()
 {
-  m_serial->open();
+  m_bActive = true;
+
+  if(m_serial->open()){
+    char* ver = getVersion();
+    if(ver){
+      LOGV("Version: %s\n", ver);
+      m_fn->onStart(true);
+      return true;
+    }
+  }
+  m_fn->onStart(false);
+  return false;
+}
+
+void FBService::stop()
+{
+  m_bActive = false;
+  m_serial->close();
+}
+
+bool FBService::getList(list<string>& li)
+{
   try{
-    m_protocol->user(listUserCode);
-    for(list<string>::iterator itr = listUserCode.begin(); itr != listUserCode.end(); itr++)
+    if(!m_protocol)
+      cout << "m_protocol null" << endl;
+    m_protocol->user(li);
+    for(list<string>::iterator itr = li.begin(); itr != li.end(); itr++)
       cout << *itr << endl;
     return true;
   }
@@ -40,26 +74,34 @@ bool FBService::start()
   return false;
 }
 
+//static
+void FBService::cbTimerFormat(void* arg)
+{
+   FBService* my = (FBService*)arg;
+   my->start();
+}
+
 bool FBService::format()
 {
   bool ret = m_protocol->init();
-  m_thread_foramt = new Thread<FBService>(&FBService::run_format, this, "FormatThread");
+
+  m_TimerRestart->start(5);
   return ret;
 }
 
 
 bool FBService::requestStartScan(int interval)
 {
-  m_running = true;
-  m_interval = interval;
+  m_scan_running = true;
+  m_scan_interval = interval;
   m_thread_scan = new Thread<FBService>(&FBService::run_scan, this, "ScanThread");
 }
 
 int FBService::requestEndScan()
 {
-  m_running = false;
+  m_scan_running = false;
   delete m_thread_scan;
-  m_thread = NULL;
+  m_thread_scan = NULL;
 }
 
 bool FBService::save(const char* filename)
@@ -74,12 +116,12 @@ bool FBService::deleteUsercode(unsigned short usercode)
 
 void FBService::run_scan()
 {
-  int interval = m_interval * 1000;
+  int interval = m_scan_interval * 1000;
   bool bNeedInterval = true;
   char ret;
   char buf[20];
   bool bLong;
-  while(m_running){
+  while(m_scan_running){
     usleep(interval);
     ret = m_protocol->stat(buf, bLong);
     printf("result %c %d\n", ret, bLong);
@@ -89,17 +131,5 @@ void FBService::run_scan()
 
 }
 
-void FBService::run_format()
-{
-  sleep(3);
-  while(true){
-    if(getVersion()){
-      
-      break;
-    }
-    sleep(1);
-  }
-
-}
 
 

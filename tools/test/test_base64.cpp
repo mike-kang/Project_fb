@@ -49,7 +49,7 @@ int main()
   result_size = encoded.length() / 4 * 3;
   result_buf = new char[result_size];
 
-  base64d(encoded.c_str(), result_buf, &result_size);
+  base64d(encoded.c_str(), -1, result_buf, &result_size);
   
   
   ofstream oOut2("resultbyDecode.jpg", ofstream::binary);

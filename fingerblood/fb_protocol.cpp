@@ -173,6 +173,24 @@ bool FBProtocol::save(const char* filename)
   return true;
 }
 
+bool FBProtocol::save(const byte* buf, int length)
+{
+  byte status;
+  int i;
+
+  try {
+    saveS();
+    saveD(buf, length);
+    saveE();
+  }
+  catch(Exception e){
+    cout << "[save]exception fail! " << e << endl;
+    return false;
+  }
+
+  return true;
+}
+
 bool FBProtocol::dele(unsigned short usercode)
 {
   char status;
@@ -337,7 +355,6 @@ void FBProtocol::saveD(const char* filename)
 
     if(status == '3'){
       serial++;
-      printf("1. serial %d\n", serial);
       if(serial == FINGER_COUNT_IN_FILE)
         break;
 
@@ -345,7 +362,6 @@ void FBProtocol::saveD(const char* filename)
     else{
       STAT_LOOP_CHECK('3');
       serial++;
-      printf("2. serial %d\n", serial);
       if(serial == FINGER_COUNT_IN_FILE)
         break;
     }
@@ -354,6 +370,74 @@ void FBProtocol::saveD(const char* filename)
   }while(1);
   delete buf;
   infile.close();
+}
+
+void FBProtocol::saveD(const byte* userdata, int len)
+{
+  int i;
+  byte status;
+  byte* receive_buf; 
+  int fingerinfo_size = len / FINGER_COUNT_IN_FILE;
+  const byte* offset = userdata;;
+  int length = 12 + fingerinfo_size;
+  byte* buf = new byte[length + 2];
+  byte _xor = 0xff;
+  byte sum = 0;
+  unsigned short serial = 0;
+
+  //command
+  buf[0] = SYNC;
+  buf[1] = length >> 8;
+  buf[2] = length & 0xff;
+  buf[3] = NODE;
+  memcpy(&buf[4], "SAVED", 5);
+  buf[9] = ENCRYPTION;
+
+  do {
+
+    buf[10] = serial >> 8;
+    buf[11] = serial & 0xff;
+    
+    memcpy(&buf[12], offset, fingerinfo_size);
+    offset += fingerinfo_size;
+    for(int i=3; i<length; i++){
+      _xor ^= buf[i];
+      sum += buf[i];
+    }
+
+    sum += _xor;
+    buf[length] = _xor;
+    buf[length+1] = sum;
+    
+    cout << "processCommand" << endl;
+    dump("SEND SAVED", buf, length + 2);
+    try{
+      receive_buf = processCommand(buf, length + 2, 9000); //delete buf;
+    }
+    catch(Exception e){
+      delete buf;
+      throw EXCEPTION_SAVED;
+    }
+    
+    status = receive_buf[STATUS];
+    delete receive_buf;
+
+    if(status == '3'){
+      serial++;
+      if(serial == FINGER_COUNT_IN_FILE)
+        break;
+
+    }
+    else{
+      STAT_LOOP_CHECK('3');
+      serial++;
+      if(serial == FINGER_COUNT_IN_FILE)
+        break;
+    }
+    
+    usleep(200000);
+  }while(1);
+  delete buf;
 }
 
 void FBProtocol::saveE()

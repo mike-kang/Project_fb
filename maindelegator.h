@@ -17,7 +17,7 @@
 #include "employeeinfomgr.h"
 
 class TimeSheetMgr;
-class MainDelegator : public SerialRfid::SerialRfidDataNoti {
+class MainDelegator : public SerialRfid::SerialRfidDataNoti, public EmployeeInfoMgr::EmployeeInfoMgrListener {
 public:
   enum Exception {
     EXCEPTION_RFID_OPEN_FAIL,
@@ -26,7 +26,7 @@ public:
   public:
     //virtual void onRFSerialNumber(char* serial) = 0;
     virtual void onMessage(std::string tag, std::string data) = 0;
-    virtual void onEmployeeInfo(std::string CoName, std::string Name, std::string PinNo, const unsigned char* img_buf, int img_sz) = 0;
+    virtual void onEmployeeInfo(std::string CoName, std::string Name, std::string PinNo) = 0;
     virtual void onStatus(std::string status) = 0;
   };
   enum Ret {
@@ -34,6 +34,12 @@ public:
   };
   virtual void onData(const char* buf);
   virtual void onSameData();
+
+  virtual void onEmployeeInfoInsert(const unsigned char* userdata);
+  virtual void onEmployeeInfoUpdate(string& usercode, const unsigned char* userdata);
+  virtual void onEmployeeInfoDelete(string& usercode);
+
+
   static MainDelegator* createInstance(EventListener* el);
   ~MainDelegator(); 
 
@@ -48,10 +54,14 @@ private:
   void run(); 
 
   //void _processRfidSerialData(void* arg);
+#ifdef LOCATION
   string getLocationName();
+#endif
   bool SettingInit();
   bool checkValidate(EmployeeInfoMgr::EmployeeInfo* ei, string& msg);
+#ifdef LOCATION
   bool checkZone(string& sAuth);
+#endif
   bool checkDate(Date* start, Date* end, string& msg);
   bool checkNetwork();
   void displayNetworkStatus(bool val);

@@ -15,6 +15,11 @@ using namespace web;
 
 #define DB_FILE "employee.xml"
 
+EmployeeInfoFixMgr::EmployeeInfo::EmployeeInfo()
+{
+  
+}
+
 EmployeeInfoFixMgr::EmployeeInfoFixMgr(Settings* settings, IWebService* ws): m_settings(settings), m_ws(ws)
 {
   try{
@@ -246,7 +251,7 @@ bool EmployeeInfoFixMgr::fillEmployeeInfo(char *xml_buf, EmployeeInfo* ei)
       p = utils::getElementData(p, "PHOTO_IMAGE");  //base64 encoded
       int length = strlen(p);
       ei->img_buf = new unsigned char[length];
-      base64::base64d(p, (char*)(ei->img_buf), &ei->img_size);
+      base64::base64d(p, length, (char*)(ei->img_buf), &ei->img_size);
       printf("img_buf:%x\n", ei->img_buf); 
       p += length + 1;
     }

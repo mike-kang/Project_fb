@@ -9,57 +9,72 @@
 #include "tools/mutex.h"
 #include "web/iwebservice.h"
 #include "sqlite3.h"
+#include <map>
 
+#define USERDATA_SIZE 864
 class Settings;
 //class web::IWebService;
 
 class EmployeeInfoMgr {
 public:
+  enum Exception {
+    EXCEPTION_USERDATA_SIZE,
+  };
   struct EmployeeInfo {
-    char serial_number[16]; //rfcard
-    std::string in_out_gb;
-    char utype;
-    tools::Date* ent_co_ymd;
-    tools::Date* rtr_co_ymd;
-    std::string zone_code;
     //display
     std::string company_name;
-    std::string lab_no;
     std::string lab_name;
     std::string pin_no;
-    unsigned char* img_buf;
-    int img_size;
+    unsigned char userdata[USERDATA_SIZE];
+    std::string blacklistinfo;
+    int pnt_cnt;
+    //char usercode[17];
     
-    EmployeeInfo(): ent_co_ymd(NULL), rtr_co_ymd(NULL), img_buf(NULL){}
-    ~EmployeeInfo(){
-      if(ent_co_ymd) delete ent_co_ymd;
-      if(rtr_co_ymd) delete rtr_co_ymd;
-      sqlite3_close(m_db) 
-      //if(img_buf) delete img_buf;
-    }
+    EmployeeInfo(){};
+    ~EmployeeInfo(){}
   };
-  EmployeeInfoMgr(Settings* settings, web::IWebService* ws);
-  virtual ~EmployeeInfoMgr(){}
+  
+  class EmployeeInfoMgrListener {
+  public:
+    virtual void onEmployeeInfoInsert(const unsigned char* userdata) = 0;
+    virtual void onEmployeeInfoUpdate(string& usercode, const unsigned char* userdata) = 0;
+    virtual void onEmployeeInfoDelete(string& usercode) = 0;
+  };
+
+
+
+  EmployeeInfoMgr(Settings* settings, web::IWebService* ws, EmployeeInfoMgrListener* eil);
+  virtual ~EmployeeInfoMgr()
+  {
+    sqlite3_close(m_db);
+  }
 
   bool updateLocalDB();
-  bool getInfo(const char* serialNumber, EmployeeInfo* ei);
+  bool getInfo(const char* serialNumber, EmployeeInfo** ei);
   
 private:  
   bool OpenOrCreateLocalDB();
-  int fillEmployeeInfoes(char *xml_buf, vector<EmployeeInfo*>& elems);
+  void updateCache();
+  void insertEmployee(vector<pair<string, EmployeeInfo*> >& elems);
+  void updateEmployee(vector<pair<string, EmployeeInfo*> >& elems);
+  void deleteEmployee(vector<pair<string, EmployeeInfo*> >& elems);
+  void fillEmployeeInfoes(char *xml_buf);
   bool fillEmployeeInfo(char *xml_buf, EmployeeInfo* ei);
-  EmployeeInfo* searchDB(const char* serialNumber);
+  void dump(map<string, EmployeeInfo*>& arr);
 
   bool m_bUseLocalDB;
   string m_sMemcoCd; // = "MC00000003";
   string m_sSiteCd; //"ST00000005";
+  string m_sEmbedCd; //"0000000008";
   bool m_bDisplayPhoto;
   web::IWebService* m_ws;
   Settings* m_settings;
-  std::vector<EmployeeInfo*> m_vectorEmployeeInfo;
-  tools::DateTime m_lastSyncTime;
+
+  map<string, EmployeeInfo*> m_arrEmployee;
+  string m_lastSyncTime;
   Mutex mtx;
-  sqlite3 * m_db;
+  sqlite3 *m_db;
+  EmployeeInfoMgrListener* m_eil;
 };
 
 

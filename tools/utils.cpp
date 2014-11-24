@@ -4,6 +4,7 @@
 #include <sstream>
 #include <vector>
 #include <cstring>
+#include <stdio.h>
 
 using namespace std;
 
@@ -22,6 +23,21 @@ char* itoa(int val, int base){
 	return &buf[i+1];
 	
 }  
+
+
+void hexdump(const char* title, unsigned char* buf, int length)
+{
+  printf("[%s]\n", title);
+  if(!length){
+    printf("size = 0\n");
+    return;
+  }
+  for(int i=0; i<length; i++){
+    printf("0x%02x ", buf[i]);
+  }
+  putchar('\n');
+  
+}
 
 const int EXCEPTION_NOT_FOUND = 0;
 char* getElementData(char* xml_buf, const char* tag)

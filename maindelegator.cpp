@@ -34,6 +34,7 @@ MainDelegator* MainDelegator::createInstance(EventListener* el)
 bool MainDelegator::checkValidate(EmployeeInfoMgr::EmployeeInfo* ei, string& msg)
 {
   bool bAccess;
+/*
   //IN_OUT_GB
   LOGV("checkValidate\n");
   cout << "in_out_gb:" << ei->in_out_gb << endl;
@@ -72,6 +73,7 @@ bool MainDelegator::checkValidate(EmployeeInfoMgr::EmployeeInfo* ei, string& msg
   LOGI("checkValidate success!\n");
 
   return true;
+*/  
 }
 
 #ifdef LOCATION
@@ -164,13 +166,13 @@ void MainDelegator::onData(const char* serialNumber)
   m_greenLed->off();
   m_redLed->off();
   m_el->onMessage("RfidNo", serialNumber);
-  EmployeeInfoMgr::EmployeeInfo* ei = new EmployeeInfoMgr::EmployeeInfo;
+  EmployeeInfoMgr::EmployeeInfo* ei;
   checkNetwork();
-  bool ret = m_employInfoMrg->getInfo(serialNumber, ei);
+  bool ret = m_employInfoMrg->getInfo(serialNumber, &ei);
 
   if(!ret){
     LOGE("get employee info fail!\n");
-    m_el->onEmployeeInfo("", "", "", NULL, 0);
+    m_el->onEmployeeInfo("", "", "");
     if(m_bSound)
       m_wp->play("SoundFiles/fail.wav");
     m_redLed->on(1500);
@@ -178,7 +180,7 @@ void MainDelegator::onData(const char* serialNumber)
     m_el->onMessage("Msg", "NO DATA");
     goto error;
   }
-  m_el->onEmployeeInfo(ei->company_name, ei->lab_name, ei->pin_no, ei->img_buf, ei->img_size);
+  m_el->onEmployeeInfo(ei->company_name, ei->lab_name, ei->pin_no);
   if(!checkValidate(ei, msg)){
     if(m_bSound)
       m_wp->play("SoundFiles/fail.wav");
@@ -216,7 +218,7 @@ void MainDelegator::onData(const char* serialNumber)
     }
   }
 #endif
-  m_timeSheetMgr->insert(ei->lab_no,ei->utype, imgBuf ,imgLength);
+  m_timeSheetMgr->insert(ei->pin_no);
 
 error:
   delete ei;
@@ -249,7 +251,17 @@ void MainDelegator::run()
   }
 
 }
+void MainDelegator::onEmployeeInfoInsert(const unsigned char* userdata)
+{
+}
+void MainDelegator::onEmployeeInfoUpdate(string& usercode, const unsigned char* userdata)
+{
+}
+void MainDelegator::onEmployeeInfoDelete(string& usercode)
+{
+}
 
+/*
 struct client_data {
   int retval;
   int timelimit;
@@ -263,7 +275,7 @@ struct client_data_Rfid : client_data {
   client_data_Rfid(int timelimit, char* serialnum=NULL)
     :client_data(timelimit), m_serialnum(serialnum){} 
 };
-
+*/
 //blocking function
 /*
 bool MainDelegator::request_processRfidSerialData(char* serialnum, int timelimit)
@@ -417,13 +429,13 @@ bool MainDelegator::SettingInit()
 #endif
   //App
   //m_sAuthCd = m_settings->get("App::AUTH_CD");
-  m_sMemcoCd = m_settings->get("App::MEMCO_CD");
-  m_sSiteCd = m_settings->get("App::SITE_CD");
+  m_sMemcoCd = m_settings->get("App::MEMCO");
+  m_sSiteCd = m_settings->get("App::SITE");
   //m_sDvLoc = m_settings->get("App::DV_LOC"); // = "0001";
   m_sDvNo = m_settings->get("App::DV_NO"); // = "1";
   m_sInOut = m_settings->get("App::IN_OUT");
   m_sEmbedCd = m_settings->get("App::EMBED"); // = "0000000008";
-  m_bCheck = m_settings->get("App::CHECK");
+  m_bCheck = m_settings->getBool("App::CHECK");
   m_sAuthCode = m_settings->get("App::AUTH_CODE");
   m_bTestSignal = m_settings->getBool("App::TEST_SIGNAL");
   
@@ -535,7 +547,7 @@ MainDelegator::MainDelegator(EventListener* el) : m_el(el), m_bProcessingRfidDat
     
   //m_ws = new WebService(ip, 17552);
   checkNetwork();
-  m_employInfoMrg = new EmployeeInfoMgr(m_settings, m_ws);
+  m_employInfoMrg = new EmployeeInfoMgr(m_settings, m_ws, this);
   m_timeSheetMgr = new TimeSheetMgr(m_settings, m_ws);
 
 #ifdef CAMERA  
@@ -547,9 +559,10 @@ MainDelegator::MainDelegator(EventListener* el) : m_el(el), m_bProcessingRfidDat
     signal(SIGUSR2, test_signal_handler);
     mTimerForTest = new Timer(cbTestTimer, this);
   }
-  
+#ifdef LOCATION
   string locationName = getLocationName();
   m_el->onMessage("GateLoc", locationName);
+#endif
   m_el->onMessage("GateNo", "No." + m_sDvNo);
   
   m_wp = media::WavPlayer::createInstance(); 
@@ -565,6 +578,8 @@ MainDelegator::MainDelegator(EventListener* el) : m_el(el), m_bProcessingRfidDat
   LOGV("reboot time= %s\n", reboot_time.c_str()); 
   if(reboot_time != "")
     setRebootTimer(reboot_time.c_str());
+
+  m_employInfoMrg->updateLocalDB();
   LOGV("MainDelegator ---\n");
 }
 

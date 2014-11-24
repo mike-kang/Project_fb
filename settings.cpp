@@ -34,7 +34,7 @@ Settings::Settings(const char* filename)
      mapStrInsert(App, DV_NO, 1);
      mapStrInsert(App, IN_OUT, I);
      mapStrInsert(App, AUTH_CODE, );
-     mapBoolInsert(App, CHECK, );
+     mapBoolInsert(App, CHECK, true);
      mapStrInsert(App, REBOOT_TIME, );
      mapStrInsert(App, WORKING_DIRECTORY, /home/pi/acu);
      //mapBoolInsert(App, DISPLAY_PHOTO, true);
@@ -72,9 +72,9 @@ Settings::Settings(const char* filename)
 
      //Server
      mapStrInsert(Server, TYPE, SM);
-     mapStrInsert(Server, SAFEIDSVC_URL, http:\47/dev.safeman.co.kr/SafeIDService.asmx);
-     mapStrInsert(Server, LOTTEIDSVC_URL, http:\47/lottedev.safeman.co.kr/LotteIDService.asmx);
-     mapStrInsert(Server, DWSVC_URL, http:\47/112.175.10.40/WebService.asmx);
+     mapStrInsert(Server, SAFEIDSVC_URL, http:\x2f/dev.safeman.co.kr/SafeIDService.asmx);
+     mapStrInsert(Server, LOTTEIDSVC_URL, http:\x2f/lottedev.safeman.co.kr/LotteIDService.asmx);
+     mapStrInsert(Server, DWSVC_URL, http:\x2f/112.175.10.40/WebService.asmx);
 
      //Gpio
      mapIntInsert(Gpio, YELLOW, 27);
@@ -132,9 +132,9 @@ Settings::Settings(const char* filename)
 
   //Server
   mapStrInsertFromReader(Server, TYPE, SM);
-  mapStrInsertFromReader(Server, SAFEIDSVC_URL, http:\47/dev.safeman.co.kr/SafeIDService.asmx);
-  mapStrInsertFromReader(Server, LOTTEIDSVC_URL, http:\47/lottedev.safeman.co.kr/LotteIDService.asmx);
-  mapStrInsertFromReader(Server, DWSVC_URL, http:\47/112.175.10.40/WebService.asmx);
+  mapStrInsertFromReader(Server, SAFEIDSVC_URL, http:\x2f/dev.safeman.co.kr/SafeIDService.asmx);
+  mapStrInsertFromReader(Server, LOTTEIDSVC_URL, http:\x2f/lottedev.safeman.co.kr/LotteIDService.asmx);
+  mapStrInsertFromReader(Server, DWSVC_URL, http:\x2f/112.175.10.40/WebService.asmx);
 
   //Gpio
   mapIntInsertFromReader(Gpio, YELLOW, 27);

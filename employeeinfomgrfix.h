@@ -54,7 +54,7 @@ private:
   web::IWebService* m_ws;
   Settings* m_settings;
   std::vector<EmployeeInfo*> m_vectorEmployeeInfo;
-  tools::DateTime m_lastSyncTime;
+  string m_lastSyncTime;
   Mutex mtx;
 };
 

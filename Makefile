@@ -13,11 +13,14 @@ else
 endif
 
 
-SRCS =  maindelegator.cpp    web/webservice.cpp hardware/gpio.cpp hardware/switchgpio.cpp settings.cpp employeeinfomgr.cpp timesheetmgr.cpp fbservice.cpp fbprotocolCMSerial.cpp fb_protocol.cpp 
+SRCS =  maindelegator.cpp  settings.cpp employeeinfomgr.cpp timesheetmgr.cpp  \
+              web/webservice.cpp web/safemanwebservice.cpp web/dwwebservice.cpp  \
+              hardware/gpio.cpp hardware/switchgpio.cpp  \
+               fingerblood/fbservice.cpp fingerblood/fbprotocolCMSerial.cpp fingerblood/fb_protocol.cpp 
+               
 OBJS = $(SRCS:.cpp=.o)
 
 all : $(LIB)
- 
 
 $(LIB) : ${OBJS} 
 	g++ -shared -o $@ ${OBJS} 
@@ -27,7 +30,7 @@ depend : $(SRCS)
 
 .PHONY : clean
 clean :
-	-rm *.o web/*.o hardware/*.o inih_r29/*.o
+	-rm *.o web/*.o hardware/*.o inih_r29/*.o fingerblood/*.o
 
 INSTALL_DIR = /home/pi/acu
 install:

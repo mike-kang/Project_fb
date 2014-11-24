@@ -17,9 +17,9 @@ using namespace web;
 
 TimeSheetMgr::TimeSheetMgr(Settings* settings, IWebService* ws):m_settings(settings), m_ws(ws)
 {
-  m_sMemcoCd = m_settings->get("App::MEMCO_CD");
-  m_sSiteCd = m_settings->get("App::SITE_CD");
-  m_sDvLoc = m_settings->get("App::DV_LOC"); // = "0001";
+  m_sMemcoCd = m_settings->get("App::MEMCO");
+  m_sSiteCd = m_settings->get("App::SITE");
+  //m_sDvLoc = m_settings->get("App::DV_LOC"); // = "0001";
   m_sDvNo = m_settings->get("App::DV_NO"); // = "6";
   m_cInOut = *m_settings->get("App::IN_OUT").c_str();
 
@@ -34,29 +34,22 @@ TimeSheetMgr::~TimeSheetMgr()
     delete *itr;
 }
 
-TimeSheetMgr::TimeSheet::TimeSheet(string pinno, char utype, char* img, int img_sz)
-  :m_pinno(pinno), m_utype(utype), m_imgSz(img_sz)
+TimeSheetMgr::TimeSheet::TimeSheet(string pinno)
+  :m_pinno(pinno)
 {
-  struct tm _tm;
-  time_t t = time(NULL);
-  localtime_r(&t, &_tm);
-  char buf[64];
-  sprintf(buf, "%d-%02d-%02d %02d:%02d:%02d", _tm.tm_year + 1900, _tm.tm_mon + 1, _tm.tm_mday
-    , _tm.tm_hour, _tm.tm_min, _tm.tm_sec);
-  m_time = buf;
-  m_photo_img = new char[img_sz];
-  memcpy(m_photo_img, img, img_sz);
+  m_time = DateTime::now();
 }
 
 TimeSheetMgr::TimeSheet::~TimeSheet()
 {
   if(m_photo_img)
     delete m_photo_img;
+  delete m_time;
 }
 
-void TimeSheetMgr::insert(string pinno, char utype, char* img, int img_sz)
+void TimeSheetMgr::insert(string pinno)
 {
-  TimeSheet* ts = new TimeSheet(pinno, utype, img, img_sz);
+  TimeSheet* ts = new TimeSheet(pinno);
   mtx.lock();
   m_listTS.push_back(ts);
   mtx.unlock();
@@ -107,7 +100,7 @@ bool TimeSheetMgr::upload()
   for(list<TimeSheet*>::iterator itr = m_listTS.begin(); itr != m_listTS.end(); itr++){
     bool ret = false;
     try{
-      ret = m_ws->request_UploadTimeSheet((*itr)->m_time.c_str(), (*itr)->m_pinno.c_str()
+      ret = m_ws->request_UploadTimeSheet((*itr)->m_time->toString().c_str(), (*itr)->m_pinno.c_str()
         , 3000, STORE_DIRECTORY);
     }
     catch(web::Except e){

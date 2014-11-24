@@ -6,6 +6,7 @@
 #include <fstream>
 #include "tools/utils.h"
 #include "tools/base64.h"
+#include "tools/datetime.h"
 
 #define LOG_TAG "EmployInfoMgr"
 
@@ -14,23 +15,30 @@ using namespace std;
 using namespace web;
 
 //#define DB_FILE "employee.xml"
+#define EMPLOYEE_FILE "employee.xml"
 #define DB_NAME "employee.db"
-#define CREATE_TABLE_EMPLOYEE "create table employee( pinno INTEGER, usercode TEXT, userdata BLOB)"
-#define CREATE_TABLE_TIME "create table time( lastsync TEXT )"
+#define CREATE_TABLE_EMPLOYEE "create table employee( company TEXT, name TEXT, pinno INTEGER, usercode TEXT, userdata BLOB, blacklistinfo TEXT, pntcnt INTEGER)"
+#define CREATE_TABLE_TIME "create table time( lastsync TEXT );" \
+                          "insert into time(lastsync) VALUES('')"
+#define INSERT_EMPLOYEE "insert into employee(company, name, pinno, usercode, userdata, blacklistinfo, pntcnt) values (?,?,?,?,?,?,?)"
+#define UPDATE_EMPLOYEE "update employee set company=?, name=?, usercode=?, userdata=?, blacklistinfo=?, pntcnt=? where pinno=?"
+#define GET_ALL "select * from employee"
+#define DELETE_EMPLOYEE "delete from employee where pinno=?"
 
-EmployeeInfoMgr::EmployeeInfoMgr(Settings* settings, IWebService* ws): m_settings(settings), m_ws(ws)
+EmployeeInfoMgr::EmployeeInfoMgr(Settings* settings, web::IWebService* ws, EmployeeInfoMgrListener* eil): m_settings(settings), m_ws(ws), m_eil(eil)
 {
   try{
     //m_bUseLocalDB = settings->getBool("App::LOCAL_DATABASE");
-    m_sMemcoCd = m_settings->get("App::MEMCO_CD");
-    m_sSiteCd = m_settings->get("App::SITE_CD");
-    m_bDisplayPhoto = settings->getBool("App::DISPLAY_PHOTO");
+    m_sMemcoCd = m_settings->get("App::MEMCO");
+    m_sSiteCd = m_settings->get("App::SITE");
+    m_sEmbedCd = m_settings->get("App::EMBED");
   }
   catch(int e)
   {
     //m_bUseLocalDB = false;
     m_sMemcoCd = "MC00000003";
     m_sSiteCd = "ST00000005";
+    m_sEmbedCd = "0000000008";
   }
   OpenOrCreateLocalDB();
   
@@ -62,6 +70,9 @@ bool EmployeeInfoMgr::OpenOrCreateLocalDB()
       return false;
     }
   }
+  else{
+    updateCache();
+  }
   
   return true;
 }
@@ -70,15 +81,15 @@ bool EmployeeInfoMgr::OpenOrCreateLocalDB()
 bool EmployeeInfoMgr::updateLocalDB()
 {
   try{
-    m_ws->request_EmployeeInfoAll(m_lastSyncTime.toString().c_str(), 8000, DB_FILE);
-    LOGV("downloaded %s\n", DB_FILE);
+    m_ws->request_EmployeeInfoAll(m_lastSyncTime.c_str(), 8000, EMPLOYEE_FILE);
+    LOGV("downloaded %s\n", EMPLOYEE_FILE);
   }
   catch(web::Except e){
-    LOGE("download %s fail\n", DB_FILE);
+    LOGE("download %s fail\n", EMPLOYEE_FILE);
     return false;
   }
 
-  ifstream infile (DB_FILE, ofstream::binary);
+  ifstream infile (EMPLOYEE_FILE, ofstream::binary);
   // get size of file
   infile.seekg (0,infile.end);
   long size = infile.tellg();
@@ -88,71 +99,107 @@ bool EmployeeInfoMgr::updateLocalDB()
   // read content of infile
   infile.read (xml_buf,size);
   infile.close();
-  int num = fillEmployeeInfoes(xml_buf, m_vectorEmployeeInfo);
-  cout << "members = " << num << endl;
+  fillEmployeeInfoes(xml_buf);
+  //cout << "members = " << num << endl;
   delete xml_buf;
+
+  //update lastsync time
+  char* err;
+  char buf[100];
+  DateTime* dt = DateTime::now();
+  sprintf(buf, "update time set lastsync = '%s'", dt->toString().c_str());
+  int rc = sqlite3_exec(m_db, buf, NULL, NULL, &err);
+  if (rc != SQLITE_OK) {
+    LOGE("Failed to update : %s\n", err);
+  }
+  delete dt;
   return true;
 
 }
 
 
 
-bool EmployeeInfoMgr::getInfo(const char* serialNumber, EmployeeInfo* ei)
+bool EmployeeInfoMgr::getInfo(const char* usercode, EmployeeInfo** ei)
 {
-  //bool bNetAvailable = false;
-  //cout << "getInfo" << endl;
-  if(m_bUseLocalDB){
-    goto localDB;
-  }
-
-  try{
-    char* xml_buf = m_ws->request_EmployeeInfo(serialNumber, 3000);
-    if(xml_buf){
-      //cout << xml_buf << endl;
-      bool ret = fillEmployeeInfo(xml_buf, ei);
-      delete xml_buf;
-      return ret;
-    }
-    return false;
-  }
-  catch(web::Except e){
-    LOGE("request_EmployeeInfo: %s\n", WebService::dump_error(e));
-  }
-
-localDB:
   LOGI("Local DB check!\n");
-  EmployeeInfo* t = searchDB(serialNumber);
-  if(!t) return false;
-  //memcpy(ei, t, sizeof(EmployeeInfo));
-  strcpy(ei->serial_number, t->serial_number);
-  ei->company_name = t->company_name;
-  if(t->ent_co_ymd)
-    ei->ent_co_ymd = new Date(t->ent_co_ymd);
-  if(t->rtr_co_ymd)
-    ei->rtr_co_ymd = new Date(t->rtr_co_ymd);
-  ei->in_out_gb = t->in_out_gb;
-  ei->lab_no = t->lab_no;
-  ei->lab_name = t->lab_name;
-  ei->pin_no = t->pin_no;
-  ei->utype = t->utype;
-  ei->zone_code = t->zone_code;
-  
+  map<string, EmployeeInfo*>::iterator itr = m_arrEmployee.find(usercode);
+  if(itr == m_arrEmployee.end())
+    return false;
+    
+  *ei = itr->second;
   return true;
     
 }
 
-int EmployeeInfoMgr::fillEmployeeInfoes(char *xml_buf, vector<EmployeeInfo*>& elems)
+void EmployeeInfoMgr::updateCache()
+{
+  char* err;
+  sqlite3_stmt *stmt;
+  const char* tail;
+  
+  int rc = sqlite3_prepare_v2(m_db, GET_ALL, -1, &stmt, &tail);
+  if (rc != SQLITE_OK) {
+    LOGE("Failed to read: %s\n", err);
+  }
+  string usercode;
+  while(sqlite3_step(stmt) == SQLITE_ROW){
+    EmployeeInfo* ei = new EmployeeInfo();
+    ei->company_name = (const char*)sqlite3_column_text(stmt , 0);
+    ei->lab_name = (const char*)sqlite3_column_text(stmt , 1);
+    ei->pin_no = (const char*)sqlite3_column_text(stmt , 2);
+    usercode = (const char*)sqlite3_column_text(stmt , 3);
+    memcpy(ei->userdata, sqlite3_column_blob(stmt,4), USERDATA_SIZE);
+    ei->blacklistinfo = (const char*)sqlite3_column_text(stmt , 5);
+    ei->pnt_cnt = sqlite3_column_int(stmt , 6);
+    m_arrEmployee.insert(pair<string, EmployeeInfo*>(usercode, ei));
+  }
+  sqlite3_finalize(stmt);
+  //dump(m_arrEmployee);
+
+  //m_lastSyncTime
+  rc = sqlite3_prepare(m_db, "select lastsync from time", -1, &stmt, &tail);
+  if (rc != SQLITE_OK) {
+    printf("Failed to read: %s\n", err);
+  }
+  if(sqlite3_step(stmt) == SQLITE_ROW){
+    m_lastSyncTime = (const char*)sqlite3_column_text(stmt , 0);
+    printf("lastsync:%s\n", m_lastSyncTime.c_str());
+  }
+  sqlite3_finalize(stmt);
+
+}
+
+void EmployeeInfoMgr::fillEmployeeInfoes(char *xml_buf)
 {
   char *p = xml_buf;
-  char *end;
+  char *start, *end;
+  vector<pair<string, EmployeeInfo*> > arrEmployeeInsert;
+  vector<pair<string, EmployeeInfo*> > arrEmployeeDelete;
+  vector<pair<string, EmployeeInfo*> > arrEmployeeUpdate;
   //cout << xml_buf << endl;
   //LOGV("***fillEmployeeInfo:%s\n", xml_buf);
   mtx.lock();
+  string usercode;
+  string status;
   while(p = strstr(p, "<Table")){
     //printf("start %x\n", p);
     end = strstr(p+7, "</Table");
     *end = '\0';
     EmployeeInfo* ei = new EmployeeInfo;
+    start = p + 6;
+    
+    try {
+      ei->lab_name = p = utils::getElementData(start, "LAB_NM");
+      *p = '\0'; //for COMPANY element
+      p += ei->lab_name.length() + 1;
+      cout << ei->lab_name << endl;
+    }
+    catch(int e){}
+
+    try {
+      ei->company_name = utils::getElementData(start, "COMPANY");
+    }
+    catch(int e){}
 
     try {
       ei->pin_no = utils::getElementData(p, "PIN_NO");
@@ -160,73 +207,175 @@ int EmployeeInfoMgr::fillEmployeeInfoes(char *xml_buf, vector<EmployeeInfo*>& el
     }
     catch(int e){}
     try {
-      ei->lab_no = p = utils::getElementData(p, "LAB_NO");
+      status = p = utils::getElementData(p, "STATUS");
       p += strlen(p) + 1;
-    }
-    catch(int e){}
-    try {
-      ei->lab_name = p = utils::getElementData(p, "LAB_NM");
-      p += strlen(p) + 1;
-    }
-    catch(int e){}
-    try {
-      ei->company_name = p = utils::getElementData(p, "CO_NM");
-      p += strlen(p) + 1;
-    }
-    catch(int e){}
-    try {
-      p = utils::getElementData(p, "RFID_CAR");
-      strcpy(ei->serial_number, p); 
-      p += strlen(p) + 1;
-    }
-    catch(int e){}
-    try {
-      ei->in_out_gb = p = utils::getElementData(p, "IN_OUT_GB");
-      p += strlen(p) + 1;
-    }
-    catch(int e){}
-    try {
-      ei->zone_code = p = utils::getElementData(p, "ZONE_CD");
-      p += strlen(p) + 1;
-    }
-    catch(int e){}
-    try {
-      ei->ent_co_ymd = new Date(p = utils::getElementData(p, "ENT_CO_YMD"));
-      p += strlen(p) + 1;
-    }
-    catch(int e){}
-    try {
-      ei->rtr_co_ymd = new Date(p = utils::getElementData(p, "RTR_CO_YMD"));
-      p += strlen(p) + 1;
-    }
-    catch(int e){}
-    try {
-      ei->utype = *utils::getElementData(p, "UTYPE");
     }
     catch(int e){}
 
-    elems.push_back(ei);
-    
+    try {
+      usercode = utils::getElementData(p, "USERCODE");
+      p += strlen(p) + 1;
+    }
+    catch(int e){}
+
+    if(status != "D"){
+      try {
+        p = utils::getElementData(p, "USER_DATA");  //base64 encoded
+        int length = strlen(p);
+        int size = 0;
+        base64::base64d(p, length, (char*)(ei->userdata), &size);
+        if(size != USERDATA_SIZE){
+          LOGE("userdata size: %d\n", size);
+          throw EXCEPTION_USERDATA_SIZE;
+        }
+        //p += length + 1;
+      }
+      catch(int e){}
+    }
+      
+    if(status == "I"){
+      LOGV("insert PIN_NO: %s\n", ei->pin_no.c_str());
+      arrEmployeeInsert.push_back(pair<string,EmployeeInfo*>(usercode, ei));
+    }
+    else if(status == "D"){
+      LOGV("delete PIN_NO: %s\n", ei->pin_no.c_str());
+      arrEmployeeDelete.push_back(pair<string,EmployeeInfo*>(usercode, ei));
+    }
+    else if(status == "U"){
+      LOGV("update PIN_NO: %s\n", ei->pin_no.c_str());
+      arrEmployeeUpdate.push_back(pair<string,EmployeeInfo*>(usercode, ei));
+    }
     p = end + 8;
   }
+
+  if(arrEmployeeInsert.size())
+    insertEmployee(arrEmployeeInsert);
+  if(arrEmployeeUpdate.size())
+    updateEmployee(arrEmployeeUpdate);
+  if(arrEmployeeDelete.size())
+    deleteEmployee(arrEmployeeUpdate);
+
   mtx.unlock();
-  return elems.size();
 }
 
-EmployeeInfoMgr::EmployeeInfo* EmployeeInfoMgr::searchDB(const char* serialNumber)
+void EmployeeInfoMgr::insertEmployee(vector<pair<string, EmployeeInfo*> >& elems)
 {
-  mtx.lock();
+  int rc;
+  sqlite3_stmt *stmt;
+  const char* tail;
+  LOGV("insertEmployee\n");
+  rc = sqlite3_prepare_v2(m_db, INSERT_EMPLOYEE, -1, &stmt, &tail);
 
-  for(vector<EmployeeInfo*>::size_type i=0; i< m_vectorEmployeeInfo.size(); i++)
-  {
-    //cout << m_vectorEmployeeInfo[i]->serial_number << endl;
-    if(!strcmp(m_vectorEmployeeInfo[i]->serial_number, serialNumber)){
-      cout << "searchDB:" <<  m_vectorEmployeeInfo[i]->in_out_gb << endl;
-      mtx.unlock();
-      return m_vectorEmployeeInfo[i];
+  for(vector<pair<string,EmployeeInfo*> >::size_type i=0; i< elems.size(); i++){
+    //cache
+    m_arrEmployee.insert(elems[i]);
+
+    EmployeeInfo* ei = elems[i].second;
+    sqlite3_bind_text(stmt, 1, ei->company_name.c_str(), ei->company_name.length(), SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, ei->lab_name.c_str(), ei->lab_name.length(), SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 3, ei->pin_no.c_str(), ei->pin_no.length(), SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 4, elems[i].first.c_str(), elems[i].first.length(), SQLITE_STATIC);
+    sqlite3_bind_blob(stmt, 5, ei->userdata, USERDATA_SIZE, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 6, ei->blacklistinfo.c_str(), ei->blacklistinfo.length(), SQLITE_STATIC);
+    sqlite3_bind_int(stmt, 7, ei->pnt_cnt);
+
+    rc = sqlite3_step(stmt);
+    if(rc != SQLITE_DONE){
+      LOGE("Failed to insert : %s\n", sqlite3_errmsg(m_db));
+      sqlite3_finalize(stmt);
+      throw 1;
     }
+    sqlite3_reset(stmt);
+
+    m_eil->onEmployeeInfoInsert(ei->userdata);
   }
-  mtx.unlock();
-  return NULL;
-} 
+  sqlite3_finalize(stmt);
+
+}
+
+void EmployeeInfoMgr::updateEmployee(vector<pair<string, EmployeeInfo*> >& elems)
+{
+  int rc;
+
+  sqlite3_stmt *stmt;
+  const char* tail;
+  LOGV("updateEmployee\n");
+  rc = sqlite3_prepare_v2(m_db, UPDATE_EMPLOYEE, -1, &stmt, &tail);
+
+  for(vector<pair<string,EmployeeInfo*> >::size_type i=0; i< elems.size(); i++){
+    
+    string& usercode = elems[i].first;
+    EmployeeInfo* ei = elems[i].second;
+    //cache
+    delete m_arrEmployee[usercode];
+    m_arrEmployee[usercode] = ei;
+
+    sqlite3_bind_text(stmt, 1, ei->company_name.c_str(), ei->company_name.length(), SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, ei->lab_name.c_str(), ei->lab_name.length(), SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 3, usercode.c_str(), usercode.length(), SQLITE_STATIC);
+    sqlite3_bind_blob(stmt, 4, ei->userdata, USERDATA_SIZE, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 5, ei->blacklistinfo.c_str(), ei->blacklistinfo.length(), SQLITE_STATIC);
+    sqlite3_bind_int(stmt, 6, ei->pnt_cnt);
+    sqlite3_bind_text(stmt, 7, ei->pin_no.c_str(), ei->pin_no.length(), SQLITE_STATIC);
+
+    rc = sqlite3_step(stmt);
+    if(rc != SQLITE_DONE){
+      LOGE("Failed to insert : %s\n", sqlite3_errmsg(m_db));
+      sqlite3_finalize(stmt);
+      throw 1;
+    }
+    sqlite3_reset(stmt);
+    
+    m_eil->onEmployeeInfoUpdate(usercode, ei->userdata);
+  }
+  sqlite3_finalize(stmt);
+
+}
+
+void EmployeeInfoMgr::deleteEmployee(vector<pair<string, EmployeeInfo*> >& elems)
+{
+  int rc;
+
+  sqlite3_stmt *stmt;
+  const char* tail;
+  LOGV("deleteEmployee\n");
+  rc = sqlite3_prepare_v2(m_db, DELETE_EMPLOYEE, -1, &stmt, &tail);
+  //printf("delete size:%d\n", arrEmployeeDelete.size());
+  for(vector<pair<string,EmployeeInfo*> >::size_type i=0; i< elems.size(); i++){
+    string& usercode = elems[i].first;
+    EmployeeInfo* ei = elems[i].second;
+
+    //cache
+    m_arrEmployee.erase(usercode);
+    
+    sqlite3_bind_text(stmt, 1, ei->pin_no.c_str(), ei->pin_no.length(), SQLITE_STATIC);
+    //printf("pin %s\n", ei->pin_no.c_str());
+    rc = sqlite3_step(stmt);
+    if(rc != SQLITE_DONE){
+      LOGE("Failed to insert : %s\n", sqlite3_errmsg(m_db));
+      sqlite3_finalize(stmt);
+      throw 1;
+    }
+    sqlite3_reset(stmt);
+    m_eil->onEmployeeInfoDelete(usercode);
+    delete ei;
+  }
+  sqlite3_finalize(stmt);
+    
+
+}
+
+void EmployeeInfoMgr::dump(map<string, EmployeeInfo*>& arr)
+{
+  printf("size %d\n", (int)arr.size());
+  for(map<string, EmployeeInfo*>::iterator itr=arr.begin(); itr != arr.end(); itr++){
+    EmployeeInfo* ei = itr->second;
+    printf("company: %s\n", ei->company_name.c_str());
+    printf("name :%s\n", ei->lab_name.c_str());
+    printf("pinno :%s\n", ei->pin_no.c_str());
+    printf("usercode :%s\n", itr->first.c_str());
+    utils::hexdump("userdata", ei->userdata, USERDATA_SIZE);
+  }
+}
+
 

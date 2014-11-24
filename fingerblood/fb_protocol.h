@@ -39,6 +39,7 @@ public:
   bool init();
   bool user(std::list<std::string>& li);
   bool save(const char* filename);
+  bool save(const byte* buf, int length);
   bool dele(unsigned short usercode);
   //bool auth();
   //bool stat();
@@ -56,6 +57,7 @@ private:
   void userE();
   void saveS();
   void saveD(const char* filename);
+  void saveD(const byte* buf, int length);
   void saveE();
 
   

@@ -281,7 +281,7 @@ void SafemanWebService::request_EmployeeInfoAll(const char *startTime, int timel
 
 void SafemanWebService::request_EmployeeInfoAllDW(const char *startTime, int timelimit, CCBFunc cbfunc, void* client, const char* outFilename)
 {
-  LOGV("request_EmployeeInfoAll +++\n");
+  LOGV("request_EmployeeInfoAllDW +++\n");
   char *cmd = new char[300];
   sprintf(cmd,"GET %s/LaborDW_Down?EMBEDDED=%s&OPTION=&UPDDATE=%s HTTP/1.1\r\nHost: %s\r\n\r\n"
     , m_service_name, m_sEmbed, startTime, m_url_addr);
