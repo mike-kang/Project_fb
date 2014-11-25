@@ -106,13 +106,13 @@ bool EmployeeInfoMgr::updateLocalDB()
   //update lastsync time
   char* err;
   char buf[100];
-  DateTime* dt = DateTime::now();
-  sprintf(buf, "update time set lastsync = '%s'", dt->toString().c_str());
+  DateTime dt;
+  m_lastSyncTime = dt.toString('+');
+  sprintf(buf, "update time set lastsync = '%s'", m_lastSyncTime.c_str());
   int rc = sqlite3_exec(m_db, buf, NULL, NULL, &err);
   if (rc != SQLITE_OK) {
     LOGE("Failed to update : %s\n", err);
   }
-  delete dt;
   return true;
 
 }
@@ -204,6 +204,7 @@ void EmployeeInfoMgr::fillEmployeeInfoes(char *xml_buf)
     try {
       ei->pin_no = utils::getElementData(p, "PIN_NO");
       p += strlen(p) + 1;
+      cout << ei->pin_no << endl;
     }
     catch(int e){}
     try {
@@ -228,7 +229,18 @@ void EmployeeInfoMgr::fillEmployeeInfoes(char *xml_buf)
           LOGE("userdata size: %d\n", size);
           throw EXCEPTION_USERDATA_SIZE;
         }
-        //p += length + 1;
+        p += length + 1;
+      }
+      catch(int e){}
+      try {
+        ei->blacklistinfo = utils::getElementData(p, "BLACK_LIST");
+        p += strlen(p) + 1;
+      }
+      catch(int e){}
+      try {
+        p = utils::getElementData(p, "PNT_CNT");
+        ei->pnt_cnt = atoi(p);
+        p += strlen(p) + 1;
       }
       catch(int e){}
     }
@@ -243,7 +255,10 @@ void EmployeeInfoMgr::fillEmployeeInfoes(char *xml_buf)
     }
     else if(status == "U"){
       LOGV("update PIN_NO: %s\n", ei->pin_no.c_str());
-      arrEmployeeUpdate.push_back(pair<string,EmployeeInfo*>(usercode, ei));
+      if(search(ei->pin_no))
+        arrEmployeeUpdate.push_back(pair<string,EmployeeInfo*>(usercode, ei));
+      else
+        arrEmployeeInsert.push_back(pair<string,EmployeeInfo*>(usercode, ei));
     }
     p = end + 8;
   }
@@ -363,6 +378,16 @@ void EmployeeInfoMgr::deleteEmployee(vector<pair<string, EmployeeInfo*> >& elems
   sqlite3_finalize(stmt);
     
 
+}
+
+bool EmployeeInfoMgr::search(string pin_no)
+{
+  for(map<string, EmployeeInfo*>::iterator itr=m_arrEmployee.begin(); itr != m_arrEmployee.end(); itr++){
+    EmployeeInfo* ei = itr->second;
+    if(ei->pin_no == pin_no)
+      return true;
+  }
+  return false;
 }
 
 void EmployeeInfoMgr::dump(map<string, EmployeeInfo*>& arr)

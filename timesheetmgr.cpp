@@ -37,14 +37,12 @@ TimeSheetMgr::~TimeSheetMgr()
 TimeSheetMgr::TimeSheet::TimeSheet(string pinno)
   :m_pinno(pinno)
 {
-  m_time = DateTime::now();
 }
 
 TimeSheetMgr::TimeSheet::~TimeSheet()
 {
   if(m_photo_img)
     delete m_photo_img;
-  delete m_time;
 }
 
 void TimeSheetMgr::insert(string pinno)
@@ -100,7 +98,7 @@ bool TimeSheetMgr::upload()
   for(list<TimeSheet*>::iterator itr = m_listTS.begin(); itr != m_listTS.end(); itr++){
     bool ret = false;
     try{
-      ret = m_ws->request_UploadTimeSheet((*itr)->m_time->toString().c_str(), (*itr)->m_pinno.c_str()
+      ret = m_ws->request_UploadTimeSheet((*itr)->m_time.toString(), (*itr)->m_pinno.c_str()
         , 3000, STORE_DIRECTORY);
     }
     catch(web::Except e){

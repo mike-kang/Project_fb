@@ -71,9 +71,9 @@ bool MainDelegator::checkValidate(EmployeeInfoMgr::EmployeeInfo* ei, string& msg
   }
 
   LOGI("checkValidate success!\n");
+  */  
 
   return true;
-*/  
 }
 
 #ifdef LOCATION
@@ -154,21 +154,21 @@ bool MainDelegator::checkDate(Date* start, Date* end, string& msg)
   return true;
 }
 
-void MainDelegator::onData(const char* serialNumber)
+void MainDelegator::onData(const char* usercode)
 {
-  LOGI("onData %s +++\n", serialNumber);
+  LOGI("onData %s +++\n", usercode);
   char* imgBuf = NULL;;
   int imgLength = 0;
   string msg;
   m_bProcessingRfidData = true;
-  printf("onData: %s\n", serialNumber);
+  printf("onData: %s\n", usercode);
   m_wp->stop();
   m_greenLed->off();
   m_redLed->off();
-  m_el->onMessage("RfidNo", serialNumber);
+  m_el->onMessage("RfidNo", usercode);
   EmployeeInfoMgr::EmployeeInfo* ei;
-  checkNetwork();
-  bool ret = m_employInfoMrg->getInfo(serialNumber, &ei);
+  //checkNetwork();
+  bool ret = m_employInfoMrg->getInfo(usercode, &ei);
 
   if(!ret){
     LOGE("get employee info fail!\n");
@@ -221,7 +221,6 @@ void MainDelegator::onData(const char* serialNumber)
   m_timeSheetMgr->insert(ei->pin_no);
 
 error:
-  delete ei;
   LOGI("onData ---\n");
   printf("onData %d\n", __LINE__);
   m_bProcessingRfidData = false;
@@ -599,12 +598,12 @@ void MainDelegator::test_signal_handler(int signo)
   if(signo == SIGUSR1){
     LOGI("signal_handler SIGUSR1\n");
     //my->m_test_serial_number = "253161024009"; //validate
-    my->m_test_serial_number = "253178087009"; //validate + Photo image
+    my->m_test_serial_number = "0000000000000005"; //validate + Photo image
     my->mTimerForTest->start(1);
   }
   else if(signo == SIGUSR2){
     LOGI("signal_handler SIGUSR2\n");
-    my->m_test_serial_number = "253153215009"; //invalidate
+    my->m_test_serial_number = "4716"; //invalidate
     my->mTimerForTest->start(1);
   }
 }

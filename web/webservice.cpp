@@ -60,7 +60,7 @@ WebService::WebService(const char* url, const char *sMemcoCode, const char* sSit
   }
 
   strncpy(m_url_addr, start, end - start);  //000.000.000.000 or aaa.sssssss.ss
-
+  m_url_addr[end-start] = '\0';
   printf("m_url_addr %s\n", m_url_addr); 
   //ar ip[21];
   char* pIP;

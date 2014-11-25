@@ -13,7 +13,7 @@ class DateTime {
   friend bool operator >= (const DateTime& lh, const DateTime& rh);
   friend bool operator <= (const DateTime& lh, const DateTime& rh);
 public:
-  DateTime(){}
+  DateTime();
   DateTime(int y, int mon, int d, int h, int min, int s):m_year(y), m_month(mon), 
   m_day(d), m_hour(h), m_minute(min), m_second(s){}
   DateTime(DateTime& datetime):m_year(datetime.m_year), m_month(datetime.m_month), 
@@ -21,8 +21,9 @@ public:
   m_second(datetime.m_second){}
   DateTime(char* datetime);
   //operator ==(
-  static DateTime* now();
-  string toString();
+  void now();
+  char* toString();
+  char* toString(char);
 private:
   int m_year;
   int m_month;
@@ -30,6 +31,7 @@ private:
   int m_hour;
   int m_minute;
   int m_second;
+  char buf[30];
 };
 }
 #endif //_DATE_HEADER

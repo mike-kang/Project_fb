@@ -13,7 +13,7 @@ public:
   struct TimeSheet {
     std::string m_pinno;
     char m_utype;
-    tools::DateTime* m_time;
+    tools::DateTime m_time;
     char* m_photo_img;
     int m_imgSz;
     TimeSheet(std::string pin_no);

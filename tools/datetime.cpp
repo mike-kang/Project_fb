@@ -32,6 +32,19 @@ char* getString(char *buf, int type)
   return buf;
 }
 #else
+DateTime::DateTime()
+{
+  struct tm _tm;
+  time_t t = time(NULL);
+  localtime_r(&t, &_tm);
+  m_year = _tm.tm_year + 1900;
+  m_month = _tm.tm_mon + 1;
+  m_day = _tm.tm_mday;
+  m_hour = _tm.tm_hour;
+  m_minute = _tm.tm_min;
+  m_second = _tm.tm_sec;
+}
+
 DateTime::DateTime(char* date) //data=20140101T010101
 {
   char buf[5];
@@ -51,23 +64,28 @@ DateTime::DateTime(char* date) //data=20140101T010101
   
 }
 
-DateTime* DateTime::now()
+void DateTime::now()
 {
-  //struct timeval  tv;
   struct tm _tm;
   time_t t = time(NULL);
   localtime_r(&t, &_tm);
-  DateTime* date = new DateTime(_tm.tm_year + 1900, _tm.tm_mon + 1, _tm.tm_mday, _tm.tm_hour, _tm.tm_min, _tm.tm_sec);
-  return date;  
+  m_year = _tm.tm_year + 1900;
+  m_month = _tm.tm_mon + 1;
+  m_day = _tm.tm_mday;
+  m_hour = _tm.tm_hour;
+  m_minute = _tm.tm_min;
+  m_second = _tm.tm_sec;
 }
 
-string DateTime::toString()
+char* DateTime::toString()
 {
-  string ret;
-  char buf[30];
   sprintf(buf, "%4d-%02d-%02d %02d:%02d:%02d", m_year, m_month, m_day, m_hour, m_minute, m_second);
-  ret = buf;
-  return ret;  
+  return buf;  
+}
+char* DateTime::toString(char c)
+{
+  sprintf(buf, "%4d-%02d-%02d%c%02d:%02d:%02d", m_year, m_month, m_day, c, m_hour, m_minute, m_second);
+  return buf;  
 }
 
 namespace tools {

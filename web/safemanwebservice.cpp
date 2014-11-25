@@ -286,6 +286,7 @@ void SafemanWebService::request_EmployeeInfoAllDW(const char *startTime, int tim
   sprintf(cmd,"GET %s/LaborDW_Down?EMBEDDED=%s&OPTION=&UPDDATE=%s HTTP/1.1\r\nHost: %s\r\n\r\n"
     , m_service_name, m_sEmbed, startTime, m_url_addr);
 
+  printf("cmd %s\n", cmd);
   WebApi* wa;
 
   if(cbfunc){

@@ -30,7 +30,7 @@ public:
     int pnt_cnt;
     //char usercode[17];
     
-    EmployeeInfo(){};
+    EmployeeInfo():pnt_cnt(0){};
     ~EmployeeInfo(){}
   };
   
@@ -60,6 +60,7 @@ private:
   void deleteEmployee(vector<pair<string, EmployeeInfo*> >& elems);
   void fillEmployeeInfoes(char *xml_buf);
   bool fillEmployeeInfo(char *xml_buf, EmployeeInfo* ei);
+  bool search(string pin_no);
   void dump(map<string, EmployeeInfo*>& arr);
 
   bool m_bUseLocalDB;
