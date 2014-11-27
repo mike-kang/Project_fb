@@ -34,6 +34,7 @@ public:
   };
   virtual void onData(const char* buf);
   virtual void onSameData();
+  virtual bool onNeedDeviceKey(char* id, char* key);
 
   virtual void onEmployeeInfoInsert(const unsigned char* userdata);
   virtual void onEmployeeInfoUpdate(string& usercode, const unsigned char* userdata);
@@ -107,6 +108,7 @@ private:
   bool m_bRelay;
   bool m_bSound; //true
   bool m_bDatabase;
+  bool m_check_code;
 
   //server
   string m_sServerType; 

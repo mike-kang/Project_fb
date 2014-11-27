@@ -32,7 +32,10 @@ public:
   virtual ~FBProtocol()
   {
   }
+
   
+  char* didr();
+  bool didk(const char* key);
   char* vers();
   char stat();
   char stat(char* data, bool& bLong);
@@ -41,10 +44,8 @@ public:
   bool save(const char* filename);
   bool save(const byte* buf, int length);
   bool dele(unsigned short usercode);
-  //bool auth();
-  //bool stat();
-  //bool save();
-  //bool dele();
+  bool optf(byte* data);
+
 
 private:  
   byte* processCommand(const char* cmd, int timeout);

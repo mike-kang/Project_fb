@@ -231,6 +231,24 @@ void MainDelegator::onSameData()
   m_el->onMessage("Msg", "Same Card");
 }
 
+bool MainDelegator::onNeedDeviceKey(char* id, char* key)
+{
+  cout << "onNeedDeviceKey:" << id << endl;
+  static char num[] = { 0,1,2,3,4,5,6,7,8,9, 0,0,0,0,0,0,0, 10,11,12,13,14,15};
+  try{
+    string& strkey = m_settings->get(id);
+    const char* str = strkey.c_str();
+    for(int i = 0; i < 8; i++){
+      key[i] = num[str[i*2] - 48]*16 + num[str[i*2+1] - 48];
+    }
+    return true;
+  }
+  catch(Settings::Exception e){
+    LOGE("onNeedDeviceKey exception %d\n", e);
+  }
+  return false;
+}
+
 void MainDelegator::run()
 {
   while(true)

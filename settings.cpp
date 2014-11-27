@@ -35,6 +35,7 @@ Settings::Settings(const char* filename)
      mapStrInsert(App, IN_OUT, I);
      mapStrInsert(App, AUTH_CODE, );
      mapBoolInsert(App, CHECK, true);
+     mapBoolInsert(App, CHECK_CODE, false);
      mapStrInsert(App, REBOOT_TIME, );
      mapStrInsert(App, WORKING_DIRECTORY, /home/pi/acu);
      //mapBoolInsert(App, DISPLAY_PHOTO, true);
@@ -55,6 +56,12 @@ Settings::Settings(const char* filename)
      //FB
      mapIntInsert(FB, CHECK_INTERVAL, 300);  // 300 ms
      mapStrInsert(FB, PORT, /dev/ttyUSB0); 
+     mapBoolInsert(FB, BUZZER, true);
+
+     //FB_ID
+     mapStrInsert(FB_ID, 14070588 , 2C2DE78A4F113209);
+     mapStrInsert(FB_ID, 14070589 , 5EC38CB4B3AA2C9B);
+     mapStrInsert(FB_ID, 14070590 , 80D4FEB2EC4B5CB3);
 
      //Camera
      mapIntInsert(Camera, DELAY_OFF_TIME, 600);  //600 sec
@@ -96,6 +103,7 @@ Settings::Settings(const char* filename)
   mapStrInsertFromReader(App, IN_OUT, I);
   mapStrInsertFromReader(App, AUTH_CODE, );
   mapBoolInsertFromReader(App, CHECK, true);
+  mapBoolInsertFromReader(App, CHECK_CODE, false);
   mapStrInsertFromReader(App, REBOOT_TIME, );
   mapStrInsertFromReader(App, WORKING_DIRECTORY, /home/pi/acu);
   //mapBoolInsertFromReader(App, DISPLAY_PHOTO, true);
@@ -116,6 +124,12 @@ Settings::Settings(const char* filename)
   //FB
   mapIntInsertFromReader(FB, CHECK_INTERVAL, 300);  // 300 ms
   mapStrInsertFromReader(FB, PORT, /dev/ttyUSB0); 
+  mapBoolInsertFromReader(FB, BUZZER, true);
+
+  //FB_ID
+  mapStrInsertFromReader(FB_ID, 14070588 , 2C2DE78A4F113209);
+  mapStrInsertFromReader(FB_ID, 14070589 , 5EC38CB4B3AA2C9B);
+  mapStrInsertFromReader(FB_ID, 14070590 , 80D4FEB2EC4B5CB3);
 
   //Camera
   mapIntInsertFromReader(Camera, DELAY_OFF_TIME, 600);  //600 sec

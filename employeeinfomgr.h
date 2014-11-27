@@ -67,6 +67,7 @@ private:
   string m_sMemcoCd; // = "MC00000003";
   string m_sSiteCd; //"ST00000005";
   string m_sEmbedCd; //"0000000008";
+  bool m_check_code;
   bool m_bDisplayPhoto;
   web::IWebService* m_ws;
   Settings* m_settings;

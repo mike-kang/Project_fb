@@ -63,7 +63,7 @@ void cbTimeSheetInsertString(void *client_data, int status, void* ret)
     delete image_buffer;
 }
 
-//#define LOTT
+#define LOTT
 //#define DW
 
 #ifdef DW
@@ -81,7 +81,8 @@ int main()
   //iws = new SafemanWebService("http://lottedev.safeman.co.kr/LotteIDService.asmx", "MC00000007", "ST00000024", "0000000008"); //dev.safeman.co.kr
   //iws = new SafemanWebService("http://dev.safeman.co.kr/SafeIDService.asmx", "MC00000007", "ST00000024", "0000000008"); //dev.safeman.co.kr
 #ifdef LOTT
-  iws = new SafemanWebService("http://lottedev.safeman.co.kr/LotteIDService.asmx", "MC00000007", "ST00000024", "0000000008", "1", 'I'); //dev.safeman.co.kr
+  //iws = new SafemanWebService("http://lottedev.safeman.co.kr/LotteIDService.asmx", "MC00000007", "ST00000024", "0000000008", "1", 'I'); //dev.safeman.co.kr
+  iws = new SafemanWebService("http://lottedev.safeman.co.kr/LotteIDService.asmx", "MC00000007", "ST00000024", "1000000022", "1", 'I'); //dev.safeman.co.kr
 #elif defined DW
   DWWebService* iws1;
   SafemanWebService* iws2;

@@ -23,6 +23,7 @@ using namespace std;
 #define TOSHORT(buf) (((buf)[0] << 8) + (buf)[1])
 //beffer size
 #define BUF_SZ_VERS 70 
+#define BUF_SZ_DEVICE_ID 8 
 //#define BUF_SZ_STAT_NORMAL 20
 //#define BUF_SZ_USERS 13 //4+1+1+5+2
 //#define BUF_SZ_USERD (16+21*USER_COUNT+2) //4+1+1+5+4+1+21*USER_COUNT + 2
@@ -46,6 +47,36 @@ void dump(const char*str, byte* buf, int length)
   putchar('\n');
   
 }
+
+char* FBProtocol::didr()
+{
+  static char device_id[BUF_SZ_DEVICE_ID];
+  byte* receive_buf; 
+  receive_buf = processCommand("DIDR", 1000);
+  memcpy(device_id, &receive_buf[10], BUF_SZ_DEVICE_ID);
+  delete receive_buf;
+  return device_id;
+}
+
+bool FBProtocol::didk(const char* key)
+{
+  char status;
+  byte* receive_buf; 
+  
+  try {
+    receive_buf = processCommand("DIDK", (const byte*)key, 8, 1000);
+    status = receive_buf[STATUS];
+    if(status != 'A')
+      STAT_LOOP_CHECK('A');
+    return true;
+  }
+  catch(Exception e){
+    cout << "[didk]exception fail! " << e << endl;
+    return false;
+  }
+  return false;
+}
+
 
 //version 정보를 얻는다.
 char* FBProtocol::vers()
@@ -213,6 +244,25 @@ bool FBProtocol::dele(unsigned short usercode)
     cout << "[dele]exception fail! " << e << endl;
     return false;
   }
+}
+
+bool FBProtocol::optf(byte* data)
+{
+  char status;
+  byte* receive_buf; 
+  
+  try {
+    receive_buf = processCommand("OPTF", data, 2, 1000);
+    status = receive_buf[STATUS];
+    if(status != 'A')
+      STAT_LOOP_CHECK('A');
+    return true;
+  }
+  catch(Exception e){
+    cout << "[optf]exception fail! " << e << endl;
+    return false;
+  }
+  return false;
 }
 
 

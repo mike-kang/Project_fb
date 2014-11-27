@@ -12,13 +12,11 @@ FBService::FBService(const char* path, Serial::Baud baud, FBServiceNoti* fn):m_f
   m_serial = new FBProtocolCMSerial(path, baud);
   m_protocol = new FBProtocol(m_serial);
   m_TimerRestart = new Timer(cbTimerFormat, this);
-  start();
 
 }
 
 FBService::~FBService()
 {
-  stop();
   delete m_serial;
   delete m_protocol;
   delete m_TimerRestart;
@@ -36,26 +34,45 @@ char* FBService::getVersion()
   }
 }
 
-bool FBService::start()
+bool FBService::start(bool check_device_id)
 {
-  m_bActive = true;
+  bool ret = false;
 
   if(m_serial->open()){
     char* ver = getVersion();
     if(ver){
       LOGV("Version: %s\n", ver);
-      m_fn->onStart(true);
-      return true;
+      if(!check_device_id)
+        ret = true;
+      else
+        ret = deviceKey();
     }
   }
-  m_fn->onStart(false);
-  return false;
+
+  m_bActive = ret;
+  m_fn->onStart(ret);
+  return ret;
 }
 
 void FBService::stop()
 {
   m_bActive = false;
   m_serial->close();
+}
+
+bool FBService::deviceKey()
+{
+  try{
+    char* device_id = m_protocol->didr();
+    char key[8];
+    if(m_fn->onNeedDeviceKey(device_id, key))
+      if(m_protocol->didk(key))
+        return true;
+  }
+  catch (FBProtocol::Exception e){
+    cout << "error:" << e << endl;
+  }
+  return false;
 }
 
 bool FBService::getList(list<string>& li)
@@ -102,6 +119,17 @@ int FBService::requestEndScan()
   m_scan_running = false;
   delete m_thread_scan;
   m_thread_scan = NULL;
+}
+
+void FBService::buzzer(bool val)
+{
+  byte buf[2] = {0x40, 0x00};
+  if(val)
+    buf[0] = 0x40;
+  else
+    buf[0] = 0xc0;
+  
+  m_protocol->optf(buf);
 }
 
 bool FBService::save(const char* filename)

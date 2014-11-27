@@ -32,6 +32,7 @@ EmployeeInfoMgr::EmployeeInfoMgr(Settings* settings, web::IWebService* ws, Emplo
     m_sMemcoCd = m_settings->get("App::MEMCO");
     m_sSiteCd = m_settings->get("App::SITE");
     m_sEmbedCd = m_settings->get("App::EMBED");
+    m_check_code = m_settings->getBool("App::CHECK_CODE");
   }
   catch(int e)
   {
@@ -39,6 +40,7 @@ EmployeeInfoMgr::EmployeeInfoMgr(Settings* settings, web::IWebService* ws, Emplo
     m_sMemcoCd = "MC00000003";
     m_sSiteCd = "ST00000005";
     m_sEmbedCd = "0000000008";
+    m_check_code = false;
   }
   OpenOrCreateLocalDB();
   
@@ -284,12 +286,12 @@ void EmployeeInfoMgr::insertEmployee(vector<pair<string, EmployeeInfo*> >& elems
   for(vector<pair<string,EmployeeInfo*> >::size_type i=0; i< elems.size(); i++){
     //cache
     m_arrEmployee.insert(elems[i]);
-
+    string& usercode = elems[i].first;
     EmployeeInfo* ei = elems[i].second;
     sqlite3_bind_text(stmt, 1, ei->company_name.c_str(), ei->company_name.length(), SQLITE_STATIC);
     sqlite3_bind_text(stmt, 2, ei->lab_name.c_str(), ei->lab_name.length(), SQLITE_STATIC);
     sqlite3_bind_text(stmt, 3, ei->pin_no.c_str(), ei->pin_no.length(), SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 4, elems[i].first.c_str(), elems[i].first.length(), SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 4, usercode.c_str(), usercode.length(), SQLITE_STATIC);
     sqlite3_bind_blob(stmt, 5, ei->userdata, USERDATA_SIZE, SQLITE_STATIC);
     sqlite3_bind_text(stmt, 6, ei->blacklistinfo.c_str(), ei->blacklistinfo.length(), SQLITE_STATIC);
     sqlite3_bind_int(stmt, 7, ei->pnt_cnt);
@@ -302,7 +304,8 @@ void EmployeeInfoMgr::insertEmployee(vector<pair<string, EmployeeInfo*> >& elems
     }
     sqlite3_reset(stmt);
 
-    m_eil->onEmployeeInfoInsert(ei->userdata);
+    if(!m_check_code || usercode.length() != 4)
+      m_eil->onEmployeeInfoInsert(ei->userdata);
   }
   sqlite3_finalize(stmt);
 
@@ -341,7 +344,8 @@ void EmployeeInfoMgr::updateEmployee(vector<pair<string, EmployeeInfo*> >& elems
     }
     sqlite3_reset(stmt);
     
-    m_eil->onEmployeeInfoUpdate(usercode, ei->userdata);
+    if(!m_check_code || usercode.length() != 4)
+      m_eil->onEmployeeInfoUpdate(usercode, ei->userdata);
   }
   sqlite3_finalize(stmt);
 

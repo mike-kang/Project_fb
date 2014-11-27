@@ -15,11 +15,14 @@ public:
   public:
     virtual void onScanData(const char* buf) = 0;
     virtual void onStart(bool ret) = 0;
+    virtual bool onNeedDeviceKey(char* id, char* key) = 0;
   };
   FBService(const char* path, Serial::Baud baud, FBServiceNoti* fn);
   virtual ~FBService();
 
-  
+  bool start(bool check = false);
+  void stop();
+  bool deviceKey();
   char* getVersion();
   bool getList(list<string>& li);
   bool format();  //auto restart
@@ -28,9 +31,9 @@ public:
   bool save(const char* filename);
   bool deleteUsercode(unsigned short usercode);
   
+  void buzzer(bool val);
+  
 private:  
-  bool start();
-  void stop();
   void run_scan();
   void run_format();
   static void cbTimerFormat(void* arg);
