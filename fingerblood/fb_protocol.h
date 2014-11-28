@@ -43,7 +43,7 @@ public:
   bool user(std::list<std::string>& li);
   bool save(const char* filename);
   bool save(const byte* buf, int length);
-  bool dele(unsigned short usercode);
+  bool dele(const char* usercode);
   bool optf(byte* data);
 
 

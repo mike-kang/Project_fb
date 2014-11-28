@@ -5,6 +5,8 @@
 #include "tools/thread.h"
 #include "tools/event.h"
 #include "serialRfid.h"
+#include "fingerblood/fbservice.h"
+
 #include "web/iwebservice.h"
 #ifdef CAMERA
 #include "camera/camerastill.h"
@@ -17,7 +19,7 @@
 #include "employeeinfomgr.h"
 
 class TimeSheetMgr;
-class MainDelegator : public SerialRfid::SerialRfidDataNoti, public EmployeeInfoMgr::EmployeeInfoMgrListener {
+class MainDelegator : public EmployeeInfoMgr::EmployeeInfoMgrListener, public FBService::FBServiceNoti {
 public:
   enum Exception {
     EXCEPTION_RFID_OPEN_FAIL,
@@ -32,9 +34,11 @@ public:
   enum Ret {
     RET_SUCCESS,
   };
-  virtual void onData(const char* buf);
-  virtual void onSameData();
+  virtual void onScanData(const char* buf);
   virtual bool onNeedDeviceKey(char* id, char* key);
+  virtual void onNeedUserCodeList(std::map<const char*, unsigned char*>& arr_16, std::map<const char*, unsigned char*>& arr_4);
+  virtual void onSync(bool result);
+  //virtual std::map<string, EmployeeInfo*>& onNeedUserCodeList();
 
   virtual void onEmployeeInfoInsert(const unsigned char* userdata);
   virtual void onEmployeeInfoUpdate(string& usercode, const unsigned char* userdata);
@@ -90,8 +94,10 @@ private:
   web::IWebService* m_ws;
   //web::IWebService* m_subws;
   SerialRfid* m_serialRfid;  
+  FBService* m_fbs;
+  bool m_bFBServiceRunning;
   Settings* m_settings;
-  EmployeeInfoMgr* m_employInfoMrg;
+  EmployeeInfoMgr* m_employInfoMgr;
   TimeSheetMgr* m_timeSheetMgr;
   tools::Timer* m_timer;  //check network, upload status, download db, upload timesheet
   tools::media::WavPlayer* m_wp;

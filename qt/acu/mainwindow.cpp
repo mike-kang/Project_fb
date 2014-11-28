@@ -69,7 +69,7 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::onEmployeeInfo(std::string CoName, std::string Name, std::string PinNo, const unsigned char* img_buf, int img_sz)
+void MainWindow::onEmployeeInfo(std::string CoName, std::string Name, std::string PinNo)
 {
 /*
     QMetaObject::invokeMethod(ui->labelCoName, "setText", Q_ARG(QString, CoName.c_str()));
@@ -79,13 +79,9 @@ void MainWindow::onEmployeeInfo(std::string CoName, std::string Name, std::strin
     pix.loadFromData(img_buf, img_sz, "JPG");
     QMetaObject::invokeMethod(ui->labelPhoto, "setPixmap", Q_ARG(QPixmap, pix));
 */
-  if(m_img_buf)
-    delete m_img_buf;
   m_CoName = CoName.c_str();
   m_Name = Name.c_str();
   m_PinNo = PinNo.c_str();
-  m_img_buf = (unsigned char*)img_buf;
-  m_img_sz = img_sz;
     
   emit employeeInfo();
 }
@@ -124,22 +120,9 @@ void MainWindow::updateEmployeeInfo()
   ui->labelCoName->setText(m_CoName);
   ui->labelName->setText(m_Name);
   //QMetaObject::invokeMethod(ui->labelPinNo, "setText", Q_ARG(QString, PinNo.c_str()));
-  qDebug() << m_img_buf;
   //ofstream oOut2("aaa.jpg", ofstream::binary);
   //oOut2.write((const char*)m_img_buf, m_img_sz);
   //oOut2.close();
-  if(m_img_buf){
-    if(pix) delete pix;
-    pix = new QPixmap;
-    
-    bool ret = pix->loadFromData(m_img_buf, m_img_sz, "JPG");
-    qDebug() << ret;
-    if(ret){
-      ui->labelPhoto->setPixmap(*pix);
-      ui->labelPhoto->show();
-      return;
-    }
-  }
   ui->labelPhoto->clear();
 }
 

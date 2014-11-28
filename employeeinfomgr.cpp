@@ -32,7 +32,7 @@ EmployeeInfoMgr::EmployeeInfoMgr(Settings* settings, web::IWebService* ws, Emplo
     m_sMemcoCd = m_settings->get("App::MEMCO");
     m_sSiteCd = m_settings->get("App::SITE");
     m_sEmbedCd = m_settings->get("App::EMBED");
-    m_check_code = m_settings->getBool("App::CHECK_CODE");
+    m_check_code = m_settings->getBool("FB::CHECK_CODE_4");
   }
   catch(int e)
   {
@@ -383,6 +383,24 @@ void EmployeeInfoMgr::deleteEmployee(vector<pair<string, EmployeeInfo*> >& elems
     
 
 }
+
+void EmployeeInfoMgr::getEmployeeList(std::map<const char*, unsigned char*>& arr_16, std::map<const char*, unsigned char*>& arr_4)
+{
+  for(map<string, EmployeeInfo*>::iterator itr=m_arrEmployee.begin(); itr != m_arrEmployee.end(); itr++){
+    EmployeeInfo* ei = itr->second;
+    if(ei->pin_no.length() == 16)
+      arr_16[itr->first.c_str()] = ei->userdata;
+    else
+      arr_4[itr->first.c_str()] = ei->userdata;
+  }
+}
+
+/*
+map<string, EmployeeInfo*>& EmployeeInfoMgr::getEmployeeList()
+{
+  return m_arrEmployee;
+}
+*/
 
 bool EmployeeInfoMgr::search(string pin_no)
 {

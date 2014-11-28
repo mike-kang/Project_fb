@@ -5,6 +5,8 @@
 #include "fb_protocol.h"
 #include <iostream>
 #include <list>
+#include <vector>
+#include <map>
 #include "tools/timer.h"
 
 using namespace tools;
@@ -14,28 +16,32 @@ public:
   class FBServiceNoti {
   public:
     virtual void onScanData(const char* buf) = 0;
-    virtual void onStart(bool ret) = 0;
+    //virtual void onStart(bool ret) = 0;
     virtual bool onNeedDeviceKey(char* id, char* key) = 0;
+    virtual void onNeedUserCodeList(std::map<const char*, unsigned char*>& arr_16, std::map<const char*, unsigned char*>& arr_4) = 0;
+    //virtual std::map<string, EmployeeInfo*>& onNeedUserCodeList() = 0;
+    virtual void onSync(bool) = 0;
   };
-  FBService(const char* path, Serial::Baud baud, FBServiceNoti* fn);
+  FBService(const char* path, Serial::Baud baud, FBServiceNoti* fn, bool bCheckUserCode4);
   virtual ~FBService();
 
   bool start(bool check = false);
   void stop();
-  bool deviceKey();
   char* getVersion();
   bool getList(list<string>& li);
   bool format();  //auto restart
   bool requestStartScan(int interval);
-  int requestEndScan();
+  int requestStopScan();
   bool save(const char* filename);
-  bool deleteUsercode(unsigned short usercode);
+  bool save(const byte* buf, int length);
+  bool deleteUsercode(const char* usercode);
   
   void buzzer(bool val);
-  
+  void sync();
 private:  
+  bool checkdeviceID();
   void run_scan();
-  void run_format();
+  void run_sync();
   static void cbTimerFormat(void* arg);
 
   bool m_bActive;
@@ -47,7 +53,10 @@ private:
   int m_scan_interval; //msec
   FBServiceNoti* m_fn;
   Timer* m_TimerRestart;
-  
+
+  Thread<FBService>* m_thread_sync;
+  bool m_sync_running;
+  bool m_bCheckUserCode4;
 };
 
 

@@ -222,13 +222,14 @@ bool FBProtocol::save(const byte* buf, int length)
   return true;
 }
 
-bool FBProtocol::dele(unsigned short usercode)
+bool FBProtocol::dele(const char* usercode)
 {
   char status;
   byte* receive_buf; 
   char sUsercode[21];
   int i;
-  sprintf(sUsercode, "%016d0000",usercode);
+  strncpy(sUsercode, usercode, 16);
+  strcat(sUsercode, "0000");
 
   try {
     receive_buf = processCommand("DELE", (byte*)sUsercode, 20, 1000);

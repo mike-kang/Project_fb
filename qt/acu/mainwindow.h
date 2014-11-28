@@ -16,7 +16,7 @@ class MainWindow : public QMainWindow, public MainDelegator::EventListener
 public:
     //virtual void onRFSerialNumber(char* serial);
     virtual void onMessage(std::string tag, std::string data);
-    virtual void onEmployeeInfo(std::string CoName, std::string Name, std::string PinNo, const unsigned char* img_buf, int img_sz);
+    virtual void onEmployeeInfo(std::string CoName, std::string Name, std::string PinNo);
     virtual void onStatus(std::string status);
     
     explicit MainWindow(QWidget *parent = 0);

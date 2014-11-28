@@ -7,7 +7,7 @@ using namespace tools;
 
 #define LOG_TAG "FBService"
 
-FBService::FBService(const char* path, Serial::Baud baud, FBServiceNoti* fn):m_fn(fn)
+FBService::FBService(const char* path, Serial::Baud baud, FBServiceNoti* fn, bool bCheckUserCode4):m_fn(fn), m_bCheckUserCode4(bCheckUserCode4)
 {
   m_serial = new FBProtocolCMSerial(path, baud);
   m_protocol = new FBProtocol(m_serial);
@@ -37,21 +37,23 @@ char* FBService::getVersion()
 bool FBService::start(bool check_device_id)
 {
   bool ret = false;
-
-  if(m_serial->open()){
-    char* ver = getVersion();
-    if(ver){
-      LOGV("Version: %s\n", ver);
-      if(!check_device_id)
-        ret = true;
-      else
-        ret = deviceKey();
-    }
+  m_bActive = false;
+  
+  if(!m_serial->open())
+    return false;
+  
+  char* ver = getVersion();
+  if(!ver)
+    return false;
+  LOGV("Version: %s\n", ver);
+  
+  if(check_device_id && !checkdeviceID()){
+    return false;
   }
 
-  m_bActive = ret;
-  m_fn->onStart(ret);
-  return ret;
+  m_bActive = true;
+  //m_fn->onStart(true);
+  return true;
 }
 
 void FBService::stop()
@@ -60,7 +62,14 @@ void FBService::stop()
   m_serial->close();
 }
 
-bool FBService::deviceKey()
+void FBService::sync()
+{
+  m_sync_running = true;
+  m_thread_sync = new Thread<FBService>(&FBService::run_sync, this, "SyncThread");
+}
+
+
+bool FBService::checkdeviceID()
 {
   try{
     char* device_id = m_protocol->didr();
@@ -114,7 +123,7 @@ bool FBService::requestStartScan(int interval)
   m_thread_scan = new Thread<FBService>(&FBService::run_scan, this, "ScanThread");
 }
 
-int FBService::requestEndScan()
+int FBService::requestStopScan()
 {
   m_scan_running = false;
   delete m_thread_scan;
@@ -137,7 +146,12 @@ bool FBService::save(const char* filename)
   return m_protocol->save(filename);
 }
 
-bool FBService::deleteUsercode(unsigned short usercode)
+bool FBService::save(const byte* buf, int length)
+{
+  return m_protocol->save(buf, length);
+}
+
+bool FBService::deleteUsercode(const char* usercode)
 {
   return m_protocol->dele(usercode);
 }
@@ -158,6 +172,55 @@ void FBService::run_scan()
   }
 
 }
+
+void FBService::run_sync()
+{
+  map<const char*, unsigned char*> device_arr_16, device_arr_4;
+  m_fn->onNeedUserCodeList(device_arr_16, device_arr_4);
+
+  list<string> module_list; //only 16
+  if(!getList(module_list))
+    m_fn->onSync(false);
+
+  map<const char*, unsigned char*>::iterator d = device_arr_16.begin();
+
+  if(module_list.size() == 0){
+    for(; d != device_arr_16.end(); d++){
+      save(d->second, 864);
+    }
+  }
+  else{
+    list<string>::iterator m = module_list.begin();
+    int compare;
+    for(; d != device_arr_16.end(); d++){
+      const char* device_usercode = d->first;
+      compare = strcmp(device_usercode, m->c_str());
+      if(!compare){
+        m++;
+      }
+      else if(compare > 0){
+        deleteUsercode(device_usercode);
+        m++;
+      }
+      else
+        save(d->second, 864);
+    }
+  }
+
+  d = device_arr_4.begin();
+
+  if(!m_bCheckUserCode4){
+    for(; d != device_arr_4.end(); d++){
+      save(d->second, 864);
+    }
+  }
+  else{
+    deleteUsercode(d->first);
+  }
+
+  m_fn->onSync(true);
+}
+
 
 
 

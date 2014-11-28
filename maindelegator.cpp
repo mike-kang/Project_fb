@@ -154,7 +154,7 @@ bool MainDelegator::checkDate(Date* start, Date* end, string& msg)
   return true;
 }
 
-void MainDelegator::onData(const char* usercode)
+void MainDelegator::onScanData(const char* usercode)
 {
   LOGI("onData %s +++\n", usercode);
   char* imgBuf = NULL;;
@@ -168,7 +168,7 @@ void MainDelegator::onData(const char* usercode)
   m_el->onMessage("RfidNo", usercode);
   EmployeeInfoMgr::EmployeeInfo* ei;
   //checkNetwork();
-  bool ret = m_employInfoMrg->getInfo(usercode, &ei);
+  bool ret = m_employInfoMgr->getInfo(usercode, &ei);
 
   if(!ret){
     LOGE("get employee info fail!\n");
@@ -225,18 +225,15 @@ error:
   printf("onData %d\n", __LINE__);
   m_bProcessingRfidData = false;
 }
-void MainDelegator::onSameData()
-{
-  LOGI("onSameData\n");
-  m_el->onMessage("Msg", "Same Card");
-}
 
 bool MainDelegator::onNeedDeviceKey(char* id, char* key)
 {
   cout << "onNeedDeviceKey:" << id << endl;
   static char num[] = { 0,1,2,3,4,5,6,7,8,9, 0,0,0,0,0,0,0, 10,11,12,13,14,15};
+  char id_buf[40];
   try{
-    string& strkey = m_settings->get(id);
+    sprintf(id_buf, "FB_KEY::%s", id);
+    string& strkey = m_settings->get(id_buf);
     const char* str = strkey.c_str();
     for(int i = 0; i < 8; i++){
       key[i] = num[str[i*2] - 48]*16 + num[str[i*2+1] - 48];
@@ -247,6 +244,16 @@ bool MainDelegator::onNeedDeviceKey(char* id, char* key)
     LOGE("onNeedDeviceKey exception %d\n", e);
   }
   return false;
+}
+
+void MainDelegator::onNeedUserCodeList(std::map<const char*, unsigned char*>& arr_16, std::map<const char*, unsigned char*>& arr_4)
+{
+  m_employInfoMgr->getEmployeeList(arr_16, arr_4);
+}
+
+void MainDelegator::onSync(bool result)
+{
+  cout << "onSync " << result << endl;
 }
 
 void MainDelegator::run()
@@ -376,7 +383,7 @@ void MainDelegator::cbTimer(void* arg)
       break;
 
     case 8:
-      md->m_employInfoMrg->updateLocalDB();
+      md->m_employInfoMgr->updateLocalDB();
       break;
       
     case 9:
@@ -437,7 +444,7 @@ void MainDelegator::displayNetworkStatus(bool val)
 
 bool MainDelegator::SettingInit()
 {
-  m_settings = new Settings("/etc/acu/FID.ini");
+  m_settings = new Settings("/etc/acufb/FID.ini");
 
 #ifdef CAMERA  
   m_cameraDelayOffTime = m_settings->getInt("Camera::DELAY_OFF_TIME"); //600 sec
@@ -541,10 +548,14 @@ MainDelegator::MainDelegator(EventListener* el) : m_el(el), m_bProcessingRfidDat
     throw EXCEPTION_RFID_OPEN_FAIL;
   }
   m_serialRfid->start(m_rfidCheckInterval, this); //interval=300ms  
+  m_el->onMessage("Rfid", m_sRfidMode + " ON");
 #endif  
 
-  m_el->onMessage("Rfid", m_sRfidMode + " ON");
-
+  m_fbs = new FBService(m_settings->get("FB::PORT").c_str(), Serial::SB38400, this, m_settings->getBool("FB::CHECK_CODE_4"));
+  m_bFBServiceRunning = m_fbs->start(m_settings->getBool("FB::CHECK_DEVICE_ID"));
+  if(m_bFBServiceRunning)
+    m_fbs->sync();
+  
   //m_el->onStatus("WebService Url:" + m_sServerUrl);
   //m_ws = new WebService("192.168.0.7", 8080);
 
@@ -564,7 +575,7 @@ MainDelegator::MainDelegator(EventListener* el) : m_el(el), m_bProcessingRfidDat
     
   //m_ws = new WebService(ip, 17552);
   checkNetwork();
-  m_employInfoMrg = new EmployeeInfoMgr(m_settings, m_ws, this);
+  m_employInfoMgr = new EmployeeInfoMgr(m_settings, m_ws, this);
   m_timeSheetMgr = new TimeSheetMgr(m_settings, m_ws);
 
 #ifdef CAMERA  
@@ -596,7 +607,7 @@ MainDelegator::MainDelegator(EventListener* el) : m_el(el), m_bProcessingRfidDat
   if(reboot_time != "")
     setRebootTimer(reboot_time.c_str());
 
-  m_employInfoMrg->updateLocalDB();
+  m_employInfoMgr->updateLocalDB();
   LOGV("MainDelegator ---\n");
 }
 
@@ -608,7 +619,7 @@ MainDelegator::~MainDelegator()
 //#ifdef SIMULATOR
 void MainDelegator::cbTestTimer(void* arg)
 {
-   my->onData(my->m_test_serial_number.c_str());
+   my->onScanData(my->m_test_serial_number.c_str());
 }
 
 void MainDelegator::test_signal_handler(int signo)

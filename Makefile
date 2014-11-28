@@ -32,7 +32,7 @@ depend : $(SRCS)
 clean :
 	-rm *.o web/*.o hardware/*.o inih_r29/*.o fingerblood/*.o
 
-INSTALL_DIR = /home/pi/acu
+INSTALL_DIR = /home/pi/acufb
 install:
 	cp libfid.so $(INSTALL_DIR)/libs/
 	cp tools/libtool.so $(INSTALL_DIR)/libs/
@@ -41,7 +41,7 @@ install:
 	cp qt/acu/acu $(INSTALL_DIR)
 	cp qt/acu/start.sh $(INSTALL_DIR)
 	cp qt/acu/start_sa.sh $(INSTALL_DIR)
-	cp config/FID.ini /etc/acu/ 
+	cp config/FID.ini /etc/acufb/ 
 	
 -include depend
 

@@ -51,7 +51,8 @@ public:
 
   bool updateLocalDB();
   bool getInfo(const char* serialNumber, EmployeeInfo** ei);
-  
+  void getEmployeeList(std::map<const char*, unsigned char*>& arr_16, std::map<const char*, unsigned char*>& arr_4);
+  //std::map<string, EmployeeInfo*>& getEmployeeList();
 private:  
   bool OpenOrCreateLocalDB();
   void updateCache();
