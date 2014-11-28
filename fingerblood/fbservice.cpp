@@ -175,6 +175,7 @@ void FBService::run_scan()
 
 void FBService::run_sync()
 {
+  LOGV("run_sync\n");
   map<const char*, unsigned char*> device_arr_16, device_arr_4;
   m_fn->onNeedUserCodeList(device_arr_16, device_arr_4);
 
@@ -184,7 +185,10 @@ void FBService::run_sync()
 
   map<const char*, unsigned char*>::iterator d = device_arr_16.begin();
 
-  if(module_list.size() == 0){
+  int count = module_list.size();
+  LOGV("module_list.size %d\n", count);
+
+  if(count == 0){
     for(; d != device_arr_16.end(); d++){
       save(d->second, 864);
     }

@@ -20,6 +20,7 @@ int AsyncSerial::read(byte* buf, int len, int timeout)
   struct pollfd fds;
   int ret;
 
+  cout << "read: "<< timeout << endl;
   fds.fd = m_fd;
   fds.events = POLLIN;
   ret = poll(&fds, 1, timeout);

@@ -277,12 +277,18 @@ void MainDelegator::run()
 }
 void MainDelegator::onEmployeeInfoInsert(const unsigned char* userdata)
 {
+  LOGV("onEmployeeInfoInsert\n");
+  m_fbs->save(userdata, 864);
 }
 void MainDelegator::onEmployeeInfoUpdate(string& usercode, const unsigned char* userdata)
 {
+  LOGV("onEmployeeInfoUpdate\n");
+  m_fbs->save(userdata, 864);
 }
 void MainDelegator::onEmployeeInfoDelete(string& usercode)
 {
+  LOGV("onEmployeeInfoDelete\n");
+  m_fbs->deleteUsercode(usercode.c_str());
 }
 
 /*
@@ -551,11 +557,6 @@ MainDelegator::MainDelegator(EventListener* el) : m_el(el), m_bProcessingRfidDat
   m_el->onMessage("Rfid", m_sRfidMode + " ON");
 #endif  
 
-  m_fbs = new FBService(m_settings->get("FB::PORT").c_str(), Serial::SB38400, this, m_settings->getBool("FB::CHECK_CODE_4"));
-  m_bFBServiceRunning = m_fbs->start(m_settings->getBool("FB::CHECK_DEVICE_ID"));
-  if(m_bFBServiceRunning)
-    m_fbs->sync();
-  
   //m_el->onStatus("WebService Url:" + m_sServerUrl);
   //m_ws = new WebService("192.168.0.7", 8080);
 
@@ -573,9 +574,14 @@ MainDelegator::MainDelegator(EventListener* el) : m_el(el), m_bProcessingRfidDat
   else
     m_ws = new SafemanWebService(m_sSafeIdServerUrl.c_str(), m_sMemcoCd.c_str(), m_sSiteCd.c_str(), m_sEmbedCd.c_str(), m_sDvNo.c_str(), m_sInOut.c_str()[0]);
     
-  //m_ws = new WebService(ip, 17552);
   checkNetwork();
   m_employInfoMgr = new EmployeeInfoMgr(m_settings, m_ws, this);
+  m_fbs = new FBService(m_settings->get("FB::PORT").c_str(), Serial::SB38400, this, m_settings->getBool("FB::CHECK_CODE_4"));
+  m_bFBServiceRunning = m_fbs->start(m_settings->getBool("FB::CHECK_DEVICE_ID"));
+  if(m_bFBServiceRunning){
+    m_fbs->sync();
+    m_fbs->buzzer(m_settings->getBool("FB::BUZZER"));
+  }
   m_timeSheetMgr = new TimeSheetMgr(m_settings, m_ws);
 
 #ifdef CAMERA  

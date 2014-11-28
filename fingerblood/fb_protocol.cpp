@@ -4,7 +4,10 @@
 #include <cstring>
 #include <iostream>
 #include <fstream>
+#include "tools/utils.h"
+
 using namespace std;
+using namespace tools;
 
 #define LOG_TAG "FBProtocol"
 
@@ -34,19 +37,7 @@ using namespace std;
                                 status = stat();      \
                               } while(status != (k))
 
-void dump(const char*str, byte* buf, int length)
-{
-  printf("[%s]\n", str);
-  if(!length){
-    printf("size = 0\n");
-    return;
-  }
-  for(int i=0; i<length; i++){
-    printf("0x%02x ", buf[i]);
-  }
-  putchar('\n');
-  
-}
+bool _debug = false;
 
 char* FBProtocol::didr()
 {
@@ -280,7 +271,7 @@ void FBProtocol::userS()
   memset(p+2, 0x00, 20);
   memset(p+22, 0xff, 20);
 
-  receive_buf = processCommand("USERS", data, 42, 9000);
+  receive_buf = processCommand("USERS", data, 42, -1);
   status = receive_buf[STATUS];
   delete receive_buf;
   if(status != '2')
@@ -386,7 +377,7 @@ void FBProtocol::saveD(const char* filename)
     buf[length+1] = sum;
     
     cout << "processCommand" << endl;
-    dump("SEND SAVED", buf, length + 2);
+    if(_debug) utils::hexdump("SEND SAVED", buf, length + 2);
     try{
       receive_buf = processCommand(buf, length + 2, 9000); //delete buf;
     }
@@ -461,7 +452,7 @@ void FBProtocol::saveD(const byte* userdata, int len)
     buf[length+1] = sum;
     
     cout << "processCommand" << endl;
-    dump("SEND SAVED", buf, length + 2);
+    if(_debug) utils::hexdump("SEND SAVED", buf, length + 2);
     try{
       receive_buf = processCommand(buf, length + 2, 9000); //delete buf;
     }
@@ -529,7 +520,8 @@ byte* FBProtocol::processCommand(const char* cmd, int timeout/*ms*/)
   cout << "processCommand" << endl;
   char temp[20];
   sprintf(temp, "SEND %s", cmd); 
-  dump(temp, buf, length + 2);
+  if(_debug)
+    utils::hexdump(temp, buf, length + 2);
     
   int writebyte = m_cm->onWrite(buf, length + 2);
   if(writebyte < length + 2)
@@ -564,10 +556,10 @@ byte* FBProtocol::processCommand(const char* cmd, const byte* data, int data_sz,
   sum += _xor;
   buf[length] = _xor;
   buf[length+1] = sum;
-  cout << "processCommand" << endl;
+  cout << "processCommand:" <<cmd<< endl;
   char temp[20];
   sprintf(temp, "SEND %s", cmd); 
-  dump(temp, buf, length + 2);
+  if(_debug) utils::hexdump(temp, buf, length + 2);
     
   int writebyte = m_cm->onWrite(buf, length + 2);
   if(writebyte < length + 2)
@@ -601,7 +593,7 @@ byte* FBProtocol::response(int timeout)
   }
   
   if(tempBuf[0] != SYNC){
-    dump("RECEIVE", tempBuf, readbyte);
+    utils::hexdump("RECEIVE", tempBuf, readbyte);
     throw EXCEPTION_NOT_ACK;
   }
   printf("readbyte %d\n", readbyte);
@@ -627,7 +619,7 @@ byte* FBProtocol::response(int timeout)
     delete receiveBuf;
     throw EXCEPTION_COMMMETHOD;
   }
-  dump("RECEIVE", receiveBuf, length);
+  if(_debug) utils::hexdump("RECEIVE", receiveBuf, length);
   printf("status 0x%x('%c')\n", receiveBuf[STATUS], receiveBuf[STATUS]);
 
   //check checksum

@@ -49,7 +49,7 @@ int main()
 {
   Noti noti;
   cout << "start main\n" << endl;
-  fbs = new FBService("/dev/ttyUSB0", Serial::SB38400, &noti);
+  fbs = new FBService("/dev/ttyUSB0", Serial::SB38400, &noti, false);
   fbs->start(true);
   
   //fbs->save("FID0000000000000012.bin");
