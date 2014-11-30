@@ -36,9 +36,10 @@ public:
   
   class EmployeeInfoMgrListener {
   public:
-    virtual void onEmployeeInfoInsert(const unsigned char* userdata) = 0;
-    virtual void onEmployeeInfoUpdate(string& usercode, const unsigned char* userdata) = 0;
-    virtual void onEmployeeInfoDelete(string& usercode) = 0;
+    virtual void onEmployeeInfoTotal(int insert_count, int update_count, int delete_count) = 0;
+    virtual void onEmployeeInfoInsert(const unsigned char* userdata, int index) = 0;
+    virtual void onEmployeeInfoUpdate(string& usercode, const unsigned char* userdata, int index) = 0;
+    virtual void onEmployeeInfoDelete(string& usercode, int index) = 0;
   };
 
 
@@ -49,10 +50,11 @@ public:
     sqlite3_close(m_db);
   }
 
-  bool updateLocalDB();
+  void getEmployeeList(std::vector<pair<const char*, unsigned char*> >& arr_16, std::vector<pair<const char*, unsigned char*> >& arr_4);
+  bool updateLocalDB(); //from Server
   bool getInfo(const char* serialNumber, EmployeeInfo** ei);
-  void getEmployeeList(std::map<const char*, unsigned char*>& arr_16, std::map<const char*, unsigned char*>& arr_4);
   //std::map<string, EmployeeInfo*>& getEmployeeList();
+  
 private:  
   bool OpenOrCreateLocalDB();
   void updateCache();
@@ -74,6 +76,7 @@ private:
   Settings* m_settings;
 
   map<string, EmployeeInfo*> m_arrEmployee;
+  map<string, EmployeeInfo*> m_arrEmployee_4;
   string m_lastSyncTime;
   Mutex mtx;
   sqlite3 *m_db;

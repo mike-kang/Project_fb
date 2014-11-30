@@ -1,6 +1,7 @@
 #ifndef _FB_SERVICE_HEADER
 #define _FB_SERVICE_HEADER
 
+#include "ifbservice.h"
 #include "fbprotocolCMSerial.h"
 #include "fb_protocol.h"
 #include <iostream>
@@ -11,18 +12,9 @@
 
 using namespace tools;
 
-class FBService {
+class FBService : public IFBService{
 public:
-  class FBServiceNoti {
-  public:
-    virtual void onScanData(const char* buf) = 0;
-    //virtual void onStart(bool ret) = 0;
-    virtual bool onNeedDeviceKey(char* id, char* key) = 0;
-    virtual void onNeedUserCodeList(std::map<const char*, unsigned char*>& arr_16, std::map<const char*, unsigned char*>& arr_4) = 0;
-    //virtual std::map<string, EmployeeInfo*>& onNeedUserCodeList() = 0;
-    virtual void onSync(bool) = 0;
-  };
-  FBService(const char* path, Serial::Baud baud, FBServiceNoti* fn, bool bCheckUserCode4);
+  FBService(const char* path, Serial::Baud baud, IFBService::IFBServiceEventListener* fn, bool bCheckUserCode4);
   virtual ~FBService();
 
   bool start(bool check = false);
@@ -51,7 +43,7 @@ private:
   Thread<FBService>* m_thread_scan;
   bool m_scan_running;
   int m_scan_interval; //msec
-  FBServiceNoti* m_fn;
+  IFBService::IFBServiceEventListener* m_fn;
   Timer* m_TimerRestart;
 
   Thread<FBService>* m_thread_sync;

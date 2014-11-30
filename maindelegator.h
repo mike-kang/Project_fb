@@ -19,7 +19,7 @@
 #include "employeeinfomgr.h"
 
 class TimeSheetMgr;
-class MainDelegator : public EmployeeInfoMgr::EmployeeInfoMgrListener, public FBService::FBServiceNoti {
+class MainDelegator : public EmployeeInfoMgr::EmployeeInfoMgrListener, public IFBService::IFBServiceEventListener{
 public:
   enum Exception {
     EXCEPTION_RFID_OPEN_FAIL,
@@ -36,13 +36,14 @@ public:
   };
   virtual void onScanData(const char* buf);
   virtual bool onNeedDeviceKey(char* id, char* key);
-  virtual void onNeedUserCodeList(std::map<const char*, unsigned char*>& arr_16, std::map<const char*, unsigned char*>& arr_4);
-  virtual void onSync(bool result);
+  virtual void onNeedUserCodeList(std::vector<pair<const char*, unsigned char*> >& arr_16, std::vector<pair<const char*, unsigned char*> >& arr_4);
+  virtual void onSyncComplete(bool result);
   //virtual std::map<string, EmployeeInfo*>& onNeedUserCodeList();
 
-  virtual void onEmployeeInfoInsert(const unsigned char* userdata);
-  virtual void onEmployeeInfoUpdate(string& usercode, const unsigned char* userdata);
-  virtual void onEmployeeInfoDelete(string& usercode);
+  virtual void onEmployeeInfoTotal(int insert_count, int update_count, int delete_count);
+  virtual void onEmployeeInfoInsert(const unsigned char* userdata, int index);
+  virtual void onEmployeeInfoUpdate(string& usercode, const unsigned char* userdata, int index);
+  virtual void onEmployeeInfoDelete(string& usercode, int index);
 
 
   static MainDelegator* createInstance(EventListener* el);
@@ -72,6 +73,7 @@ private:
   void displayNetworkStatus(bool val);
   bool getSeverTime();
   void setRebootTimer(const char* time_buf);
+  void checkAndRunFBService();
 //#ifdef SIMULATOR  
   static void cbTestTimer(void* arg);
   static void test_signal_handler(int signo);
@@ -80,6 +82,7 @@ private:
 //#endif
   static void cbStatusUpdate(void *client_data, int status, void* ret);
   static void cbTimer(void* arg);
+  static void cbTimerCheckFBService(void* arg);
   //static void cb_ServerTimeGet(void* arg);
   //void _cb_ServerTimeGet(void* arg);
   static void cbRebootTimer(void* arg);
@@ -94,7 +97,7 @@ private:
   web::IWebService* m_ws;
   //web::IWebService* m_subws;
   SerialRfid* m_serialRfid;  
-  FBService* m_fbs;
+  IFBService* m_fbs;
   bool m_bFBServiceRunning;
   Settings* m_settings;
   EmployeeInfoMgr* m_employInfoMgr;
@@ -103,6 +106,7 @@ private:
   tools::media::WavPlayer* m_wp;
   EventListener* m_el;
   tools::Timer* m_RebootTimer;
+  tools::Timer* m_timer_checkFBSerivce;
 
 
   bool m_bFirstDown;
@@ -152,7 +156,9 @@ private:
   
   bool m_bProcessingRfidData;
   bool m_bTimeAvailable;
+  bool m_bSyncDeviceAndModule;
   bool m_bTestSignal; //for debug
+  
   //Led
   SwitchGpio* m_yellowLed;
   SwitchGpio* m_blueLed;

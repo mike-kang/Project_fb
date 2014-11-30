@@ -37,9 +37,13 @@ WebService::WebService(const char* url, const char *sMemcoCode, const char* sSit
   sEmbed, const char* gateCode, char inout) : m_port(80), m_cInOut(inout)
 {
   strncpy(m_sMemcoCd, sMemcoCode, 10);
+  m_sMemcoCd[10] = '\0';
   strncpy(m_sSiteCd, sSiteCode, 10);
+  m_sSiteCd[10] = '\0';
   strncpy(m_sEmbed, sEmbed, 10);
+  m_sEmbed[10] = '\0';
   strncpy(m_sGateCode, gateCode, 4);
+  m_sGateCode[4] = '\0';
 
   char* start = strstr((char*)url, "//");
   if(!start) 

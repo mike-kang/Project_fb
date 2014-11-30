@@ -222,7 +222,6 @@ void MainDelegator::onScanData(const char* usercode)
 
 error:
   LOGI("onData ---\n");
-  printf("onData %d\n", __LINE__);
   m_bProcessingRfidData = false;
 }
 
@@ -246,14 +245,28 @@ bool MainDelegator::onNeedDeviceKey(char* id, char* key)
   return false;
 }
 
-void MainDelegator::onNeedUserCodeList(std::map<const char*, unsigned char*>& arr_16, std::map<const char*, unsigned char*>& arr_4)
+void MainDelegator::onNeedUserCodeList(std::vector<pair<const char*, unsigned char*> >& arr_16, std::vector<pair<const char*, unsigned char*> >& arr_4)
 {
   m_employInfoMgr->getEmployeeList(arr_16, arr_4);
 }
 
-void MainDelegator::onSync(bool result)
+//init
+void MainDelegator::onSyncComplete(bool result)
 {
-  cout << "onSync " << result << endl;
+  LOGV("onSync %d\n", result);
+  m_bSyncDeviceAndModule = result;
+  if(result){
+    if(m_bTimeAvailable){
+      m_employInfoMgr->updateLocalDB();
+    }
+    
+    m_timer = new Timer(cbTimer, this);
+    int interval = m_settings->getInt("App::TIMER_INTERVAL");
+    LOGI("timer interval= %d\n", interval);
+    m_timer->start(interval, true);
+
+    m_fbs->requestStartScan(300);
+  }
 }
 
 void MainDelegator::run()
@@ -275,19 +288,25 @@ void MainDelegator::run()
   }
 
 }
-void MainDelegator::onEmployeeInfoInsert(const unsigned char* userdata)
+
+void MainDelegator::onEmployeeInfoTotal(int insert_count, int update_count, int delete_count)
 {
-  LOGV("onEmployeeInfoInsert\n");
-  m_fbs->save(userdata, 864);
+  LOGV("onEmployeeInfoTotal insert:%d update:%d delete:%d\n", insert_count, update_count, delete_count);
 }
-void MainDelegator::onEmployeeInfoUpdate(string& usercode, const unsigned char* userdata)
+
+void MainDelegator::onEmployeeInfoInsert(const unsigned char* userdata, int index)
 {
-  LOGV("onEmployeeInfoUpdate\n");
-  m_fbs->save(userdata, 864);
+  LOGV("onEmployeeInfoInsert %d\n", index);
+  m_fbs->save(userdata, USERDATA_SIZE);
 }
-void MainDelegator::onEmployeeInfoDelete(string& usercode)
+void MainDelegator::onEmployeeInfoUpdate(string& usercode, const unsigned char* userdata, int index)
 {
-  LOGV("onEmployeeInfoDelete\n");
+  LOGV("onEmployeeInfoUpdate %d\n", index);
+  m_fbs->save(userdata, USERDATA_SIZE);
+}
+void MainDelegator::onEmployeeInfoDelete(string& usercode, int index)
+{
+  LOGV("onEmployeeInfoDelete %d\n", index);
   m_fbs->deleteUsercode(usercode.c_str());
 }
 
@@ -358,6 +377,35 @@ void MainDelegator::cbStatusUpdate(void *client_data, int status, void* ret)
   LOGV("cbStatusUpdate status:%d, ret:%d\n", status, *((bool*)ret));
 }
 
+void MainDelegator::checkAndRunFBService()
+{
+  if(!m_bFBServiceRunning){
+    m_bFBServiceRunning = m_fbs->start(m_settings->getBool("FB::CHECK_DEVICE_ID"));
+    if(m_bFBServiceRunning){
+      if(m_timer_checkFBSerivce){
+        m_timer_checkFBSerivce->stop();
+        delete m_timer_checkFBSerivce;
+        m_timer_checkFBSerivce = NULL;
+      }
+      m_fbs->buzzer(m_settings->getBool("FB::BUZZER"));
+      m_fbs->sync();
+    }
+    else{
+      m_timer_checkFBSerivce = new Timer(cbTimerCheckFBService, this);
+      m_timer_checkFBSerivce->start(10, true);
+    }
+  }
+}
+
+//static
+void MainDelegator::cbTimerCheckFBService(void* arg)
+{
+  MainDelegator* md = (MainDelegator*)arg;
+
+  md->checkAndRunFBService();
+}
+
+//static
 //check network, upload status, download db, upload timesheet
 void MainDelegator::cbTimer(void* arg)
 {
@@ -376,6 +424,7 @@ void MainDelegator::cbTimer(void* arg)
   }
 
   LOGV("cbTimer count=%d\n", count);
+
   if(md->m_bProcessingRfidData){
     LOGV("cbTimer returned by processing card\n");
     return;
@@ -389,7 +438,11 @@ void MainDelegator::cbTimer(void* arg)
       break;
 
     case 8:
-      md->m_employInfoMgr->updateLocalDB();
+      if(md->m_bTimeAvailable && md->m_bSyncDeviceAndModule){
+        md->m_fbs->requestStopScan();
+        md->m_employInfoMgr->updateLocalDB();
+        md->m_fbs->requestStartScan(300);
+      }
       break;
       
     case 9:
@@ -510,7 +563,7 @@ bool MainDelegator::SettingInit()
   return true;
 }
 
-MainDelegator::MainDelegator(EventListener* el) : m_el(el), m_bProcessingRfidData(false)
+MainDelegator::MainDelegator(EventListener* el) : m_el(el), m_bProcessingRfidData(false), m_bFBServiceRunning(false), m_bSyncDeviceAndModule(false), m_timer_checkFBSerivce(NULL)
 {
   bool ret;
   cout << "start" << endl;
@@ -575,13 +628,12 @@ MainDelegator::MainDelegator(EventListener* el) : m_el(el), m_bProcessingRfidDat
     m_ws = new SafemanWebService(m_sSafeIdServerUrl.c_str(), m_sMemcoCd.c_str(), m_sSiteCd.c_str(), m_sEmbedCd.c_str(), m_sDvNo.c_str(), m_sInOut.c_str()[0]);
     
   checkNetwork();
+  m_bTimeAvailable = getSeverTime();
   m_employInfoMgr = new EmployeeInfoMgr(m_settings, m_ws, this);
   m_fbs = new FBService(m_settings->get("FB::PORT").c_str(), Serial::SB38400, this, m_settings->getBool("FB::CHECK_CODE_4"));
-  m_bFBServiceRunning = m_fbs->start(m_settings->getBool("FB::CHECK_DEVICE_ID"));
-  if(m_bFBServiceRunning){
-    m_fbs->sync();
-    m_fbs->buzzer(m_settings->getBool("FB::BUZZER"));
-  }
+
+  checkAndRunFBService();
+
   m_timeSheetMgr = new TimeSheetMgr(m_settings, m_ws);
 
 #ifdef CAMERA  
@@ -602,18 +654,11 @@ MainDelegator::MainDelegator(EventListener* el) : m_el(el), m_bProcessingRfidDat
   m_wp = media::WavPlayer::createInstance(); 
   m_wp->play("SoundFiles/start.wav");
 
-  m_timer = new Timer(cbTimer, this);
-  int interval = m_settings->getInt("App::TIMER_INTERVAL");
-  LOGI("timer interval= %d\n", interval);
-  m_timer->start(interval, true);
-  
-  m_bTimeAvailable = getSeverTime();
   string reboot_time = m_settings->get("App::REBOOT_TIME");
   LOGV("reboot time= %s\n", reboot_time.c_str()); 
   if(reboot_time != "")
     setRebootTimer(reboot_time.c_str());
 
-  m_employInfoMgr->updateLocalDB();
   LOGV("MainDelegator ---\n");
 }
 

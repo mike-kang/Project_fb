@@ -1,18 +1,21 @@
 #include <iostream>
 #include <stdio.h>
 #include "fbservice.h"
+#include <fstream>
+#include <vector>
 
 using namespace std;
 using namespace tools;
 
 FBService* fbs;
 
-class Noti: public FBService::FBServiceNoti {
+class Noti: public IFBService::IFBServiceEventListener {
 public:  
   virtual void onScanData(const char* buf)
   {
     cout << "onScanData:" << buf << endl;
   }
+  /*
   virtual void onStart(bool ret)
   {
     cout << "onStart:" << ret << endl;
@@ -25,6 +28,7 @@ public:
       cout << 2 << endl;
     }
   }
+  */
   
   virtual bool onNeedDeviceKey(char* id, char* key)
   {
@@ -43,16 +47,55 @@ public:
     }
     return false;
   }
+
+  void onNeedUserCodeList(std::vector<pair<const char*, unsigned char*> >& arr_16, std::vector<pair<const char*, unsigned char*> >& arr_4)
+  {
+  }
+
+  void onSyncComplete(bool){}
 };
+
+#define GETLIST
+//#define DELETE
+#define SAVE
+#define SCAN
+
 
 int main()
 {
   Noti noti;
   cout << "start main\n" << endl;
   fbs = new FBService("/dev/ttyUSB0", Serial::SB38400, &noti, false);
-  fbs->start(true);
+  if(!fbs->start(true)){
+    cout << "start fail!" << endl;
+    return 1;
+  }
   
-  //fbs->save("FID0000000000000012.bin");
+  fbs->buzzer(false);
+#ifdef GETLIST
+  list<string> listUserCode;
+  fbs->getList(listUserCode);
+  ofstream oOut("usercodelist.txt");
+  for(list<string>::iterator itr = listUserCode.begin(); itr != listUserCode.end(); itr++)
+    oOut << *itr << endl;
+  oOut.close();
+#endif
+#ifdef FORMAT
+  fbs->format();
+  sleep(5);
+#endif
+#ifdef DELETE
+  fbs->deleteUsercode("0000000000000036");
+  fbs->deleteUsercode("0000000000000038");
+#endif
+  
+#ifdef SAVE  
+  fbs->save("FID0000000000000012.bin");
+#endif
+
+#ifdef SCAN
+  fbs->requestStartScan(300);
+#endif
   //fbs->deleteUsercode(12);
   //fbs->requestStartScan(300);
   while(1){

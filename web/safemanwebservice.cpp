@@ -260,7 +260,7 @@ void SafemanWebService::request_EmployeeInfoAll(const char *startTime, int timel
     , m_service_name, m_sEmbed, startTime, m_url_addr);
 
   WebApi* wa;
-
+  LOGV("cmd: %s\n", cmd);
   if(cbfunc){
     wa = new RfidInfoSelectAll_WebApi(this, cmd, 0, cbfunc, client, outFilename);
     wa->processCmd();

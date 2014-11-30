@@ -1,13 +1,14 @@
 #include "fbservice.h"
 #include "tools/log.h"
 #include <stdio.h>
+#include <fstream>
 
 using namespace std;
 using namespace tools;
 
 #define LOG_TAG "FBService"
 
-FBService::FBService(const char* path, Serial::Baud baud, FBServiceNoti* fn, bool bCheckUserCode4):m_fn(fn), m_bCheckUserCode4(bCheckUserCode4)
+FBService::FBService(const char* path, Serial::Baud baud, IFBService::IFBServiceEventListener* fn, bool bCheckUserCode4):m_fn(fn), m_bCheckUserCode4(bCheckUserCode4)
 {
   m_serial = new FBProtocolCMSerial(path, baud);
   m_protocol = new FBProtocol(m_serial);
@@ -29,7 +30,7 @@ char* FBService::getVersion()
     return ret;
   }
   catch(FBProtocol::Exception e){
-    cout << "[vers]exception fail! " << e << endl;
+    LOGE("[vers]exception fail! %d", e);
     return NULL;
   }
 }
@@ -79,7 +80,7 @@ bool FBService::checkdeviceID()
         return true;
   }
   catch (FBProtocol::Exception e){
-    cout << "error:" << e << endl;
+    LOGE("[checkdeviceID]exception fail! %d", e);
   }
   return false;
 }
@@ -90,12 +91,12 @@ bool FBService::getList(list<string>& li)
     if(!m_protocol)
       cout << "m_protocol null" << endl;
     m_protocol->user(li);
-    for(list<string>::iterator itr = li.begin(); itr != li.end(); itr++)
-      cout << *itr << endl;
+    //for(list<string>::iterator itr = li.begin(); itr != li.end(); itr++)
+    //  cout << *itr << endl;
     return true;
   }
   catch (FBProtocol::Exception e){
-    cout << "error:" << e << endl;
+    LOGE("[getList]exception fail! %d", e);
   }
   return false;
 }
@@ -109,9 +110,10 @@ void FBService::cbTimerFormat(void* arg)
 
 bool FBService::format()
 {
+  LOGV("format\n");
   bool ret = m_protocol->init();
 
-  m_TimerRestart->start(5);
+  //m_TimerRestart->start(5);
   return ret;
 }
 
@@ -143,32 +145,53 @@ void FBService::buzzer(bool val)
 
 bool FBService::save(const char* filename)
 {
+  LOGV("save %s\n", filename);
   return m_protocol->save(filename);
 }
 
 bool FBService::save(const byte* buf, int length)
 {
+  LOGV("save\n");
   return m_protocol->save(buf, length);
 }
 
 bool FBService::deleteUsercode(const char* usercode)
 {
+  LOGV("deleteUsercode: %s\n", usercode);
   return m_protocol->dele(usercode);
 }
 
+#define S_INIT 0
+#define S_READY 1
 void FBService::run_scan()
 {
+  static int state = S_INIT;
   int interval = m_scan_interval * 1000;
   bool bNeedInterval = true;
   char ret;
-  char buf[20];
+  char buf[17];
+  buf[16] = '\0';
   bool bLong;
   while(m_scan_running){
     usleep(interval);
     ret = m_protocol->stat(buf, bLong);
-    printf("result %c %d\n", ret, bLong);
-    if(bLong && ret == 'A')
-      printf("*******************Good*****************\n");
+    //printf("result %c %d\n", ret, bLong);
+
+    if(state == S_INIT){
+      if(ret == '2')
+        state = S_READY;
+    }
+    else if (state == S_READY){
+      if(bLong && ret == 'A'){
+        m_fn->onScanData(buf);
+        state = S_INIT;
+      }
+      else if(ret == 'B'){
+        m_fn->onScanData("");
+        state = S_INIT;
+      }
+    }
+   
   }
 
 }
@@ -176,53 +199,84 @@ void FBService::run_scan()
 void FBService::run_sync()
 {
   LOGV("run_sync\n");
-  map<const char*, unsigned char*> device_arr_16, device_arr_4;
+  vector<pair<const char*, unsigned char*> >device_arr_16, device_arr_4;
   m_fn->onNeedUserCodeList(device_arr_16, device_arr_4);
 
-  list<string> module_list; //only 16
+  list<string> module_list; //only list usercode length 16
   if(!getList(module_list))
-    m_fn->onSync(false);
+    m_fn->onSyncComplete(false);
 
-  map<const char*, unsigned char*>::iterator d = device_arr_16.begin();
+  int modulelist_count = module_list.size();
+  LOGV("module_list.size %d\n", modulelist_count);
 
-  int count = module_list.size();
-  LOGV("module_list.size %d\n", count);
-
-  if(count == 0){
-    for(; d != device_arr_16.end(); d++){
-      save(d->second, 864);
+  if(modulelist_count == 0){
+    for(vector<pair<const char*, unsigned char*> >::size_type d = 0; d < device_arr_16.size() ; d++){
+      save(device_arr_16[d].second, 864);
     }
   }
   else{
-    list<string>::iterator m = module_list.begin();
+    LOGV("device_list16.size %d\n", device_arr_16.size());
+    list<string>::iterator m;
+#ifdef _DEBUG
+    ofstream oOut_d("device.list");
+    ofstream oOut_m("module.list");
+    for(vector<pair<const char*, unsigned char*> >::size_type d = 0; d < device_arr_16.size() ; d++){
+      //cout << "dev-" << d->first << endl;
+      oOut_d << device_arr_16[d].first << endl;
+    }
+    oOut_d.close();
+    for(m = module_list.begin(); m != module_list.end(); m++){
+      oOut_m << *m << endl;
+    }
+    oOut_m.close();
+#endif
     int compare;
-    for(; d != device_arr_16.end(); d++){
-      const char* device_usercode = d->first;
-      compare = strcmp(device_usercode, m->c_str());
+    m = module_list.begin();
+    vector<pair<const char*, unsigned char*> >::size_type d = 0;
+    
+    while(d < device_arr_16.size()){
+      const char* device_usercode = device_arr_16[d].first;
+      const char* module_usercode = m->c_str();
+      LOGV("[dev]%s vs [mod]%s\n", device_usercode, module_usercode);
+      compare = strcmp(device_usercode, module_usercode);
       if(!compare){
-        m++;
+        d++, m++;
       }
       else if(compare > 0){
-        deleteUsercode(device_usercode);
+        deleteUsercode(module_usercode);
         m++;
       }
-      else
-        save(d->second, 864);
+      else{
+        save(device_arr_16[d].second, 864);
+        d++;
+      }
+      if(m == module_list.end()){
+        for(; d < device_arr_16.size() ; d++){
+          save(device_arr_16[d].second, 864);
+        }
+        break;
+      }
     }
+    
+    for(; m != module_list.end(); m++){
+      deleteUsercode(m->c_str());
+    }
+    
   }
-
-  d = device_arr_4.begin();
+  LOGV("device_list4.size %d\n", device_arr_4.size());
 
   if(!m_bCheckUserCode4){
-    for(; d != device_arr_4.end(); d++){
-      save(d->second, 864);
+    for(vector<pair<const char*, unsigned char*> >::size_type d = 0; d < device_arr_4.size() ; d++){
+        save(device_arr_4[d].second, 864);
     }
   }
   else{
-    deleteUsercode(d->first);
+    for(vector<pair<const char*, unsigned char*> >::size_type d = 0; d < device_arr_4.size() ; d++){
+      deleteUsercode(device_arr_4[d].first);
+    }
   }
 
-  m_fn->onSync(true);
+  m_fn->onSyncComplete(true);
 }
 
 
