@@ -6,11 +6,11 @@ MACHINE=$(shell uname -m)
 CPPFLAGS =  -g -I. -fPIC 
 LIB = libfid.so
 
-ifeq ($(MACHINE), x86_64)
-  CPPFLAGS += -DSIMULATOR
-else
-  CPPFLAGS += -DCAMERA
-endif
+#ifeq ($(MACHINE), x86_64)
+# CPPFLAGS += -DSIMULATOR
+#else
+#  CPPFLAGS += -DCAMERA
+#endif
 
 
 SRCS =  maindelegator.cpp  settings.cpp employeeinfomgr.cpp timesheetmgr.cpp  \
