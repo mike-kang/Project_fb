@@ -7,43 +7,54 @@
 #include <fstream>
 #include <QImage>
 #include <QPixmap>
+#include <QMovie>
 
 #define insertTable(tag)  labelTable.insert(pair<std::string, QLabel*>(#tag, ui->label##tag)) 
 
 using namespace std;
 
+QTextCodec* MainWindow::m_codec = NULL;
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
+    //m_codec = QTextCodec::codecForName("eucKR"); //UTF-8
+
     ui->setupUi(this);
     statusLabel = new QLabel;
     statusBar()->addWidget(statusLabel);
 
-    ui->labelGateLoc->setText("");
+    ui->labelEmbed->setText("");
     ui->labelGateNo->setText("");
-    ui->labelServer->setText("");
-    ui->labelRfid->setText("");
-    ui->labelRfidNo->setText("");
-    ui->labelResult->setText("");
+    ui->labelNetwork->setText("");
+    ui->labelFID->setText("");
+    ui->labelDownload->setText("");
+    ui->labelUpload->setText("");
     ui->labelMsg->setText("");
     ui->labelCoName->setText("");
     ui->labelName->setText("");
     ui->labelPinNo->setText("");
-    ui->labelPhoto->setText("");
+    ui->labelImage->setText("");
     
-    insertTable(GateLoc);
+    insertTable(Embed);
     insertTable(GateNo);
-    insertTable(Server);
-    insertTable(Rfid);
+    insertTable(Network);
+    insertTable(FID);
     //insertTable(CoName);
     //insertTable(Name);
     //insertTable(PinNo);
-    insertTable(RfidNo);
-    insertTable(Result);
+    //insertTable(RfidNo);
+    //insertTable(Result);
     insertTable(Msg);
     m_img_buf = NULL;
+    QMovie *movie = new QMovie("Images/finger.gif");
+    ui->labelAnimation->setMovie(movie);
+    movie->start();
+
+    m_pm_auth_pass = QPixmap(":/Images/authok.jpg");
+    m_pm_auth_fail = QPixmap(":/Images/authfail.jpg");
+
     MainDelegator* md = MainDelegator::createInstance(this);
     //md->setEventListener(this);
 
@@ -57,9 +68,10 @@ MainWindow::MainWindow(QWidget *parent) :
     timer->start(1000);
     
     connect(this, SIGNAL(employeeInfo()), this, SLOT(updateEmployeeInfo()));
-    
+    connect(this, SIGNAL(resultImage()), this, SLOT(displayResultImage()));
+
     m_timerEmployeeInfo = new QTimer(this);
-    connect(m_timerEmployeeInfo, SIGNAL(timeout()), this, SLOT(cleanEmployeeInfo()));
+    connect(m_timerEmployeeInfo, SIGNAL(timeout()), this, SLOT(cleanInfo()));
 
 
 }
@@ -71,16 +83,8 @@ MainWindow::~MainWindow()
 
 void MainWindow::onEmployeeInfo(std::string CoName, std::string Name, std::string PinNo)
 {
-/*
-    QMetaObject::invokeMethod(ui->labelCoName, "setText", Q_ARG(QString, CoName.c_str()));
-    QMetaObject::invokeMethod(ui->labelName, "setText", Q_ARG(QString, Name.c_str()));
-    QMetaObject::invokeMethod(ui->labelPinNo, "setText", Q_ARG(QString, PinNo.c_str()));
-    QPixmap pix;
-    pix.loadFromData(img_buf, img_sz, "JPG");
-    QMetaObject::invokeMethod(ui->labelPhoto, "setPixmap", Q_ARG(QPixmap, pix));
-*/
-  m_CoName = CoName.c_str();
-  m_Name = Name.c_str();
+  m_CoName = QString::fromLocal8Bit(CoName.c_str());
+  m_Name = QString::fromLocal8Bit(Name.c_str());
   m_PinNo = PinNo.c_str();
     
   emit employeeInfo();
@@ -88,20 +92,49 @@ void MainWindow::onEmployeeInfo(std::string CoName, std::string Name, std::strin
 
 void MainWindow::onMessage(std::string tag, std::string data)
 {
-    cout << "onMessage:" << tag << ":" << data << endl;
-    for(std::map<std::string, QLabel*>::iterator iter = labelTable.begin(); iter != labelTable.end(); iter++){
-      if(iter->first == tag){
-        QMetaObject::invokeMethod(iter->second, "setText", Q_ARG(QString, data.c_str()));
-      }
-        
+  //cout << "onMessage:" << tag << ":" << data << endl;
+  for(std::map<std::string, QLabel*>::iterator iter = labelTable.begin(); iter != labelTable.end(); iter++){
+    if(iter->first == tag){
+      QMetaObject::invokeMethod(iter->second, "setText", Q_ARG(QString, QString::fromLocal8Bit(data.c_str())));
     }
+  }
+  /*
+  if(m_timerEmployeeInfo->isActive())
+    m_timerEmployeeInfo->stop();
+  m_timerEmployeeInfo->start(5000);
+  */
+}
+
+void MainWindow::onLogo(std::string data)
+{
+  if(data == "LT"){
+    m_pm_logo = QPixmap(":/Images/logo_lt.bmp");
+  }
+  else{
+    m_pm_logo = QPixmap(":/Images/logo.bmp");
+  }
+  
+  //m_pm_logo = m_pm_logo.scaled(img->
+  ui->labelImage->setPixmap(m_pm_logo);
+  //ui->labelImage->setPixmap(m_pm_auth_pass);
 }
 
 void MainWindow::onStatus(std::string status)
 {
-  cout << status << endl;
+  cout << "onStatus:" << status << endl;
   QMetaObject::invokeMethod(statusLabel, "setText", Q_ARG(QString, status.c_str()));
 }
+
+void MainWindow::onImage(bool val)
+{
+  cout << "onImage" << endl;
+  if(val)
+    m_pm_auth = &m_pm_auth_pass;
+  else
+    m_pm_auth = &m_pm_auth_fail;
+  emit resultImage();
+}
+
 
 void MainWindow::updateTime()
 {
@@ -113,27 +146,33 @@ void MainWindow::updateTime()
 
 void MainWindow::updateEmployeeInfo()
 {
-  static QPixmap* pix = NULL;
+  //static QPixmap* pix = NULL;
   if(m_timerEmployeeInfo->isActive())
     m_timerEmployeeInfo->stop();
   m_timerEmployeeInfo->start(5000);
   ui->labelCoName->setText(m_CoName);
   ui->labelName->setText(m_Name);
-  //QMetaObject::invokeMethod(ui->labelPinNo, "setText", Q_ARG(QString, PinNo.c_str()));
-  //ofstream oOut2("aaa.jpg", ofstream::binary);
-  //oOut2.write((const char*)m_img_buf, m_img_sz);
-  //oOut2.close();
-  ui->labelPhoto->clear();
+  //ui->labelPhoto->clear();
 }
 
-void MainWindow::cleanEmployeeInfo()
+void MainWindow::cleanInfo()
 {
+  qDebug() << "cleanEmployeeInfo";
   ui->labelCoName->setText("");
   ui->labelName->setText("");
-  ui->labelPhoto->clear();
-  ui->labelRfidNo->setText("");
-  ui->labelResult->setText("");
+  ui->labelImage->setPixmap(m_pm_logo);
   ui->labelMsg->setText("");
   m_timerEmployeeInfo->stop();
 }
+
+void MainWindow::displayResultImage()
+{
+  ui->labelImage->setPixmap(m_Name);
+  QMetaObject::invokeMethod(ui->labelImage, "setPixmap", Q_ARG(QPixmap, *m_pm_auth));
+  
+  if(m_timerEmployeeInfo->isActive())
+    m_timerEmployeeInfo->stop();
+  m_timerEmployeeInfo->start(5000);
+}
+
 

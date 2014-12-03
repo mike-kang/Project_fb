@@ -26,14 +26,14 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <widget class="QLabel" name="labelGateLoc">
+   <widget class="QLabel" name="labelEmbed">
     <property name="enabled">
      <bool>true</bool>
     </property>
     <property name="geometry">
      <rect>
-      <x>160</x>
-      <y>10</y>
+      <x>10</x>
+      <y>30</y>
       <width>85</width>
       <height>17</height>
      </rect>
@@ -48,9 +48,25 @@
     </property>
     <property name="geometry">
      <rect>
-      <x>250</x>
+      <x>190</x>
+      <y>30</y>
+      <width>66</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>TextLabel</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="labelNetwork">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>150</x>
       <y>10</y>
-      <width>66</width>
+      <width>81</width>
       <height>17</height>
      </rect>
     </property>
@@ -58,30 +74,14 @@
      <string>TextLabel</string>
     </property>
    </widget>
-   <widget class="QLabel" name="labelServer">
+   <widget class="QLabel" name="labelFID">
     <property name="enabled">
      <bool>true</bool>
     </property>
     <property name="geometry">
      <rect>
-      <x>10</x>
-      <y>40</y>
-      <width>66</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>TextLabel</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="labelRfid">
-    <property name="enabled">
-     <bool>true</bool>
-    </property>
-    <property name="geometry">
-     <rect>
-      <x>130</x>
-      <y>40</y>
+      <x>240</x>
+      <y>10</y>
       <width>80</width>
       <height>17</height>
      </rect>
@@ -97,20 +97,20 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>70</y>
+      <y>55</y>
       <width>66</width>
       <height>17</height>
      </rect>
     </property>
     <property name="text">
-     <string>Company</string>
+     <string>회사</string>
     </property>
    </widget>
    <widget class="Line" name="line">
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>50</y>
+      <y>40</y>
       <width>301</width>
       <height>16</height>
      </rect>
@@ -126,13 +126,13 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>100</y>
+      <y>72</y>
       <width>66</width>
       <height>17</height>
      </rect>
     </property>
     <property name="text">
-     <string>Name</string>
+     <string>이름</string>
     </property>
    </widget>
    <widget class="QLabel" name="staticLabel1_3">
@@ -142,29 +142,13 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>130</y>
+      <y>91</y>
       <width>66</width>
       <height>17</height>
      </rect>
     </property>
     <property name="text">
-     <string>PIN No</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="staticLabel1_4">
-    <property name="enabled">
-     <bool>true</bool>
-    </property>
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>165</y>
-      <width>66</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>RFID No</string>
+     <string>PIN 번호</string>
     </property>
    </widget>
    <widget class="QLabel" name="labelCoName">
@@ -174,7 +158,7 @@
     <property name="geometry">
      <rect>
       <x>90</x>
-      <y>70</y>
+      <y>55</y>
       <width>66</width>
       <height>16</height>
      </rect>
@@ -190,7 +174,7 @@
     <property name="geometry">
      <rect>
       <x>90</x>
-      <y>100</y>
+      <y>72</y>
       <width>66</width>
       <height>16</height>
      </rect>
@@ -206,7 +190,7 @@
     <property name="geometry">
      <rect>
       <x>90</x>
-      <y>130</y>
+      <y>91</y>
       <width>101</width>
       <height>16</height>
      </rect>
@@ -215,15 +199,15 @@
      <string>TextLabel</string>
     </property>
    </widget>
-   <widget class="QLabel" name="labelRfidNo">
+   <widget class="QLabel" name="labelDownload">
     <property name="enabled">
      <bool>true</bool>
     </property>
     <property name="geometry">
      <rect>
-      <x>90</x>
-      <y>165</y>
-      <width>111</width>
+      <x>210</x>
+      <y>70</y>
+      <width>81</width>
       <height>16</height>
      </rect>
     </property>
@@ -231,14 +215,14 @@
      <string>TextLabel</string>
     </property>
    </widget>
-   <widget class="QLabel" name="labelResult">
+   <widget class="QLabel" name="labelUpload">
     <property name="enabled">
      <bool>true</bool>
     </property>
     <property name="geometry">
      <rect>
       <x>210</x>
-      <y>165</y>
+      <y>89</y>
       <width>66</width>
       <height>16</height>
      </rect>
@@ -282,17 +266,33 @@
      <string>TextLabel</string>
     </property>
    </widget>
-   <widget class="QLabel" name="labelPhoto">
+   <widget class="QLabel" name="labelImage">
     <property name="geometry">
      <rect>
-      <x>180</x>
-      <y>70</y>
-      <width>121</width>
-      <height>91</height>
+      <x>20</x>
+      <y>113</y>
+      <width>111</width>
+      <height>81</height>
      </rect>
     </property>
     <property name="text">
      <string>TextLabel</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="labelAnimation">
+    <property name="geometry">
+     <rect>
+      <x>170</x>
+      <y>110</y>
+      <width>121</width>
+      <height>81</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="pixmap">
+     <pixmap>Images/finger.gif</pixmap>
     </property>
    </widget>
   </widget>

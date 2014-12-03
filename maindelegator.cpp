@@ -20,6 +20,12 @@ using namespace web;
 
 #define LOG_TAG "MainDelegator"
 
+string str_nodata = " 데이터가 없습니다.";
+string str_prohibition_entrance = "출입금지 ";
+string str_prohibition_entrance_3out = "출입금지 삼진아웃";
+string str_success = " 인증에 성공했습니다.";
+string str_fail = "인증에 실패했습니다. 재시도 하세요.";
+
 MainDelegator* MainDelegator::my = NULL;
 
 MainDelegator* MainDelegator::createInstance(EventListener* el)
@@ -154,75 +160,120 @@ bool MainDelegator::checkDate(Date* start, Date* end, string& msg)
   return true;
 }
 
+const char* MainDelegator::debug_str(AuthMode m)
+{
+  switch(m){
+    case AM_NORMAL: return "AM_NORMAL";
+    case AM_PASS_NOREGISTOR: return "AM_PASS_NOREGISTOR";
+    case AM_PASS_THREEOUT: return "AM_PASS_THREEOUT";
+  }
+}
+void MainDelegator::processAuthResult(bool result, const char* sound_path, string msg)
+{
+  if(m_bSound)
+    m_wp->play(sound_path);
+  if(result){
+    m_Relay->on(1500);
+    m_greenLed->on(1500);
+  }
+  else{
+    m_redLed->on(1500);
+  }
+  m_el->onMessage("Msg", msg);
+  m_el->onImage(result);
+}
 void MainDelegator::onScanData(const char* usercode)
 {
-  LOGI("onData %s +++\n", usercode);
+  LOGI("onScanData %s +++\n", usercode);
   char* imgBuf = NULL;;
   int imgLength = 0;
+  static int out_count = 0;
   string msg;
-  m_bProcessingRfidData = true;
-  printf("onData: %s\n", usercode);
+  
+  m_bProcessingAuth = true;
+
   m_wp->stop();
   m_greenLed->off();
   m_redLed->off();
-  m_el->onMessage("RfidNo", usercode);
-  EmployeeInfoMgr::EmployeeInfo* ei;
-  //checkNetwork();
-  bool ret = m_employInfoMgr->getInfo(usercode, &ei);
+  //m_el->onMessage("RfidNo", usercode);
+  if(usercode){
+    string str_usercode(usercode);
+    EmployeeInfoMgr::EmployeeInfo* ei;
+    bool ret = m_employInfoMgr->getInfo(usercode, &ei);
 
-  if(!ret){
-    LOGE("get employee info fail!\n");
-    m_el->onEmployeeInfo("", "", "");
-    if(m_bSound)
-      m_wp->play("SoundFiles/fail.wav");
-    m_redLed->on(1500);
-    m_el->onMessage("Result", "FAIL");
-    m_el->onMessage("Msg", "NO DATA");
-    goto error;
-  }
-  m_el->onEmployeeInfo(ei->company_name, ei->lab_name, ei->pin_no);
-  if(!checkValidate(ei, msg)){
-    if(m_bSound)
-      m_wp->play("SoundFiles/fail.wav");
-    m_redLed->on(1500);
-    m_el->onMessage("Result", "FAIL");
-    m_el->onMessage("Msg", msg);
-    goto error;
-  }
+    if(!ret){
+      LOGE("get employee info fail!\n");
+      //m_el->onEmployeeInfo("", "", "");
+      processAuthResult(false, "SoundFiles/authfail.wav", str_usercode + str_nodata);
+      goto error;
+    }
 
-  if(m_bSound)
-    m_wp->play("SoundFiles/ok.wav");
-  m_greenLed->on(1500);
-  m_Relay->on(1500);
-  m_el->onMessage("Msg", msg);
-  m_el->onMessage("Result", "OK");
+    if(m_bDisplayEmployeeInfo)
+      m_el->onEmployeeInfo(ei->company_name, ei->lab_name, ei->pin_no);
 
-#ifdef CAMERA
-  if(m_bCapture){
-    if(m_cameraStill->takePicture(&imgBuf, &imgLength, m_takePictureMaxWaitTime))
-    {
-      //for debuf
-      if(m_bSavePictureFile){
-        if(imgLength < 0)
-          fprintf(stderr, "takePicture error!\n");
-        else{
-          //LOGV("takePicture %x %d\n", imgBuf, imgLength);
-          FILE* fp = fopen("test.jpeg", "wb");
-          fwrite(imgBuf, 1, imgLength, fp);
-          fclose(fp);
-        }
+    if(m_admin1 == usercode){
+      LOGV("Mode Change : %s -> AM_NORMAL\n", debug_str(m_authMode));   
+      m_authMode = AM_NORMAL;
+      out_count = 0;
+    }
+    else if(m_admin2 == usercode){
+      LOGV("Mode Change : %s -> AM_PASS_NOREGISTOR\n", debug_str(m_authMode));   
+      m_authMode = AM_PASS_NOREGISTOR;
+    }
+    else if(m_admin3 == usercode){
+      LOGV("Mode Change : %s -> AM_PASS_THREEOUT\n", debug_str(m_authMode));   
+      m_authMode = AM_PASS_THREEOUT;
+    }
+    else if(m_admin4 == usercode){
+      LOGV("admin4\n");   
+      ; // todo
+    }
+
+    if(m_bCheck){
+      if(ei->blacklistinfo != ""){
+        LOGV("blacklist: %s\n", ei->blacklistinfo.c_str());   
+        processAuthResult(false, "SoundFiles/authcheck.wav", str_prohibition_entrance + ei->blacklistinfo);
+        goto error;
+      }
+      if(ei->pnt_cnt >= 3){
+        LOGV("penalty count: %s\n", ei->pnt_cnt);   
+        processAuthResult(false, "SoundFiles/authcheck.wav", str_prohibition_entrance_3out);
+        goto error;
       }
     }
-    else{
-      LOGE("take Picture fail!!!\n");
+    
+    processAuthResult(true, "SoundFiles/authok.wav", str_usercode + str_success);
+    out_count = 0;
+    m_timeSheetMgr->insert(ei->pin_no);
+ 
+  }
+  else {
+    switch(m_authMode){
+      case AM_NORMAL:
+        processAuthResult(false, "SoundFiles/authfail.wav", str_fail);
+        break;
+        
+      case AM_PASS_NOREGISTOR:
+        processAuthResult(true, "SoundFiles/authok.wav", str_success);
+        break;
+
+      case AM_PASS_THREEOUT:
+        if(out_count < 2){
+          out_count++;
+          processAuthResult(false, "SoundFiles/authfail.wav", str_fail);
+        }
+        else{
+          processAuthResult(true, "SoundFiles/authok.wav", str_success);
+          out_count = 0;
+        }
+        break;
+        
     }
   }
-#endif
-  m_timeSheetMgr->insert(ei->pin_no);
 
 error:
-  LOGI("onData ---\n");
-  m_bProcessingRfidData = false;
+  LOGI("onScanData ---\n");
+  m_bProcessingAuth = false;
 }
 
 bool MainDelegator::onNeedDeviceKey(char* id, char* key)
@@ -382,6 +433,7 @@ void MainDelegator::checkAndRunFBService()
   if(!m_bFBServiceRunning){
     m_bFBServiceRunning = m_fbs->start(m_settings->getBool("FB::CHECK_DEVICE_ID"));
     if(m_bFBServiceRunning){
+      m_el->onMessage("FID", "FID On");
       if(m_timer_checkFBSerivce){
         m_timer_checkFBSerivce->stop();
         delete m_timer_checkFBSerivce;
@@ -391,6 +443,7 @@ void MainDelegator::checkAndRunFBService()
       m_fbs->sync();
     }
     else{
+      m_el->onMessage("FID", "FID Off");
       m_timer_checkFBSerivce = new Timer(cbTimerCheckFBService, this);
       m_timer_checkFBSerivce->start(10, true);
     }
@@ -425,7 +478,7 @@ void MainDelegator::cbTimer(void* arg)
 
   LOGV("cbTimer count=%d\n", count);
 
-  if(md->m_bProcessingRfidData){
+  if(md->m_bProcessingAuth){
     LOGV("cbTimer returned by processing card\n");
     return;
   }
@@ -484,13 +537,13 @@ void MainDelegator::displayNetworkStatus(bool val)
   
   if(!bInitialized || val != m_bNetworkAvailable){
     if(val){
-      LOGV("Server ON\n");
-      m_el->onMessage("Server", "Server ON");
+      LOGV("Network ON\n");
+      m_el->onMessage("Network", "Network On");
       m_yellowLed->off();
     }
     else{
-      LOGV("Server OFF\n");
-      m_el->onMessage("Server", "Server OFF");
+      LOGV("Network OFF\n");
+      m_el->onMessage("Network", "Network Off");
       int arr[] = {1000, 1000, 0};
       m_yellowLed->on(arr, true);
     }
@@ -521,7 +574,11 @@ bool MainDelegator::SettingInit()
   m_bCheck = m_settings->getBool("App::CHECK");
   m_sAuthCode = m_settings->get("App::AUTH_CODE");
   m_bTestSignal = m_settings->getBool("App::TEST_SIGNAL");
-  
+  m_admin1 = m_settings->get("App::ADMIN1");
+  m_admin2 = m_settings->get("App::ADMIN2");
+  m_admin3 = m_settings->get("App::ADMIN3");
+  m_admin4 = m_settings->get("App::ADMIN4");
+  m_bDisplayEmployeeInfo = m_settings->getBool("App::DISPLAY_EMPLOYEE_INFO");
   //Action
   m_bCapture = m_settings->getBool("Action::CAPTURE");
   m_bSound = m_settings->getBool("Action::SOUND");
@@ -563,7 +620,7 @@ bool MainDelegator::SettingInit()
   return true;
 }
 
-MainDelegator::MainDelegator(EventListener* el) : m_el(el), m_bProcessingRfidData(false), m_bFBServiceRunning(false), m_bSyncDeviceAndModule(false), m_timer_checkFBSerivce(NULL)
+MainDelegator::MainDelegator(EventListener* el) : m_el(el), m_bProcessingAuth(false), m_bFBServiceRunning(false), m_bSyncDeviceAndModule(false), m_timer_checkFBSerivce(NULL)
 {
   bool ret;
   cout << "start" << endl;
@@ -609,6 +666,7 @@ MainDelegator::MainDelegator(EventListener* el) : m_el(el), m_bProcessingRfidDat
   m_serialRfid->start(m_rfidCheckInterval, this); //interval=300ms  
   m_el->onMessage("Rfid", m_sRfidMode + " ON");
 #endif  
+  m_authMode = AM_NORMAL;
 
   //m_el->onStatus("WebService Url:" + m_sServerUrl);
   //m_ws = new WebService("192.168.0.7", 8080);
@@ -616,17 +674,21 @@ MainDelegator::MainDelegator(EventListener* el) : m_el(el), m_bProcessingRfidDat
   LOGV("m_sServerURL= %s\n", m_sDWServerUrl.c_str()); 
   LOGV("m_sServerURL= %s\n", m_sLotteIdServerUrl.c_str()); 
   LOGV("m_sServerURL= %s\n", m_sSafeIdServerUrl.c_str()); 
-
+  m_el->onLogo(m_sServerType.c_str());
   if(m_sServerType == "DW"){
     DWWebService* dw = new DWWebService(m_sDWServerUrl.c_str(), m_sMemcoCd.c_str(), m_sSiteCd.c_str(), m_sEmbedCd.c_str(), m_sDvNo.c_str(), m_sInOut.c_str()[0]);
     SafemanWebService* sm = new SafemanWebService(m_sSafeIdServerUrl.c_str(), m_sMemcoCd.c_str(), m_sSiteCd.c_str(), m_sEmbedCd.c_str(), m_sDvNo.c_str(), m_sInOut.c_str()[0]);
     m_ws = new MyDWWebService(dw, sm);
+    el->onStatus(m_sDWServerUrl.c_str());
   }
-  else if(m_sServerType == "LT")
+  else if(m_sServerType == "LT"){
     m_ws = new SafemanWebService(m_sLotteIdServerUrl.c_str(), m_sMemcoCd.c_str(), m_sSiteCd.c_str(), m_sEmbedCd.c_str(), m_sDvNo.c_str(), m_sInOut.c_str()[0]);
-  else
+    el->onStatus(m_sLotteIdServerUrl.c_str());
+  }
+  else{
     m_ws = new SafemanWebService(m_sSafeIdServerUrl.c_str(), m_sMemcoCd.c_str(), m_sSiteCd.c_str(), m_sEmbedCd.c_str(), m_sDvNo.c_str(), m_sInOut.c_str()[0]);
-    
+    el->onStatus(m_sSafeIdServerUrl.c_str());
+  }
   checkNetwork();
   m_bTimeAvailable = getSeverTime();
   m_employInfoMgr = new EmployeeInfoMgr(m_settings, m_ws, this);
@@ -649,6 +711,9 @@ MainDelegator::MainDelegator(EventListener* el) : m_el(el), m_bProcessingRfidDat
   string locationName = getLocationName();
   m_el->onMessage("GateLoc", locationName);
 #endif
+  m_el->onMessage("Embed", m_sEmbedCd);
+  
+
   m_el->onMessage("GateNo", "No." + m_sDvNo);
   
   m_wp = media::WavPlayer::createInstance(); 

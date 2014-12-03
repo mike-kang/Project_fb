@@ -41,8 +41,8 @@ TimeSheetMgr::TimeSheet::TimeSheet(string pinno)
 
 TimeSheetMgr::TimeSheet::~TimeSheet()
 {
-  if(m_photo_img)
-    delete m_photo_img;
+  //if(m_photo_img)
+  //  delete m_photo_img;
 }
 
 void TimeSheetMgr::insert(string pinno)

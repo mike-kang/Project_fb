@@ -187,7 +187,7 @@ void FBService::run_scan()
         state = S_INIT;
       }
       else if(ret == 'B'){
-        m_fn->onScanData("");
+        m_fn->onScanData(NULL);
         state = S_INIT;
       }
     }

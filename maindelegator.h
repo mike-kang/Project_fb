@@ -27,12 +27,19 @@ public:
   class EventListener {
   public:
     //virtual void onRFSerialNumber(char* serial) = 0;
-    virtual void onMessage(std::string tag, std::string data) = 0;
+    virtual void onMessage(std::string tag, std::string data) = 0; //for lable
+    virtual void onLogo(std::string data) = 0;
     virtual void onEmployeeInfo(std::string CoName, std::string Name, std::string PinNo) = 0;
     virtual void onStatus(std::string status) = 0;
+    virtual void onImage(bool) = 0;
   };
   enum Ret {
     RET_SUCCESS,
+  };
+  enum AuthMode {
+    AM_NORMAL,
+    AM_PASS_NOREGISTOR,
+    AM_PASS_THREEOUT,
   };
   virtual void onScanData(const char* buf);
   virtual bool onNeedDeviceKey(char* id, char* key);
@@ -86,6 +93,8 @@ private:
   //static void cb_ServerTimeGet(void* arg);
   //void _cb_ServerTimeGet(void* arg);
   static void cbRebootTimer(void* arg);
+  const char* debug_str(AuthMode m);
+  void processAuthResult(bool result, const char* sound_path, string msg);
 
 
   Thread<MainDelegator> *m_thread;
@@ -140,7 +149,11 @@ private:
   string m_sRfidMode; //="1356M";
   string m_sRfid1356Port; // /dev/ttyAMA0
   string m_sRfid900Port; // /dev/ttyUSB0
-
+  string m_admin1;
+  string m_admin2;
+  string m_admin3;
+  string m_admin4;
+  
   int m_fbCheckInterval; //ms
   string m_fbPort; // /dev/ttyUSB0
 #ifdef CAMERA  
@@ -154,11 +167,12 @@ private:
   //string m_sServerURL;
   //string m_consolePath;
   
-  bool m_bProcessingRfidData;
+  bool m_bProcessingAuth;
   bool m_bTimeAvailable;
   bool m_bSyncDeviceAndModule;
   bool m_bTestSignal; //for debug
-  
+  AuthMode m_authMode;
+  bool m_bDisplayEmployeeInfo;
   //Led
   SwitchGpio* m_yellowLed;
   SwitchGpio* m_blueLed;

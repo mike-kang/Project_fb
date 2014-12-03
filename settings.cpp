@@ -40,6 +40,11 @@ Settings::Settings(const char* filename)
      //mapBoolInsert(App, DISPLAY_PHOTO, true);
      mapIntInsert(App, TIMER_INTERVAL, 60);  //60 sec
      mapBoolInsert(App, TEST_SIGNAL, false);
+     mapStrInsert(App, ADMIN1, 0000001111111111);
+     mapStrInsert(App, ADMIN2, 0000001111111112);
+     mapStrInsert(App, ADMIN3, 0000001111111113);
+     mapStrInsert(App, ADMIN4, 0000001111111114);
+     mapBoolInsert(App, DISPLAY_EMPLOYEE_INFO, true);
      
      //Action
      mapBoolInsert(Action, CAPTURE, true);
@@ -65,10 +70,11 @@ Settings::Settings(const char* filename)
      mapStrInsert(FB_KEY, 14070590 , 80D4FEB2EC4B5CB3);
 
      //Camera
+#ifdef CAMARA    
      mapIntInsert(Camera, DELAY_OFF_TIME, 600);  //600 sec
      mapBoolInsert(Camera, SAVE_PICTURE_FILE, false);
      mapIntInsert(Camera, TAKEPICTURE_MAX_WAIT_TIME, 2);  // 2 sec
-     
+#endif     
      
      //Log
      mapBoolInsert(Log, CONSOLE, false);
@@ -109,6 +115,11 @@ Settings::Settings(const char* filename)
   //mapBoolInsertFromReader(App, DISPLAY_PHOTO, true);
   mapIntInsertFromReader(App, TIMER_INTERVAL, 60);  //60 sec
   mapBoolInsertFromReader(App, TEST_SIGNAL, false);
+  mapStrInsertFromReader(App, ADMIN1, 0000001111111111);
+  mapStrInsertFromReader(App, ADMIN2, 0000001111111112);
+  mapStrInsertFromReader(App, ADMIN3, 0000001111111113);
+  mapStrInsertFromReader(App, ADMIN4, 0000001111111114);
+  mapBoolInsertFromReader(App, DISPLAY_EMPLOYEE_INFO, true);
 
   //Action
   mapBoolInsertFromReader(Action, CAPTURE, true);
@@ -134,10 +145,11 @@ Settings::Settings(const char* filename)
   mapStrInsertFromReader(FB_KEY, 14070590 , 80D4FEB2EC4B5CB3);
 
   //Camera
+#ifdef CAMARA    
   mapIntInsertFromReader(Camera, DELAY_OFF_TIME, 600);  //600 sec
   mapBoolInsertFromReader(Camera, SAVE_PICTURE_FILE, false);
   mapIntInsertFromReader(Camera, TAKEPICTURE_MAX_WAIT_TIME, 2);  // 2 sec
-
+#endif
   //Log
   mapBoolInsertFromReader(Log, CONSOLE, false);
   mapIntInsertFromReader(Log, CONSOLE_LEVEL, 1);  // 1(VERBOSE), 2(DEBUF), 3(INFO), 4(WARN), 5(ERROR), 6(FATAL)
