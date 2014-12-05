@@ -20,6 +20,7 @@ using namespace web;
 
 #define LOG_TAG "MainDelegator"
 
+//utf8
 string str_nodata = " 데이터가 없습니다.";
 string str_prohibition_entrance = "출입금지 ";
 string str_prohibition_entrance_3out = "출입금지 삼진아웃";
@@ -203,7 +204,7 @@ void MainDelegator::onScanData(const char* usercode)
 
     if(!ret){
       LOGE("get employee info fail!\n");
-      //m_el->onEmployeeInfo("", "", "");
+      m_el->onEmployeeInfo("", "", "");
       processAuthResult(false, "SoundFiles/authfail.wav", str_usercode + str_nodata);
       goto error;
     }
@@ -248,6 +249,7 @@ void MainDelegator::onScanData(const char* usercode)
  
   }
   else {
+    m_el->onEmployeeInfo("", "", "");
     switch(m_authMode){
       case AM_NORMAL:
         processAuthResult(false, "SoundFiles/authfail.wav", str_fail);
