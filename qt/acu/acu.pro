@@ -11,11 +11,18 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        mainwindow.cpp
+        mainwindow.cpp \
+        syncdialog.cpp \
+        updatedialog.cpp
 
-HEADERS  += mainwindow.h
 
-FORMS    += mainwindow.ui
+HEADERS  += mainwindow.h \
+    syncdialog.h \
+    updatedialog.h
+
+FORMS    += mainwindow.ui \
+    syncdialog.ui \
+    updatedialog.ui
 
 #DEFINES = SIMULATOR
 DEFINES += CAMERA

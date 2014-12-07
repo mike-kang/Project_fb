@@ -10,10 +10,18 @@ class IFBService {
 public:
   class IFBServiceEventListener {
   public:
+    enum SyncStatus{
+      SS_START,
+      SS_COUNT,
+      SS_PROCESS,
+      SS_FAIL,
+      SS_SUCCESS,
+    };
     virtual void onScanData(const char* buf) = 0;
     virtual bool onNeedDeviceKey(char* id, char* key) = 0;
     virtual void onNeedUserCodeList(std::vector<std::pair<const char*, unsigned char*> >& arr_16, std::vector<std::pair<const char*, unsigned char*> >& arr_4) = 0;
-    virtual void onSyncComplete(bool result) = 0;
+    virtual void onSync(IFBService::IFBServiceEventListener::SyncStatus status, 
+    int index=0) = 0;
   };
 
   virtual bool start(bool check = false) = 0;

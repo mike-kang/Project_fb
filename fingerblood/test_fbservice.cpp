@@ -52,7 +52,8 @@ public:
   {
   }
 
-  void onSyncComplete(bool){}
+  void onSync(IFBService::IFBServiceEventListener::SyncStatus status, 
+    int index=0){}
 };
 
 #define GETLIST

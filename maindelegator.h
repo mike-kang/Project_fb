@@ -27,6 +27,14 @@ public:
   class EventListener {
   public:
     //virtual void onRFSerialNumber(char* serial) = 0;
+    virtual void onSyncStart() = 0;
+    virtual void onSyncCount(int count) = 0;
+    virtual void onSyncIndex(int index) = 0;
+    virtual void onSyncEnd(bool val) = 0;
+    virtual void onUpdateStart() = 0;
+    virtual void onUpdateCount(int count) = 0;
+    virtual void onUpdateIndex(int index) = 0;
+    virtual void onUpdateEnd(bool val) = 0;
     virtual void onMessage(std::string tag, std::string data) = 0; //for lable
     virtual void onLogo(std::string data) = 0;
     virtual void onEmployeeInfo(std::string CoName, std::string Name, std::string PinNo) = 0;
@@ -44,13 +52,15 @@ public:
   virtual void onScanData(const char* buf);
   virtual bool onNeedDeviceKey(char* id, char* key);
   virtual void onNeedUserCodeList(std::vector<pair<const char*, unsigned char*> >& arr_16, std::vector<pair<const char*, unsigned char*> >& arr_4);
-  virtual void onSyncComplete(bool result);
+  virtual void onSync(IFBService::IFBServiceEventListener::SyncStatus status, int index);
   //virtual std::map<string, EmployeeInfo*>& onNeedUserCodeList();
 
-  virtual void onEmployeeInfoTotal(int insert_count, int update_count, int delete_count);
-  virtual void onEmployeeInfoInsert(const unsigned char* userdata, int index);
-  virtual void onEmployeeInfoUpdate(string& usercode, const unsigned char* userdata, int index);
-  virtual void onEmployeeInfoDelete(string& usercode, int index);
+  virtual void onEmployeeMgrUpdateStart();
+  virtual void onEmployeeMgrUpdateCount(int insert_count, int update_count, int delete_count);
+  virtual void onEmployeeMgrUpdateInsert(const unsigned char* userdata, int index);
+  virtual void onEmployeeMgrUpdateUpdate(string& usercode, const unsigned char* userdata, int index);
+  virtual void onEmployeeMgrUpdateDelete(string& usercode, int index);
+  virtual void onEmployeeCountChanged(int length_16, int length_4);
 
 
   static MainDelegator* createInstance(EventListener* el);
@@ -173,6 +183,7 @@ private:
   bool m_bTestSignal; //for debug
   AuthMode m_authMode;
   bool m_bDisplayEmployeeInfo;
+  bool m_bCheckUsercode4;
   //Led
   SwitchGpio* m_yellowLed;
   SwitchGpio* m_blueLed;

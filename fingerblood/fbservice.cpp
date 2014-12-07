@@ -199,28 +199,35 @@ void FBService::run_scan()
 void FBService::run_sync()
 {
   LOGV("run_sync\n");
+  m_fn->onSync(IFBService::IFBServiceEventListener::SS_START);
   vector<pair<const char*, unsigned char*> >device_arr_16, device_arr_4;
   m_fn->onNeedUserCodeList(device_arr_16, device_arr_4);
 
   list<string> module_list; //only list usercode length 16
   if(!getList(module_list))
-    m_fn->onSyncComplete(false);
+    m_fn->onSync(IFBService::IFBServiceEventListener::SS_FAIL);
 
   int modulelist_count = module_list.size();
   LOGV("module_list.size %d\n", modulelist_count);
 
+  vector<pair<const char*, unsigned char*> >::size_type d;
+  vector<pair<const char*, unsigned char*> >::size_type devicelist_count = device_arr_16.size();
+  vector<pair<const char*, unsigned char*> >::size_type devicelist_4_count = device_arr_4.size();
+
+  m_fn->onSync(IFBService::IFBServiceEventListener::SS_COUNT, devicelist_count + devicelist_4_count);
   if(modulelist_count == 0){
-    for(vector<pair<const char*, unsigned char*> >::size_type d = 0; d < device_arr_16.size() ; d++){
+    for(d = 0; d < devicelist_count ; d++){
+      m_fn->onSync(IFBService::IFBServiceEventListener::SS_PROCESS, d);
       save(device_arr_16[d].second, 864);
     }
   }
   else{
-    LOGV("device_list16.size %d\n", device_arr_16.size());
+    LOGV("device_list16.size %d\n", devicelist_count);
     list<string>::iterator m;
 #ifdef _DEBUG
     ofstream oOut_d("device.list");
     ofstream oOut_m("module.list");
-    for(vector<pair<const char*, unsigned char*> >::size_type d = 0; d < device_arr_16.size() ; d++){
+    for( d = 0; d < devicelist_count ; d++){
       //cout << "dev-" << d->first << endl;
       oOut_d << device_arr_16[d].first << endl;
     }
@@ -232,9 +239,10 @@ void FBService::run_sync()
 #endif
     int compare;
     m = module_list.begin();
-    vector<pair<const char*, unsigned char*> >::size_type d = 0;
+    d = 0;
     
-    while(d < device_arr_16.size()){
+    while(d < devicelist_count){
+      m_fn->onSync(IFBService::IFBServiceEventListener::SS_PROCESS, d);
       const char* device_usercode = device_arr_16[d].first;
       const char* module_usercode = m->c_str();
       LOGV("[dev]%s vs [mod]%s\n", device_usercode, module_usercode);
@@ -263,20 +271,22 @@ void FBService::run_sync()
     }
     
   }
-  LOGV("device_list4.size %d\n", device_arr_4.size());
+  LOGV("device_list4.size %d\n", devicelist_4_count);
 
   if(!m_bCheckUserCode4){
-    for(vector<pair<const char*, unsigned char*> >::size_type d = 0; d < device_arr_4.size() ; d++){
-        save(device_arr_4[d].second, 864);
+    for(d = 0; d < devicelist_4_count ; d++){
+      m_fn->onSync(IFBService::IFBServiceEventListener::SS_PROCESS, devicelist_count + d);
+      save(device_arr_4[d].second, 864);
     }
   }
   else{
-    for(vector<pair<const char*, unsigned char*> >::size_type d = 0; d < device_arr_4.size() ; d++){
+    for(d = 0; d < devicelist_4_count ; d++){
+      m_fn->onSync(IFBService::IFBServiceEventListener::SS_PROCESS, devicelist_count + d);
       deleteUsercode(device_arr_4[d].first);
     }
   }
 
-  m_fn->onSyncComplete(true);
+  m_fn->onSync(IFBService::IFBServiceEventListener::SS_SUCCESS);
 }
 
 

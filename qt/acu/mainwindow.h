@@ -5,6 +5,9 @@
 #include "maindelegator.h"
 #include <QtGui/QLabel>
 #include <QTextCodec>
+#include "syncdialog.h"
+#include "updatedialog.h"
+#include <QMovie>
 
 namespace Ui {
 class MainWindow;
@@ -17,6 +20,14 @@ class MainWindow : public QMainWindow, public MainDelegator::EventListener
     
 public:
     //virtual void onRFSerialNumber(char* serial);
+    virtual void onSyncStart();
+    virtual void onSyncCount(int count);
+    virtual void onSyncIndex(int index);
+    virtual void onSyncEnd(bool val);
+    virtual void onUpdateStart();
+    virtual void onUpdateCount(int count);
+    virtual void onUpdateIndex(int index);
+    virtual void onUpdateEnd(bool val);
     virtual void onMessage(std::string tag, std::string data);
     virtual void onLogo(std::string data);
     virtual void onEmployeeInfo(std::string CoName, std::string Name, std::string PinNo);
@@ -27,10 +38,18 @@ public:
     ~MainWindow();
     
 signals:
+    void sigStartSync();
+    void sigEndSync();
+    void sigStartUpdate();
+    void sigEndUpdate();
     void employeeInfo();
     void resultImage();
     
 private slots:
+    void startSync();
+    void endSync();
+    void startUpdate();
+    void endUpdate();
     void updateTime();
     void updateEmployeeInfo();
     void cleanInfo();
@@ -51,6 +70,9 @@ private:
     QPixmap* m_pm_auth;
     QTimer *m_timerEmployeeInfo;
     static QTextCodec * m_codec;
+    SyncDialog m_syncDialog;
+    UpdateDialog m_updateDialog;
+    QMovie *m_aninfinger;
 };
 
 #endif // MAINWINDOW_H

@@ -10,6 +10,7 @@
 #include "web/iwebservice.h"
 #include "sqlite3.h"
 #include <map>
+#include "tools/thread.h"
 
 #define USERDATA_SIZE 864
 class Settings;
@@ -36,10 +37,12 @@ public:
   
   class EmployeeInfoMgrListener {
   public:
-    virtual void onEmployeeInfoTotal(int insert_count, int update_count, int delete_count) = 0;
-    virtual void onEmployeeInfoInsert(const unsigned char* userdata, int index) = 0;
-    virtual void onEmployeeInfoUpdate(string& usercode, const unsigned char* userdata, int index) = 0;
-    virtual void onEmployeeInfoDelete(string& usercode, int index) = 0;
+    virtual void onEmployeeMgrUpdateStart() = 0;
+    virtual void onEmployeeMgrUpdateCount(int insert_count, int update_count, int delete_count) = 0;
+    virtual void onEmployeeMgrUpdateInsert(const unsigned char* userdata, int index) = 0;
+    virtual void onEmployeeMgrUpdateUpdate(string& usercode, const unsigned char* userdata, int index) = 0;
+    virtual void onEmployeeMgrUpdateDelete(string& usercode, int index) = 0;
+    virtual void onEmployeeCountChanged(int length_16, int length_4) = 0;
   };
 
 
@@ -51,17 +54,19 @@ public:
   }
 
   void getEmployeeList(std::vector<pair<const char*, unsigned char*> >& arr_16, std::vector<pair<const char*, unsigned char*> >& arr_4);
-  bool updateLocalDB(); //from Server
+  void getEmployeeCount(int& count_16, int& count_4);
+  bool updateLocalDBfromServer(); //from Server
   bool getInfo(const char* serialNumber, EmployeeInfo** ei);
   //std::map<string, EmployeeInfo*>& getEmployeeList();
   
 private:  
   bool OpenOrCreateLocalDB();
-  void updateCache();
+  void initCache();
   void insertEmployee(vector<pair<string, EmployeeInfo*> >& elems);
   void updateEmployee(vector<pair<string, EmployeeInfo*> >& elems);
   void deleteEmployee(vector<pair<string, EmployeeInfo*> >& elems);
-  void fillEmployeeInfoes(char *xml_buf);
+  //void updateLocalDB(char *xml_buf);
+  void run_updateLocalDB();
   bool fillEmployeeInfo(char *xml_buf, EmployeeInfo* ei);
   bool search(string pin_no);
   void dump(map<string, EmployeeInfo*>& arr);
@@ -77,10 +82,14 @@ private:
 
   map<string, EmployeeInfo*> m_arrEmployee;
   map<string, EmployeeInfo*> m_arrEmployee_4;
+  //string m_lastSyncTime_tmp;
   string m_lastSyncTime;
   Mutex mtx;
   sqlite3 *m_db;
   EmployeeInfoMgrListener* m_eil;
+  Thread<EmployeeInfoMgr>* m_thread_update;
+  char* m_xml_buf;
+  bool m_bUpdateThreadRunning;
 };
 
 

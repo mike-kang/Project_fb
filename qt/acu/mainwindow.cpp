@@ -7,7 +7,6 @@
 #include <fstream>
 #include <QImage>
 #include <QPixmap>
-#include <QMovie>
 
 #define insertTable(tag)  labelTable.insert(pair<std::string, QLabel*>(#tag, ui->label##tag)) 
 
@@ -17,7 +16,7 @@ QTextCodec* MainWindow::m_codec = NULL;
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow)
+    ui(new Ui::MainWindow) , m_syncDialog(this), m_updateDialog(this)
 {
     //m_codec = QTextCodec::codecForName("eucKR"); //UTF-8
 
@@ -47,13 +46,20 @@ MainWindow::MainWindow(QWidget *parent) :
     //insertTable(RfidNo);
     //insertTable(Result);
     insertTable(Msg);
+    insertTable(Download);
     m_img_buf = NULL;
-    QMovie *movie = new QMovie("Images/finger.gif");
-    ui->labelAnimation->setMovie(movie);
-    movie->start();
+    m_aninfinger = new QMovie("Images/finger.gif");
+    ui->labelAnimation->setMovie(m_aninfinger);
+    m_aninfinger->start();
 
     m_pm_auth_pass = QPixmap(":/Images/authok.jpg");
     m_pm_auth_fail = QPixmap(":/Images/authfail.jpg");
+
+    //connect(this, SIGNAL(sigStartSync()), &m_syncDialog, SLOT(exec()));
+    connect(this, SIGNAL(sigStartSync()), this, SLOT(startSync()));
+    connect(this, SIGNAL(sigEndSync()), this, SLOT(endSync()));
+    connect(this, SIGNAL(sigStartUpdate()), this, SLOT(startUpdate()));
+    connect(this, SIGNAL(sigEndUpdate()), this, SLOT(endUpdate()));
 
     MainDelegator* md = MainDelegator::createInstance(this);
     //md->setEventListener(this);
@@ -72,6 +78,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     m_timerEmployeeInfo = new QTimer(this);
     connect(m_timerEmployeeInfo, SIGNAL(timeout()), this, SLOT(cleanInfo()));
+    qDebug() << "MainWindow ---";
 
 
 }
@@ -88,6 +95,54 @@ void MainWindow::onEmployeeInfo(std::string CoName, std::string Name, std::strin
   m_PinNo = PinNo.c_str();
     
   emit employeeInfo();
+}
+
+void MainWindow::onSyncStart()
+{
+  cout << "onSyncStart1" << endl;
+  
+  emit sigStartSync();
+}
+
+void MainWindow::onSyncCount(int count)
+{
+  cout << "onSyncCount" << endl;
+  m_syncDialog.setCount(count);
+}
+
+void MainWindow::onSyncIndex(int index)
+{
+  m_syncDialog.setIndex(index);
+}
+
+void MainWindow::onSyncEnd(bool val)
+{
+  cout << "onSyncEnd" << endl;
+  emit sigEndSync();
+}
+
+void MainWindow::onUpdateStart()
+{
+  cout << "onUpdateStart" << endl;
+  
+  emit sigStartUpdate();
+}
+
+void MainWindow::onUpdateCount(int count)
+{
+  cout << "onUpdateCount" << endl;
+  m_updateDialog.setCount(count);
+}
+
+void MainWindow::onUpdateIndex(int index)
+{
+  m_updateDialog.setIndex(index);
+}
+
+void MainWindow::onUpdateEnd(bool val)
+{
+  cout << "onUpdateEnd" << endl;
+  emit sigEndUpdate();
 }
 
 void MainWindow::onMessage(std::string tag, std::string data)
@@ -142,6 +197,32 @@ void MainWindow::updateTime()
     QDateTime curDate = QDateTime::currentDateTime();
     QString date_string = curDate.toString("yyyy-MM-dd hh:mm:ss");
     ui->labelTime->setText(date_string);
+}
+
+void MainWindow::startSync()
+{
+    cout << "startSync" << endl;
+    m_aninfinger->stop();
+    m_syncDialog.exec();
+}
+void MainWindow::endSync()
+{
+    cout << "endSync" << endl;
+    m_aninfinger->start();
+    m_syncDialog.close();
+}
+
+void MainWindow::startUpdate()
+{
+    cout << "startUpdate" << endl;
+    m_aninfinger->stop();
+    m_updateDialog.exec();
+}
+void MainWindow::endUpdate()
+{
+    cout << "endUpdate" << endl;
+    m_aninfinger->start();
+    m_updateDialog.close();
 }
 
 void MainWindow::updateEmployeeInfo()

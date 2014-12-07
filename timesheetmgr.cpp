@@ -56,6 +56,7 @@ void TimeSheetMgr::insert(string pinno)
 bool TimeSheetMgr::upload()
 {
   vector<list<TimeSheet*>::iterator> vector_erase;
+  
   // 1. send file
   vector<string*> filelist;
   try{
@@ -65,6 +66,7 @@ bool TimeSheetMgr::upload()
     LOGF("get List error:%s\n", strerror(errno));
     return false;
   }
+  
   for(vector<string*>::size_type i=0; i< filelist.size(); i++){
     try{
       //LOGV("entry:%s\n", filelist[i]->c_str());

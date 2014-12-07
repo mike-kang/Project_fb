@@ -304,21 +304,40 @@ void MainDelegator::onNeedUserCodeList(std::vector<pair<const char*, unsigned ch
 }
 
 //init
-void MainDelegator::onSyncComplete(bool result)
+void MainDelegator::onSync(IFBService::IFBServiceEventListener::SyncStatus status, int val)
 {
-  LOGV("onSync %d\n", result);
-  m_bSyncDeviceAndModule = result;
-  if(result){
-    if(m_bTimeAvailable){
-      m_employInfoMgr->updateLocalDB();
-    }
-    
-    m_timer = new Timer(cbTimer, this);
-    int interval = m_settings->getInt("App::TIMER_INTERVAL");
-    LOGI("timer interval= %d\n", interval);
-    m_timer->start(interval, true);
-
-    m_fbs->requestStartScan(300);
+  LOGV("onSync %d\n", status);
+  int interval;
+  //m_bSyncDeviceAndModule = result;
+  switch(status){
+    case SS_START:
+      m_el->onSyncStart();
+      break;
+    case SS_COUNT:
+      cout << "onSync SS_COUNT: " << val << endl;
+      m_el->onSyncCount(val);
+      break;
+    case SS_PROCESS:
+      m_el->onSyncIndex(val);
+      break;
+    case SS_SUCCESS:
+      cout << "onSync SS_SUCCESS" << endl;
+      m_el->onSyncEnd(true);
+      if(m_bTimeAvailable){
+        m_employInfoMgr->updateLocalDBfromServer();
+      }
+      
+      m_timer = new Timer(cbTimer, this);
+      interval = m_settings->getInt("App::TIMER_INTERVAL");
+      LOGI("timer interval= %d\n", interval);
+      m_timer->start(interval, true);
+      
+      m_fbs->requestStartScan(300);
+      break;
+    case SS_FAIL:
+      cout << "onSync SS_FAIL" << endl;
+      m_el->onSyncEnd(false);
+      break;
   }
 }
 
@@ -342,27 +361,39 @@ void MainDelegator::run()
 
 }
 
-void MainDelegator::onEmployeeInfoTotal(int insert_count, int update_count, int delete_count)
+void MainDelegator::onEmployeeMgrUpdateStart()
 {
-  LOGV("onEmployeeInfoTotal insert:%d update:%d delete:%d\n", insert_count, update_count, delete_count);
+  m_el->onUpdateStart();
 }
 
-void MainDelegator::onEmployeeInfoInsert(const unsigned char* userdata, int index)
+void MainDelegator::onEmployeeMgrUpdateCount(int insert_count, int update_count, int delete_count)
 {
-  LOGV("onEmployeeInfoInsert %d\n", index);
+  LOGV("onEmployeeMgrUpdateCount insert:%d update:%d delete:%d\n", insert_count, update_count, delete_count);
+}
+
+void MainDelegator::onEmployeeMgrUpdateInsert(const unsigned char* userdata, int index)
+{
+  LOGV("onEmployeeMgrUpdateInsert %d\n", index);
   m_fbs->save(userdata, USERDATA_SIZE);
 }
-void MainDelegator::onEmployeeInfoUpdate(string& usercode, const unsigned char* userdata, int index)
+void MainDelegator::onEmployeeMgrUpdateUpdate(string& usercode, const unsigned char* userdata, int index)
 {
-  LOGV("onEmployeeInfoUpdate %d\n", index);
+  LOGV("onEmployeeMgrUpdateUpdate %d\n", index);
   m_fbs->save(userdata, USERDATA_SIZE);
 }
-void MainDelegator::onEmployeeInfoDelete(string& usercode, int index)
+void MainDelegator::onEmployeeMgrUpdateDelete(string& usercode, int index)
 {
-  LOGV("onEmployeeInfoDelete %d\n", index);
+  LOGV("onEmployeeMgrUpdateDelete %d\n", index);
   m_fbs->deleteUsercode(usercode.c_str());
 }
 
+void MainDelegator::onEmployeeCountChanged(int length_16, int length_4)
+{
+  if(!m_bCheckUsercode4)
+    m_el->onMessage("Download", utils::itoa(length_16 + length_4, 10));
+  else
+    m_el->onMessage("Download", utils::itoa(length_16, 10));
+}
 /*
 struct client_data {
   int retval;
@@ -447,7 +478,7 @@ void MainDelegator::checkAndRunFBService()
     else{
       m_el->onMessage("FID", "FID Off");
       m_timer_checkFBSerivce = new Timer(cbTimerCheckFBService, this);
-      m_timer_checkFBSerivce->start(10, true);
+      m_timer_checkFBSerivce->start(10, false);
     }
   }
 }
@@ -489,26 +520,21 @@ void MainDelegator::cbTimer(void* arg)
     md->m_bTimeAvailable = md->getSeverTime();
 
   switch(count){
-    case 3:
-      break;
-
-    case 8:
-      if(md->m_bTimeAvailable && md->m_bSyncDeviceAndModule){
+    case 4:
+      if(md->m_bTimeAvailable/* && md->m_bSyncDeviceAndModule*/){
         md->m_fbs->requestStopScan();
-        md->m_employInfoMgr->updateLocalDB();
+        md->m_employInfoMgr->updateLocalDBfromServer();
         md->m_fbs->requestStartScan(300);
       }
+      count = 0;
       break;
       
-    case 9:
-      count = -1;
-      break;
     default:
       //upload timesheet
       md->m_timeSheetMgr->upload();
+      count++;
       break;
   }
-  count++;
   
 }
 
@@ -581,6 +607,8 @@ bool MainDelegator::SettingInit()
   m_admin3 = m_settings->get("App::ADMIN3");
   m_admin4 = m_settings->get("App::ADMIN4");
   m_bDisplayEmployeeInfo = m_settings->getBool("App::DISPLAY_EMPLOYEE_INFO");
+  m_bCheckUsercode4 = m_settings->getBool("FB::CHECK_CODE_4");
+  
   //Action
   m_bCapture = m_settings->getBool("Action::CAPTURE");
   m_bSound = m_settings->getBool("Action::SOUND");
@@ -694,7 +722,8 @@ MainDelegator::MainDelegator(EventListener* el) : m_el(el), m_bProcessingAuth(fa
   checkNetwork();
   m_bTimeAvailable = getSeverTime();
   m_employInfoMgr = new EmployeeInfoMgr(m_settings, m_ws, this);
-  m_fbs = new FBService(m_settings->get("FB::PORT").c_str(), Serial::SB38400, this, m_settings->getBool("FB::CHECK_CODE_4"));
+  
+  m_fbs = new FBService(m_settings->get("FB::PORT").c_str(), Serial::SB38400, this, m_bCheckUsercode4);
 
   checkAndRunFBService();
 

@@ -25,7 +25,7 @@ using namespace web;
 #define GET_ALL "select * from employee"
 #define DELETE_EMPLOYEE "delete from employee where pinno=?"
 
-EmployeeInfoMgr::EmployeeInfoMgr(Settings* settings, web::IWebService* ws, EmployeeInfoMgrListener* eil): m_settings(settings), m_ws(ws), m_eil(eil)
+EmployeeInfoMgr::EmployeeInfoMgr(Settings* settings, web::IWebService* ws, EmployeeInfoMgrListener* eil): m_settings(settings), m_ws(ws), m_eil(eil), m_bUpdateThreadRunning(false)
 {
   try{
     //m_bUseLocalDB = settings->getBool("App::LOCAL_DATABASE");
@@ -75,17 +75,22 @@ bool EmployeeInfoMgr::OpenOrCreateLocalDB()
     }
   }
   else{
-    updateCache();
+    initCache();
   }
   
   return true;
 }
 
-
-bool EmployeeInfoMgr::updateLocalDB()
+// 
+bool EmployeeInfoMgr::updateLocalDBfromServer()
 {
-  LOGV("updateLocalDB\n");
+  LOGV("updateLocalDBfromServer\n");
 
+  if(m_bUpdateThreadRunning){
+    LOGE("Update thread is running\n");
+    return false;
+  }
+  
   try{
     m_ws->request_EmployeeInfoAll(m_lastSyncTime.c_str(), 8000, EMPLOYEE_FILE);
     LOGV("downloaded %s\n", EMPLOYEE_FILE);
@@ -104,24 +109,16 @@ bool EmployeeInfoMgr::updateLocalDB()
   long size = infile.tellg();
   infile.seekg (0);
   // allocate memory for file content
-  char* xml_buf = new char[size + 1];
+  m_xml_buf = new char[size + 1];
   // read content of infile
-  infile.read (xml_buf, size);
-  xml_buf[size] = '\0';
+  infile.read (m_xml_buf, size);
+  m_xml_buf[size] = '\0';
   infile.close();
-  fillEmployeeInfoes(xml_buf);
-  //cout << "members = " << num << endl;
-  delete xml_buf;
+  
+  //updateLocalDB(xml_buf);
+  m_thread_update = new Thread<EmployeeInfoMgr>(&EmployeeInfoMgr::run_updateLocalDB, this, "UpdateThread");
+  m_thread_update->detach();
 
-  //update lastsync time
-  char* err;
-  char buf[100];
-
-  sprintf(buf, "update time set lastsync = '%s'", m_lastSyncTime.c_str());
-  int rc = sqlite3_exec(m_db, buf, NULL, NULL, &err);
-  if (rc != SQLITE_OK) {
-    LOGE("Failed to update : %s\n", err);
-  }
   return true;
 
 }
@@ -140,13 +137,13 @@ bool EmployeeInfoMgr::getInfo(const char* usercode, EmployeeInfo** ei)
     
 }
 
-void EmployeeInfoMgr::updateCache()
+void EmployeeInfoMgr::initCache()
 {
   char* err;
   sqlite3_stmt *stmt;
   const char* tail;
   
-  LOGV("updateCache\n");
+  LOGV("initCache\n");
   
   int rc = sqlite3_prepare_v2(m_db, GET_ALL, -1, &stmt, &tail);
   if (rc != SQLITE_OK) {
@@ -170,6 +167,7 @@ void EmployeeInfoMgr::updateCache()
   }
   sqlite3_finalize(stmt);
   //dump(m_arrEmployee);
+  m_eil->onEmployeeCountChanged(m_arrEmployee.size(), m_arrEmployee_4.size());
 
   //m_lastSyncTime
   rc = sqlite3_prepare(m_db, "select lastsync from time", -1, &stmt, &tail);
@@ -184,11 +182,22 @@ void EmployeeInfoMgr::updateCache()
 
 }
 
-void EmployeeInfoMgr::fillEmployeeInfoes(char *xml_buf)
+/*
+void EmployeeInfoMgr::updateLocalDB(char *xml_buf)
 {
-  LOGV("fillEmployeeInfoes +++\n");
+  LOGV("updateLocalDB +++\n");
+
+}
+*/
+
+void EmployeeInfoMgr::run_updateLocalDB()
+{
+  LOGV("run_updateLocalDB\n");
+  m_bUpdateThreadRunning = true;
+
+  m_eil->onEmployeeMgrUpdateStart();
   
-  char *p = xml_buf;
+  char *p = m_xml_buf;
   char *start, *end;
   vector<pair<string, EmployeeInfo*> > arrEmployeeInsert;
   vector<pair<string, EmployeeInfo*> > arrEmployeeDelete;
@@ -285,7 +294,7 @@ void EmployeeInfoMgr::fillEmployeeInfoes(char *xml_buf)
   int update_count = arrEmployeeUpdate.size();
   int delete_count = arrEmployeeDelete.size();
 
-  m_eil->onEmployeeInfoTotal(insert_count, update_count, delete_count);
+  m_eil->onEmployeeMgrUpdateCount(insert_count, update_count, delete_count);
 
   if(delete_count)
     deleteEmployee(arrEmployeeDelete);
@@ -295,8 +304,23 @@ void EmployeeInfoMgr::fillEmployeeInfoes(char *xml_buf)
     insertEmployee(arrEmployeeInsert);
 
   //mtx.unlock();
-    
-  LOGV("fillEmployeeInfoes ---\n");
+   //cout << "members = " << num << endl;
+  delete m_xml_buf;
+  m_xml_buf = NULL;
+  
+  //update lastsync time
+  char* err;
+  char buf[100];
+
+  sprintf(buf, "update time set lastsync = '%s'", m_lastSyncTime.c_str());
+  int rc = sqlite3_exec(m_db, buf, NULL, NULL, &err);
+  if (rc != SQLITE_OK) {
+    LOGE("Failed to update : %s\n", err);
+  }
+  
+  m_eil->onEmployeeCountChanged(m_arrEmployee.size(), m_arrEmployee_4.size());   
+  m_bUpdateThreadRunning = false;
+  LOGV("updateLocalDB ---\n");
     
 }
 
@@ -309,6 +333,7 @@ void EmployeeInfoMgr::insertEmployee(vector<pair<string, EmployeeInfo*> >& elems
   int index = 0;
   LOGV("insertEmployee size=%d\n", elems.size());
   rc = sqlite3_prepare_v2(m_db, INSERT_EMPLOYEE, -1, &stmt, &tail);
+  mtx.lock();
 
   for(vector<pair<string,EmployeeInfo*> >::size_type i=0; i< elems.size(); i++){
     //cache
@@ -332,13 +357,15 @@ void EmployeeInfoMgr::insertEmployee(vector<pair<string, EmployeeInfo*> >& elems
     if(rc != SQLITE_DONE){
       LOGE("Failed to insert : %s\n", sqlite3_errmsg(m_db));
       sqlite3_finalize(stmt);
+      mtx.unlock();
       throw 1;
     }
     sqlite3_reset(stmt);
 
     if(!m_check_code || usercode.length() != 4)
-      m_eil->onEmployeeInfoInsert(ei->userdata, index++);
+      m_eil->onEmployeeMgrUpdateInsert(ei->userdata, index++);
   }
+  mtx.unlock();
   sqlite3_finalize(stmt);
 
 }
@@ -353,6 +380,7 @@ void EmployeeInfoMgr::updateEmployee(vector<pair<string, EmployeeInfo*> >& elems
   const char* tail;
   LOGV("updateEmployee size=%d\n", elems.size());
   rc = sqlite3_prepare_v2(m_db, UPDATE_EMPLOYEE, -1, &stmt, &tail);
+  mtx.lock();
 
   for(vector<pair<string,EmployeeInfo*> >::size_type i=0; i< elems.size(); i++){
     
@@ -382,13 +410,15 @@ void EmployeeInfoMgr::updateEmployee(vector<pair<string, EmployeeInfo*> >& elems
     if(rc != SQLITE_DONE){
       LOGE("Failed to insert : %s\n", sqlite3_errmsg(m_db));
       sqlite3_finalize(stmt);
+      mtx.unlock();
       throw 1;
     }
     sqlite3_reset(stmt);
     
     if(!m_check_code || usercode.length() != 4)
-      m_eil->onEmployeeInfoUpdate(usercode, ei->userdata, index++);
+      m_eil->onEmployeeMgrUpdateUpdate(usercode, ei->userdata, index++);
   }
+  mtx.unlock();
   sqlite3_finalize(stmt);
 
 }
@@ -404,6 +434,7 @@ void EmployeeInfoMgr::deleteEmployee(vector<pair<string, EmployeeInfo*> >& elems
   LOGV("deleteEmployee size=%d\n", elems.size());
   rc = sqlite3_prepare_v2(m_db, DELETE_EMPLOYEE, -1, &stmt, &tail);
   //printf("delete size:%d\n", arrEmployeeDelete.size());
+  mtx.lock();
   for(vector<pair<string,EmployeeInfo*> >::size_type i=0; i< elems.size(); i++){
     string& usercode = elems[i].first;
     EmployeeInfo* ei = elems[i].second;
@@ -424,20 +455,21 @@ void EmployeeInfoMgr::deleteEmployee(vector<pair<string, EmployeeInfo*> >& elems
     if(rc != SQLITE_DONE){
       LOGE("Failed to insert : %s\n", sqlite3_errmsg(m_db));
       sqlite3_finalize(stmt);
+      mtx.unlock();
       throw 1;
     }
     sqlite3_reset(stmt);
-    m_eil->onEmployeeInfoDelete(usercode, index++);
+    m_eil->onEmployeeMgrUpdateDelete(usercode, index++);
     delete ei;
   }
+  mtx.unlock();
   sqlite3_finalize(stmt);
-    
-
 }
 
 void EmployeeInfoMgr::getEmployeeList(std::vector<pair<const char*, unsigned char*> >& arr_16, std::vector<pair<const char*, unsigned char*> >& arr_4)
 {
   LOGV("getEmployeeList size: %d\n", m_arrEmployee.size());
+  mtx.lock();
   arr_16.reserve(m_arrEmployee.size());
   for(map<string, EmployeeInfo*>::iterator itr=m_arrEmployee.begin(); itr != m_arrEmployee.end(); itr++){
     EmployeeInfo* ei = itr->second;
@@ -450,6 +482,15 @@ void EmployeeInfoMgr::getEmployeeList(std::vector<pair<const char*, unsigned cha
     //LOGV("usercode size: %d\n", itr->first.length());
     arr_4.push_back(pair<const char*, unsigned char*>(itr->first.c_str(), ei->userdata));
   }
+  mtx.unlock();
+}
+
+void EmployeeInfoMgr::getEmployeeCount(int& count_16, int& count_4)
+{
+  mtx.lock();
+  count_16 = m_arrEmployee.size();
+  count_4 = m_arrEmployee_4.size();
+  mtx.unlock();
 }
 
 /*
