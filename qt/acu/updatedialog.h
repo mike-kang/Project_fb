@@ -14,9 +14,10 @@ class UpdateDialog : public QDialog
 public:
     explicit UpdateDialog(QWidget *parent = 0);
     ~UpdateDialog();
-    void setCount(int);
-    void setIndex(int);
-
+    void setCount(int delete_count, int update_count, int insert_count);
+    void setIndexOfDelete(int);
+    void setIndexOfUpdate(int);
+    void setIndexOfInsert(int);
 private:
     Ui::UpdateDialog *ui;
 };

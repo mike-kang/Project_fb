@@ -25,9 +25,11 @@ public:
     virtual void onSyncIndex(int index);
     virtual void onSyncEnd(bool val);
     virtual void onUpdateStart();
-    virtual void onUpdateCount(int count);
-    virtual void onUpdateIndex(int index);
-    virtual void onUpdateEnd(bool val);
+    virtual void onUpdateCount(int delete_count, int update_count, int insert_count);
+    virtual void onUpdateDeleteIndex(int index);
+    virtual void onUpdateUpdateIndex(int index);
+    virtual void onUpdateInsertIndex(int index);
+    virtual void onUpdateEnd();
     virtual void onMessage(std::string tag, std::string data);
     virtual void onLogo(std::string data);
     virtual void onEmployeeInfo(std::string CoName, std::string Name, std::string PinNo);

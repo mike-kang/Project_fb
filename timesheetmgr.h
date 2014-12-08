@@ -10,6 +10,10 @@
 class Settings;
 class TimeSheetMgr {
 public:
+  class TimeSheetMgrEventListener {
+    virtual void onTimeSheetFileCountChanged(int count) = 0;
+    virtual void onTimeSheetCacheCountChanged(int count) = 0;
+  };
   struct TimeSheet {
     std::string m_pinno;
     char m_utype;
@@ -19,7 +23,7 @@ public:
     TimeSheet(std::string pin_no);
     ~TimeSheet();
   };
-  TimeSheetMgr(Settings* settings, web::IWebService* ws);
+  TimeSheetMgr(Settings* settings, web::IWebService* ws, TimeSheetMgrEventListener* el);
   virtual ~TimeSheetMgr();
 
   void insert(std::string lab_no);
@@ -37,6 +41,7 @@ private:
   std::string m_sDvNo; // = "1";
   char m_cInOut; // = "I";
   Mutex mtx;
+  TimeSheetMgrEventListener* m_el;
 };
 
 #endif  //_TIMESHEETMGR_HEADER

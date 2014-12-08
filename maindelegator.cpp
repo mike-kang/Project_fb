@@ -366,25 +366,34 @@ void MainDelegator::onEmployeeMgrUpdateStart()
   m_el->onUpdateStart();
 }
 
-void MainDelegator::onEmployeeMgrUpdateCount(int insert_count, int update_count, int delete_count)
+void MainDelegator::onEmployeeMgrUpdateCount(int delete_count, int update_count, int insert_count)
 {
-  LOGV("onEmployeeMgrUpdateCount insert:%d update:%d delete:%d\n", insert_count, update_count, delete_count);
+  LOGV("onEmployeeMgrUpdateCount delete:%d update:%d insert:%d\n", delete_count, update_count, insert_count);
+  m_el->onUpdateCount(delete_count, update_count, insert_count);
 }
 
 void MainDelegator::onEmployeeMgrUpdateInsert(const unsigned char* userdata, int index)
 {
   LOGV("onEmployeeMgrUpdateInsert %d\n", index);
   m_fbs->save(userdata, USERDATA_SIZE);
+  m_el->onUpdateInsertIndex(index);
 }
 void MainDelegator::onEmployeeMgrUpdateUpdate(string& usercode, const unsigned char* userdata, int index)
 {
   LOGV("onEmployeeMgrUpdateUpdate %d\n", index);
   m_fbs->save(userdata, USERDATA_SIZE);
+  m_el->onUpdateUpdateIndex(index);
 }
 void MainDelegator::onEmployeeMgrUpdateDelete(string& usercode, int index)
 {
   LOGV("onEmployeeMgrUpdateDelete %d\n", index);
   m_fbs->deleteUsercode(usercode.c_str());
+  m_el->onUpdateDeleteIndex(index);
+}
+void MainDelegator::onEmployeeMgrUpdateEnd()
+{
+  LOGV("onEmployeeMgrUpdateEnd\n");
+  m_el->onUpdateEnd();
 }
 
 void MainDelegator::onEmployeeCountChanged(int length_16, int length_4)
@@ -727,7 +736,7 @@ MainDelegator::MainDelegator(EventListener* el) : m_el(el), m_bProcessingAuth(fa
 
   checkAndRunFBService();
 
-  m_timeSheetMgr = new TimeSheetMgr(m_settings, m_ws);
+  m_timeSheetMgr = new TimeSheetMgr(m_settings, m_ws, this);
 
 #ifdef CAMERA  
   m_cameraStill = new CameraStill(m_cameraDelayOffTime);

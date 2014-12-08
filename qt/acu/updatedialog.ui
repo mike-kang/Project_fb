@@ -9,43 +9,43 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>236</width>
-    <height>110</height>
+    <width>261</width>
+    <height>99</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>업데이트</string>
   </property>
-  <widget class="QProgressBar" name="progressBar">
+  <widget class="QProgressBar" name="progressBar_D">
    <property name="geometry">
     <rect>
-     <x>30</x>
-     <y>50</y>
-     <width>171</width>
-     <height>31</height>
+     <x>100</x>
+     <y>20</y>
+     <width>141</width>
+     <height>21</height>
     </rect>
    </property>
    <property name="value">
-    <number>24</number>
+    <number>0</number>
    </property>
   </widget>
   <widget class="QLabel" name="label">
    <property name="geometry">
     <rect>
-     <x>40</x>
+     <x>20</x>
      <y>20</y>
-     <width>61</width>
+     <width>41</width>
      <height>21</height>
     </rect>
    </property>
    <property name="text">
-    <string>Total:</string>
+    <string>삭제</string>
    </property>
   </widget>
-  <widget class="QLabel" name="labelCount">
+  <widget class="QLabel" name="labelCountDelete">
    <property name="geometry">
     <rect>
-     <x>110</x>
+     <x>70</x>
      <y>20</y>
      <width>66</width>
      <height>21</height>
@@ -53,6 +53,84 @@
    </property>
    <property name="text">
     <string>0</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_2">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>40</y>
+     <width>41</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>수정</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="labelCountUpdate">
+   <property name="geometry">
+    <rect>
+     <x>70</x>
+     <y>40</y>
+     <width>66</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>0</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_3">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>60</y>
+     <width>41</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>추가</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="labelCountInsert">
+   <property name="geometry">
+    <rect>
+     <x>70</x>
+     <y>60</y>
+     <width>66</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>0</string>
+   </property>
+  </widget>
+  <widget class="QProgressBar" name="progressBar_U">
+   <property name="geometry">
+    <rect>
+     <x>100</x>
+     <y>40</y>
+     <width>141</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="value">
+    <number>0</number>
+   </property>
+  </widget>
+  <widget class="QProgressBar" name="progressBar_I">
+   <property name="geometry">
+    <rect>
+     <x>100</x>
+     <y>60</y>
+     <width>141</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="value">
+    <number>0</number>
    </property>
   </widget>
  </widget>

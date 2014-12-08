@@ -38,10 +38,11 @@ public:
   class EmployeeInfoMgrListener {
   public:
     virtual void onEmployeeMgrUpdateStart() = 0;
-    virtual void onEmployeeMgrUpdateCount(int insert_count, int update_count, int delete_count) = 0;
+    virtual void onEmployeeMgrUpdateCount(int delete_count, int update_count, int insert_count) = 0;
     virtual void onEmployeeMgrUpdateInsert(const unsigned char* userdata, int index) = 0;
     virtual void onEmployeeMgrUpdateUpdate(string& usercode, const unsigned char* userdata, int index) = 0;
     virtual void onEmployeeMgrUpdateDelete(string& usercode, int index) = 0;
+    virtual void onEmployeeMgrUpdateEnd() = 0;
     virtual void onEmployeeCountChanged(int length_16, int length_4) = 0;
   };
 

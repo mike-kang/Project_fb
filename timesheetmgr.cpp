@@ -15,7 +15,7 @@ using namespace tools;
 using namespace web;
 
 
-TimeSheetMgr::TimeSheetMgr(Settings* settings, IWebService* ws):m_settings(settings), m_ws(ws)
+TimeSheetMgr::TimeSheetMgr(Settings* settings, web::IWebService* ws, TimeSheetMgrEventListener* el):m_settings(settings), m_ws(ws), m_el(el)
 {
   m_sMemcoCd = m_settings->get("App::MEMCO");
   m_sSiteCd = m_settings->get("App::SITE");
@@ -51,13 +51,15 @@ void TimeSheetMgr::insert(string pinno)
   mtx.lock();
   m_listTS.push_back(ts);
   mtx.unlock();
+  
+  m_el->onTimeSheetCacheCountChanged(m_listTS.size());
 }
 
 bool TimeSheetMgr::upload()
 {
   vector<list<TimeSheet*>::iterator> vector_erase;
   
-  // 1. send file
+  // 1. send files
   vector<string*> filelist;
   try{
     filesystem::getList(STORE_DIRECTORY, filelist);
@@ -95,6 +97,7 @@ bool TimeSheetMgr::upload()
   for(vector<string*>::size_type i=0; i < filelist.size(); i++){
     delete filelist[i];
   }
+  m_el->onTimeSheetFileCountChanged(filelist.size());
   
   // 2. send list
   for(list<TimeSheet*>::iterator itr = m_listTS.begin(); itr != m_listTS.end(); itr++){
@@ -115,6 +118,8 @@ bool TimeSheetMgr::upload()
     m_listTS.erase(vector_erase[i]);
   }
   mtx.unlock();
+
+  m_el->onTimeSheetCacheCountChanged(m_listTS.size());
   return true;
 }
   

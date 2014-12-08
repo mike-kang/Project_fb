@@ -128,18 +128,26 @@ void MainWindow::onUpdateStart()
   emit sigStartUpdate();
 }
 
-void MainWindow::onUpdateCount(int count)
+void MainWindow::onUpdateCount(int delete_count, int update_count, int insert_count)
 {
   cout << "onUpdateCount" << endl;
-  m_updateDialog.setCount(count);
+  m_updateDialog.setCount(delete_count, update_count, insert_count);
 }
 
-void MainWindow::onUpdateIndex(int index)
+void MainWindow::onUpdateDeleteIndex(int index)
 {
-  m_updateDialog.setIndex(index);
+  m_updateDialog.setIndexOfDelete(index);
+}
+void MainWindow::onUpdateUpdateIndex(int index)
+{
+  m_updateDialog.setIndexOfUpdate(index);
+}
+void MainWindow::onUpdateInsertIndex(int index)
+{
+  m_updateDialog.setIndexOfInsert(index);
 }
 
-void MainWindow::onUpdateEnd(bool val)
+void MainWindow::onUpdateEnd()
 {
   cout << "onUpdateEnd" << endl;
   emit sigEndUpdate();
