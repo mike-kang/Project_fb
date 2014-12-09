@@ -27,13 +27,14 @@ public:
 
     WebApi(WebService* ws, char* cmd, int cmd_offset, int t, const char* 
     debug_file=NULL):m_ws(ws), m_cmd(cmd), m_cmd_offset(cmd_offset), 
-    timelimit(t), m_pRet(&m_ret), m_debug_file(debug_file) 
+    timelimit(t), m_pRet(&m_ret), m_debug_file(debug_file) , m_ret(false)
     {
       m_cbfunc=NULL;
       if(m_debug_file) oOut.open(m_debug_file);
     } //sync
     WebApi(WebService* ws, char* cmd, int cmd_offset, CCBFunc cbfunc, void* client, const char* 
-    debug_file = NULL):m_ws(ws), m_cmd(cmd), m_cmd_offset(cmd_offset), m_cbfunc(cbfunc), m_client(client), m_pRet(&m_ret), m_debug_file(debug_file)
+    debug_file = NULL):m_ws(ws), m_cmd(cmd), m_cmd_offset(cmd_offset), m_cbfunc(cbfunc), m_client(client), m_pRet(&m_ret), 
+    m_debug_file(debug_file), m_ret(false)
     {
       timelimit=-1;
       if(m_debug_file) oOut.open(m_debug_file);
@@ -68,20 +69,20 @@ public:
     Thread<WebApi>* m_thread;
   };
 
-  class GetNetInfo_WebApi : public WebApi {
+  class WebApiInt : public WebApi {
   //friend class WebService;
   public:
-    GetNetInfo_WebApi(WebService* ws, char* cmd, int cmd_offset, int t):WebApi(ws, cmd, cmd_offset, t)  //sync
+    WebApiInt(WebService* ws, char* cmd, int cmd_offset, int t):WebApi(ws, cmd, cmd_offset, t)  //sync
     {
     }
-    GetNetInfo_WebApi(WebService* ws, char* cmd, int cmd_offset, CCBFunc cbfunc, void* client):WebApi(ws, cmd, cmd_offset, cbfunc, client) //async
+    WebApiInt(WebService* ws, char* cmd, int cmd_offset, CCBFunc cbfunc, void* client):WebApi(ws, cmd, cmd_offset, cbfunc, client) //async
     {
     }
-    virtual ~GetNetInfo_WebApi()
+    virtual ~WebApiInt()
     {
     }
 
-
+    virtual void parsing();
   };
   
   WebService(const char* url, const char *sMemcoCode, const char* sSiteCode, const char* 

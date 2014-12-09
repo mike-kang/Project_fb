@@ -403,6 +403,17 @@ void MainDelegator::onEmployeeCountChanged(int length_16, int length_4)
   else
     m_el->onMessage("Download", utils::itoa(length_16, 10));
 }
+
+void MainDelegator::onTimeSheetFileCountChanged(int count)
+{
+  LOGV("onTimeSheetFileCountChanged %d\n", count);
+  m_el->onMessage("UploadFilesCount", utils::itoa(count, 10));
+}
+void MainDelegator::onTimeSheetCacheCountChanged(int count)
+{
+  LOGV("onTimeSheetCacheCountChanged %d\n", count);
+  m_el->onMessage("UploadCacheCount", utils::itoa(count, 10));
+}
 /*
 struct client_data {
   int retval;
@@ -477,7 +488,7 @@ void MainDelegator::checkAndRunFBService()
     if(m_bFBServiceRunning){
       m_el->onMessage("FID", "FID On");
       if(m_timer_checkFBSerivce){
-        m_timer_checkFBSerivce->stop();
+        //m_timer_checkFBSerivce->stop();
         delete m_timer_checkFBSerivce;
         m_timer_checkFBSerivce = NULL;
       }
@@ -735,6 +746,8 @@ MainDelegator::MainDelegator(EventListener* el) : m_el(el), m_bProcessingAuth(fa
   m_fbs = new FBService(m_settings->get("FB::PORT").c_str(), Serial::SB38400, this, m_bCheckUsercode4);
 
   checkAndRunFBService();
+
+  //m_timesheetFilesCount = m_timesheetCacheCount = 0;
 
   m_timeSheetMgr = new TimeSheetMgr(m_settings, m_ws, this);
 

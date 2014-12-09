@@ -20,6 +20,7 @@ enum Exception {
   
 };
 void getList(const char* directory, std::vector<std::string*>& arr);
+int getListCount(const char* directory);
 
 }
 }

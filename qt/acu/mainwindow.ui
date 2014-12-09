@@ -215,20 +215,20 @@
      <string>인원</string>
     </property>
    </widget>
-   <widget class="QLabel" name="labelUpload">
+   <widget class="QLabel" name="labelUploadFilesCount">
     <property name="enabled">
      <bool>true</bool>
     </property>
     <property name="geometry">
      <rect>
-      <x>235</x>
+      <x>230</x>
       <y>70</y>
-      <width>51</width>
+      <width>21</width>
       <height>20</height>
      </rect>
     </property>
     <property name="text">
-     <string>0/0</string>
+     <string>0</string>
     </property>
    </widget>
    <widget class="QLabel" name="labelMsg">
@@ -338,6 +338,38 @@
     </property>
     <property name="text">
      <string>0000-00-00T00:00:00</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="labelUploadCacheCount">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>270</x>
+      <y>70</y>
+      <width>31</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>0</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="labelUpload_1">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>252</x>
+      <y>73</y>
+      <width>16</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>/</string>
     </property>
    </widget>
   </widget>

@@ -70,14 +70,14 @@ public:
     virtual ~RfidInfoSelect_WebApi(){}
   };
   
-  class TimeSheetInsertString_WebApi : public WebApi {
+  class TimeSheetInsertString_WebApi : public WebApiInt {
   //friend class WebService;
   public:
-    virtual void parsing();
+    //virtual void parsing();
     
-    TimeSheetInsertString_WebApi(WebService* ws, char* cmd, int cmd_offset, int t):WebApi(ws, cmd, cmd_offset, 
+    TimeSheetInsertString_WebApi(WebService* ws, char* cmd, int cmd_offset, int t):WebApiInt(ws, cmd, cmd_offset, 
     t){}  //sync
-    TimeSheetInsertString_WebApi(WebService* ws, char* cmd, int cmd_offset, CCBFunc cbfunc, void* client):WebApi(ws, cmd, cmd_offset, cbfunc, 
+    TimeSheetInsertString_WebApi(WebService* ws, char* cmd, int cmd_offset, CCBFunc cbfunc, void* client):WebApiInt(ws, cmd, cmd_offset, cbfunc, 
     client){}//async
     virtual ~TimeSheetInsertString_WebApi(){}
   };

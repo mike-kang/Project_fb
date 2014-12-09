@@ -157,6 +157,29 @@ void WebService::WebApi::parsing()
   m_ret = (*(p+1)=='t');
 }
 
+void WebService::WebApiInt::parsing()
+{
+  char headerbuf[RCVHEADERBUFSIZE];
+  char* startContent;
+  int contentLength;
+  int readByteContent;
+
+  parsingHeader(headerbuf, &startContent, &contentLength, &readByteContent);
+
+  //contents
+  char* p;
+  cout << "parsing:" << startContent << endl;
+  p = strstr(startContent, "\n");
+  p = strstr(p, "int");
+  p = strstr(p, ">");
+
+  char* start = p + 1;
+  p = strstr(start, "<");
+  *p = '\0';
+
+  m_ret = atoi(start) > 0;
+}
+
 
 /***********************************************************************************/
 /*                                                                                 */
@@ -364,14 +387,14 @@ bool WebService::request_CheckNetwork(int timelimit, CCBFunc cbfunc, void* clien
   char *cmd = new char[100];
   sprintf(cmd,"GET %s/NetworkOn? HTTP/1.1\r\nHost: %s\r\n\r\n", m_service_name, m_url_addr);
 
-  GetNetInfo_WebApi* wa;
+  WebApi* wa;
 
   if(cbfunc){
-    wa = new GetNetInfo_WebApi(this, cmd, 0, cbfunc, client);
+    wa = new WebApi(this, cmd, 0, cbfunc, client);
     wa->processCmd();
   }
   else{
-    wa = new GetNetInfo_WebApi(this, cmd, 0, timelimit);
+    wa = new WebApi(this, cmd, 0, timelimit);
   
     int status = wa->processCmd();
     if(status != RET_SUCCESS){
@@ -407,11 +430,11 @@ bool WebService::request_SendFile(const char *filename, int timelimit, CCBFunc c
   WebApi* wa;
 
   if(cbfunc){
-    wa = new WebApi(this, cmd, 0, cbfunc, client);
+    wa = new WebApiInt(this, cmd, 0, cbfunc, client);
     wa->processCmd();
   }
   else{
-    wa = new WebApi(this, cmd, 0, timelimit);
+    wa = new WebApiInt(this, cmd, 0, timelimit);
   
     int status = wa->processCmd();
     if(status != RET_SUCCESS){

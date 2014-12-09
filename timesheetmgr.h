@@ -11,6 +11,7 @@ class Settings;
 class TimeSheetMgr {
 public:
   class TimeSheetMgrEventListener {
+  public:
     virtual void onTimeSheetFileCountChanged(int count) = 0;
     virtual void onTimeSheetCacheCountChanged(int count) = 0;
   };

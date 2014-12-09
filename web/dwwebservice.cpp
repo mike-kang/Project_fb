@@ -84,6 +84,7 @@ void DWWebService::RfidInfoSelect_WebApi::parsing()
   //printf("end parsing\n");
 }
 
+/*
 void DWWebService::TimeSheetInsertString_WebApi::parsing()
 {
   char headerbuf[RCVHEADERBUFSIZE];
@@ -106,7 +107,7 @@ void DWWebService::TimeSheetInsertString_WebApi::parsing()
   m_ret = atoi(start) > 0;
 
 }
-
+*/
 
 /***********************************************************************************/
 /*                                                                                 */
@@ -289,13 +290,16 @@ bool DWWebService::request_UploadTimeSheet(const char* sTime, const char* pinno,
     wa = new TimeSheetInsertString_WebApi(this, cmd, cmd_offset, timelimit);
   
     int status = wa->processCmd();
-    if(status != RET_SUCCESS && !wa->m_ret){
+    if(status != RET_SUCCESS || !wa->m_ret){
       char filename[255];
       sprintf(filename, "%s/%s", outDirectory, sTime);
       LOGV("save file: %s\n", filename);
       ofstream oRet(filename);
       oRet << (cmd + cmd_offset);
       oRet.close();
+    }
+
+    if(status != RET_SUCCESS){
       delete wa;
       THROW_EXCEPTION(status);
     }

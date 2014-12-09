@@ -100,15 +100,40 @@ void getList(const char* directory, vector<string*>& arr)
   }
   closedir(dir);
   
-  for(vector<string*>::size_type i; i < arr.size(); i++){
-    cout << "list:" << *arr[i] << endl;
-  }
+  //for(vector<string*>::size_type i; i < arr.size(); i++){
+  //  cout << "list:" << *arr[i] << endl;
+  //}
   if(!entry && errno){
     for(vector<string*>::size_type i; i < arr.size(); i++){
       delete arr[i];
     }
     throw EXCEPTION_EBADF;
   }
+}
+
+int getListCount(const char* directory)
+{
+  DIR* dir;
+  int count = 0;
+  struct dirent *entry;
+  dir = opendir(directory);
+  if(!dir){
+    throw EXCEPTION_OPEN_DIR;
+  }
+  errno = 0;
+
+  while((entry = readdir(dir)) != NULL){
+    if(strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")){
+      count++;
+    }
+  }
+  closedir(dir);
+
+  if(!entry && errno){
+    throw EXCEPTION_EBADF;
+  }
+
+  return count;
 }
 
 bool file_delete(const char* path)

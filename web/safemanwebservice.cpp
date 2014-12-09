@@ -115,6 +115,7 @@ void SafemanWebService::RfidInfoSelect_WebApi::parsing()
   m_pRet = buf;
 }
 
+/*
 void SafemanWebService::TimeSheetInsertString_WebApi::parsing()
 {
   char headerbuf[RCVHEADERBUFSIZE];
@@ -137,7 +138,7 @@ void SafemanWebService::TimeSheetInsertString_WebApi::parsing()
 
   m_ret = atoi(start) > 0;
 }
-
+*/
 /***********************************************************************************/
 /*                                                                                 */
 /*   request functions                                                             */
@@ -381,13 +382,16 @@ bool SafemanWebService::request_UploadTimeSheet(const char* sTime, const char* p
     wa = new TimeSheetInsertString_WebApi(this, cmd, cmd_offset, timelimit);
   
     int status = wa->processCmd();
-    if(status != RET_SUCCESS && !wa->m_ret){
+    if(status != RET_SUCCESS || !wa->m_ret){
       char filename[255];
       sprintf(filename, "%s/%s", outDirectory, sTime);
       LOGV("save file: %s\n", filename);
       ofstream oRet(filename);
       oRet << (cmd + cmd_offset);
       oRet.close();
+    }
+    
+    if(status != RET_SUCCESS){
       delete wa;
       THROW_EXCEPTION(status);
     }

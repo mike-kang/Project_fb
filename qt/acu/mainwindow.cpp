@@ -29,7 +29,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->labelNetwork->setText("");
     ui->labelFID->setText("");
     ui->labelDownload->setText("");
-    ui->labelUpload->setText("");
+    //ui->labelUpload->setText("");
     ui->labelMsg->setText("");
     ui->labelCoName->setText("");
     ui->labelName->setText("");
@@ -47,6 +47,8 @@ MainWindow::MainWindow(QWidget *parent) :
     //insertTable(Result);
     insertTable(Msg);
     insertTable(Download);
+    insertTable(UploadFilesCount);
+    insertTable(UploadCacheCount);
     m_img_buf = NULL;
     m_aninfinger = new QMovie("Images/finger.gif");
     ui->labelAnimation->setMovie(m_aninfinger);

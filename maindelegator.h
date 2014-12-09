@@ -40,7 +40,6 @@ public:
     virtual void onUpdateInsertIndex(int index) = 0;
     virtual void onUpdateEnd() = 0;
     
-
     virtual void onMessage(std::string tag, std::string data) = 0; //for lable
     virtual void onLogo(std::string data) = 0;
     virtual void onEmployeeInfo(std::string CoName, std::string Name, std::string PinNo) = 0;
@@ -201,6 +200,8 @@ private:
   SwitchGpio* m_redLed;
   //Relay
   SwitchGpio* m_Relay;
+
+  //int m_timesheetFilesCount, m_timesheetCacheCount;
 };
 
 

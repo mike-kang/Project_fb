@@ -26,6 +26,18 @@ TimeSheetMgr::TimeSheetMgr(Settings* settings, web::IWebService* ws, TimeSheetMg
   //create directory
   if(!filesystem::file_exist(STORE_DIRECTORY))
     filesystem::dir_create(STORE_DIRECTORY);
+  else{
+    int count;
+    try{
+      count = filesystem::getListCount(STORE_DIRECTORY);
+    }
+    catch(filesystem::Exception e){
+      LOGF("getListCount error:%s\n", strerror(errno));
+    }
+    
+    m_el->onTimeSheetFileCountChanged(count);
+  }
+    
 }
 
 TimeSheetMgr::~TimeSheetMgr()
@@ -47,6 +59,7 @@ TimeSheetMgr::TimeSheet::~TimeSheet()
 
 void TimeSheetMgr::insert(string pinno)
 {
+  LOGV("insert: %s\n", pinno.c_str());
   TimeSheet* ts = new TimeSheet(pinno);
   mtx.lock();
   m_listTS.push_back(ts);
@@ -58,11 +71,12 @@ void TimeSheetMgr::insert(string pinno)
 bool TimeSheetMgr::upload()
 {
   vector<list<TimeSheet*>::iterator> vector_erase;
-  
+  int file_count;
   // 1. send files
   vector<string*> filelist;
   try{
     filesystem::getList(STORE_DIRECTORY, filelist);
+    //file_count = filelist.size();
   }
   catch(filesystem::Exception e){
     LOGF("get List error:%s\n", strerror(errno));
@@ -80,6 +94,7 @@ bool TimeSheetMgr::upload()
       if(ret){
         LOGV("file_delete: %s\n", path);
         filesystem::file_delete(path);
+        //file_count--;
       }
       else{
         LOGE("request_SendFile fail\n");
@@ -88,26 +103,28 @@ bool TimeSheetMgr::upload()
     }
     catch(web::Except e){
       LOGE("request_SendFile: %s\n", WebService::dump_error(e));
-      for(vector<string*>::size_type i=0; i < filelist.size(); i++){
-        delete filelist[i];
-      }
-      return false;
+      //for(vector<string*>::size_type i=0; i < filelist.size(); i++){
+      //  delete filelist[i];
+      //}
+      //return false;
     }
   }
   for(vector<string*>::size_type i=0; i < filelist.size(); i++){
     delete filelist[i];
   }
-  m_el->onTimeSheetFileCountChanged(filelist.size());
   
   // 2. send list
   for(list<TimeSheet*>::iterator itr = m_listTS.begin(); itr != m_listTS.end(); itr++){
     bool ret = false;
     try{
-      ret = m_ws->request_UploadTimeSheet((*itr)->m_time.toString(), (*itr)->m_pinno.c_str()
+      ret = m_ws->request_UploadTimeSheet((*itr)->m_time.toString('+'), (*itr)->m_pinno.c_str()
         , 3000, STORE_DIRECTORY);
+      //if(!ret)
+      //  file_count++;
     }
     catch(web::Except e){
       LOGE("request_UploadTimeSheet: %s\n", WebService::dump_error(e));
+      //file_count++;
     }
     vector_erase.push_back(itr);
   }
@@ -119,6 +136,14 @@ bool TimeSheetMgr::upload()
   }
   mtx.unlock();
 
+  try{
+    file_count = filesystem::getListCount(STORE_DIRECTORY);
+  }
+  catch(filesystem::Exception e){
+    LOGF("getListCount error:%s\n", strerror(errno));
+  }
+
+  m_el->onTimeSheetFileCountChanged(file_count);
   m_el->onTimeSheetCacheCountChanged(m_listTS.size());
   return true;
 }
