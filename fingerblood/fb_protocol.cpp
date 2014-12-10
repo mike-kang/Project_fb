@@ -33,7 +33,6 @@ using namespace tools;
 //#define BUF_SZ_USERE 13
 //#define BUF_SZ_AUTH 12
 #define STAT_LOOP_CHECK(k)    do {                    \
-                                usleep(50000);       \
                                 status = stat();      \
                               } while(status != (k))
 
@@ -85,7 +84,7 @@ char FBProtocol::stat()
 {
   char status;
   byte* receive_buf; 
-  receive_buf = processCommand("STAT", 1000);
+  receive_buf = processCommand("STAT", 5000);
   status = receive_buf[STATUS];
   delete receive_buf;
   return status;  
@@ -99,7 +98,7 @@ char FBProtocol::stat(char* data, bool& bLong)
   char status;
   byte* receive_buf; 
   try {
-    receive_buf = processCommand("STAT", 2000);
+    receive_buf = processCommand("STAT", 5000);
     //printf("STAT 0x%x('%c')\n", receive_buf[STATUS], receive_buf[STATUS]);
     status = receive_buf[STATUS];
     short length = TOSHORT(receive_buf + 1);
@@ -340,11 +339,12 @@ void FBProtocol::saveS()
   byte* receive_buf; 
   byte status;
 
-  receive_buf = processCommand("SAVES", 3000);
+  receive_buf = processCommand("SAVES", 5000);
   status = receive_buf[STATUS];
   delete receive_buf;
-  if(status != '3')
+  if(status != '3'){
     STAT_LOOP_CHECK('3');
+  }
 }
 
 
@@ -464,13 +464,15 @@ void FBProtocol::saveD(const byte* userdata, int len)
     sum += _xor;
     buf[length] = _xor;
     buf[length+1] = sum;
-    
+    //usleep(200000);
     if(_debug) utils::hexdump("SEND SAVED", buf, length + 2);
     try{
       receive_buf = processCommand(buf, length + 2, 9000); //delete buf;
     }
     catch(Exception e){
       delete buf;
+      if(_debug) printf("[saveD] exception %d\n", e);
+      LOGE("[saveD] exception %d\n", e);
       throw EXCEPTION_SAVED;
     }
     

@@ -3,17 +3,23 @@
 #include "fbservice.h"
 #include <fstream>
 #include <vector>
+#include "tools/log.h"
 
 using namespace std;
 using namespace tools;
 
 FBService* fbs;
+#define USERDATA_SIZE 864
+
 
 class Noti: public IFBService::IFBServiceEventListener {
 public:  
   virtual void onScanData(const char* buf)
   {
-    cout << "onScanData:" << buf << endl;
+    if(buf)
+      cout << "onScanData:" << buf << endl;
+    else
+      cout << "onScanData Null" << endl;
   }
   /*
   virtual void onStart(bool ret)
@@ -56,16 +62,28 @@ public:
     int index=0){}
 };
 
+const char* save_list[] = {
+//  "FID0000000000000001",
+//  "FID0000000000000002",
+//  "FID0000000000000003",
+//  "FID0000000000000004",
+//  "FID0000000000000005",
+//  "FID0000000000000006",
+//  "FID0000000000000007",
+  "FID0000000000000012",
+};
 #define GETLIST
 //#define DELETE
 #define SAVE
-#define SCAN
-
+//#define SCAN
+//#define FORMAT
 
 int main()
 {
   Noti noti;
   cout << "start main\n" << endl;
+  
+  log_init(true, 1, "/dev/pts/3", false, 3, "Log");
   fbs = new FBService("/dev/ttyUSB0", Serial::SB38400, &noti, false);
   if(!fbs->start(true)){
     cout << "start fail!" << endl;
@@ -86,12 +104,23 @@ int main()
   sleep(5);
 #endif
 #ifdef DELETE
-  fbs->deleteUsercode("0000000000000036");
-  fbs->deleteUsercode("0000000000000038");
+  for(int i=0; i<sizeof(save_list)/sizeof(char*); i++){
+    fbs->deleteUsercode(save_list[i]);
+  }
 #endif
   
 #ifdef SAVE  
+/*
+  for(int i=0; i<sizeof(save_list)/sizeof(char*); i++){
+    char buf[USERDATA_SIZE];
+    ifstream infile (save_list[i], ofstream::binary);
+    infile.read (buf, USERDATA_SIZE);
+    infile.close();
+    fbs->save((const unsigned char*)buf, USERDATA_SIZE);
+  }
+*/
   fbs->save("FID0000000000000012.bin");
+
 #endif
 
 #ifdef SCAN

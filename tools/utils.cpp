@@ -32,7 +32,7 @@ char* itoa(int val, int base){
 
 void hexdump(const char* title, unsigned char* buf, int length)
 {
-  printf("[%s]\n", title);
+  printf("[%s - %lu]\n", title, pthread_self());
   if(!length){
     printf("size = 0\n");
     return;

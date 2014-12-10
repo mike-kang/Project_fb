@@ -23,8 +23,14 @@ void UpdateDialog::setCount(int delete_count, int update_count, int insert_count
     QMetaObject::invokeMethod(ui->progressBar_D, "setEnabled", Q_ARG(bool, false));
   else
     QMetaObject::invokeMethod(ui->progressBar_D, "setMaximum", Q_ARG(int, delete_count));
-  QMetaObject::invokeMethod(ui->progressBar_U, "setMaximum", Q_ARG(int, update_count));
-  QMetaObject::invokeMethod(ui->progressBar_I, "setMaximum", Q_ARG(int, insert_count));
+  if(!update_count)
+    QMetaObject::invokeMethod(ui->progressBar_U, "setEnabled", Q_ARG(bool, false));
+  else
+    QMetaObject::invokeMethod(ui->progressBar_U, "setMaximum", Q_ARG(int, update_count));
+  if(!insert_count)
+    QMetaObject::invokeMethod(ui->progressBar_I, "setEnabled", Q_ARG(bool, false));
+  else
+    QMetaObject::invokeMethod(ui->progressBar_I, "setMaximum", Q_ARG(int, insert_count));
 }
 
 void UpdateDialog::setIndexOfDelete(int index)

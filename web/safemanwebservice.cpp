@@ -371,7 +371,7 @@ bool SafemanWebService::request_UploadTimeSheet(const char* sTime, const char* p
   //oOut << (cmd+ cmd_offset) << endl;
   //oOut.close();
   
-  printf("cmd:%s\n", cmd + cmd_offset);
+  //printf("cmd:%s\n", cmd + cmd_offset);
   WebApi* wa;
 
   if(cbfunc){

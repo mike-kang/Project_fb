@@ -237,7 +237,7 @@ void MainDelegator::onScanData(const char* usercode)
         goto error;
       }
       if(ei->pnt_cnt >= 3){
-        LOGV("penalty count: %s\n", ei->pnt_cnt);   
+        LOGV("penalty count: %d\n", ei->pnt_cnt);   
         processAuthResult(false, "SoundFiles/authcheck.wav", str_prohibition_entrance_3out);
         goto error;
       }
@@ -307,7 +307,6 @@ void MainDelegator::onNeedUserCodeList(std::vector<pair<const char*, unsigned ch
 void MainDelegator::onSync(IFBService::IFBServiceEventListener::SyncStatus status, int val)
 {
   LOGV("onSync %d\n", status);
-  int interval;
   //m_bSyncDeviceAndModule = result;
   switch(status){
     case SS_START:
@@ -326,13 +325,14 @@ void MainDelegator::onSync(IFBService::IFBServiceEventListener::SyncStatus statu
       if(m_bTimeAvailable){
         m_employInfoMgr->updateLocalDBfromServer();
       }
-      
-      m_timer = new Timer(cbTimer, this);
-      interval = m_settings->getInt("App::TIMER_INTERVAL");
-      LOGI("timer interval= %d\n", interval);
-      m_timer->start(interval, true);
-      
-      m_fbs->requestStartScan(300);
+      else{
+        m_timer = new Timer(cbTimer, this);
+        int interval = m_settings->getInt("App::TIMER_INTERVAL");
+        LOGI("timer interval= %d\n", interval);
+        m_timer->start(interval, true);
+        
+        m_fbs->requestStartScan(300);
+      }
       break;
     case SS_FAIL:
       cout << "onSync SS_FAIL" << endl;
@@ -394,6 +394,14 @@ void MainDelegator::onEmployeeMgrUpdateEnd()
 {
   LOGV("onEmployeeMgrUpdateEnd\n");
   m_el->onUpdateEnd();
+  if(!m_timer){
+    m_timer = new Timer(cbTimer, this);
+    int interval = m_settings->getInt("App::TIMER_INTERVAL");
+    LOGI("timer interval= %d\n", interval);
+    m_timer->start(interval, true);
+    
+    m_fbs->requestStartScan(300);
+  }
 }
 
 void MainDelegator::onEmployeeCountChanged(int length_16, int length_4)
@@ -670,7 +678,7 @@ bool MainDelegator::SettingInit()
   return true;
 }
 
-MainDelegator::MainDelegator(EventListener* el) : m_el(el), m_bProcessingAuth(false), m_bFBServiceRunning(false), m_bSyncDeviceAndModule(false), m_timer_checkFBSerivce(NULL)
+MainDelegator::MainDelegator(EventListener* el) : m_el(el), m_bProcessingAuth(false), m_bFBServiceRunning(false), m_bSyncDeviceAndModule(false), m_timer_checkFBSerivce(NULL), m_timer(NULL)
 {
   bool ret;
   cout << "start" << endl;

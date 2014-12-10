@@ -85,8 +85,7 @@ bool TimeSheetMgr::upload()
   
   for(vector<string*>::size_type i=0; i< filelist.size(); i++){
     try{
-      //LOGV("entry:%s\n", filelist[i]->c_str());
-      cout << "entry:" << *filelist[i] << endl;
+      LOGV("file upload entry:%s\n", filelist[i]->c_str());
       char path[256];
       sprintf(path, "%s/%s", STORE_DIRECTORY, filelist[i]->c_str());
       bool ret = m_ws->request_SendFile(path, 3000);
@@ -117,7 +116,7 @@ bool TimeSheetMgr::upload()
   for(list<TimeSheet*>::iterator itr = m_listTS.begin(); itr != m_listTS.end(); itr++){
     bool ret = false;
     try{
-      ret = m_ws->request_UploadTimeSheet((*itr)->m_time.toString('+'), (*itr)->m_pinno.c_str()
+      ret = m_ws->request_UploadTimeSheet((*itr)->m_time.toString(), (*itr)->m_pinno.c_str()
         , 3000, STORE_DIRECTORY);
       //if(!ret)
       //  file_count++;

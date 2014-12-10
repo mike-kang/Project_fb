@@ -27,6 +27,7 @@ using namespace web;
 
 EmployeeInfoMgr::EmployeeInfoMgr(Settings* settings, web::IWebService* ws, EmployeeInfoMgrListener* eil): m_settings(settings), m_ws(ws), m_eil(eil), m_bUpdateThreadRunning(false)
 {
+  bool db_ok;
   try{
     //m_bUseLocalDB = settings->getBool("App::LOCAL_DATABASE");
     m_sMemcoCd = m_settings->get("App::MEMCO");
@@ -42,7 +43,12 @@ EmployeeInfoMgr::EmployeeInfoMgr(Settings* settings, web::IWebService* ws, Emplo
     m_sEmbedCd = "0000000008";
     m_check_code = false;
   }
-  OpenOrCreateLocalDB();
+  for(int i=0;i<3;i++){
+    if(db_ok = OpenOrCreateLocalDB())
+      break;
+  }
+  if(!db_ok)
+    throw EXCEPTION_DB;
   
 }
 
@@ -61,6 +67,16 @@ bool EmployeeInfoMgr::OpenOrCreateLocalDB()
   
   int db_size = filesystem::file_size(DB_NAME);
   printf("db size: %d\n", db_size);
+  
+  if(db_size){
+    if(!checkValidate()){
+      LOGE("checkValidate fail!\n");
+      sqlite3_close(m_db);
+      filesystem::file_delete(DB_NAME);
+      return false;
+    }
+  }
+  
   if(!db_size){
     printf("create table\n");
     rc = sqlite3_exec(m_db, CREATE_TABLE_EMPLOYEE, NULL, NULL, &err);
@@ -135,6 +151,24 @@ bool EmployeeInfoMgr::getInfo(const char* usercode, EmployeeInfo** ei)
   *ei = itr->second;
   return true;
     
+}
+
+bool EmployeeInfoMgr::checkValidate()
+{
+  char* err;
+  sqlite3_stmt *stmt;
+  const char* tail;
+  string lastSyncTime;
+
+  int rc = sqlite3_prepare(m_db, "select lastsync from time", -1, &stmt, &tail);
+  if (rc != SQLITE_OK) {
+    printf("Failed to read: %s\n", err);
+  }
+  if(sqlite3_step(stmt) == SQLITE_ROW){
+    lastSyncTime = (const char*)sqlite3_column_text(stmt , 0);
+  }
+  sqlite3_finalize(stmt);
+  return lastSyncTime != "";
 }
 
 void EmployeeInfoMgr::initCache()
@@ -361,7 +395,11 @@ void EmployeeInfoMgr::insertEmployee(vector<pair<string, EmployeeInfo*> >& elems
       throw 1;
     }
     sqlite3_reset(stmt);
-
+//debug
+//    ofstream oOut2(usercode.c_str(), ofstream::binary);
+//    oOut2.write((const char*)ei->userdata, USERDATA_SIZE);
+//    oOut2.close();
+//end debug
     if(!m_check_code || usercode.length() != 4)
       m_eil->onEmployeeMgrUpdateInsert(ei->userdata, index++);
   }

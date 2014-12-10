@@ -168,7 +168,7 @@ void WebService::WebApiInt::parsing()
 
   //contents
   char* p;
-  cout << "parsing:" << startContent << endl;
+  //cout << "parsing:" << startContent << endl;
   p = strstr(startContent, "\n");
   p = strstr(p, "int");
   p = strstr(p, ">");
@@ -421,7 +421,7 @@ bool WebService::request_SendFile(const char *filename, int timelimit, CCBFunc c
   long size = infile.tellg();
   infile.seekg (0);
   // allocate memory for file content
-  cout << "size:" << size << endl;
+  //cout << "size:" << size << endl;
   char* cmd = new char[size];
   // read content of infile
   infile.read (cmd, size);

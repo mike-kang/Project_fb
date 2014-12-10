@@ -20,6 +20,7 @@ class EmployeeInfoMgr {
 public:
   enum Exception {
     EXCEPTION_USERDATA_SIZE,
+    EXCEPTION_DB,
   };
   struct EmployeeInfo {
     //display
@@ -62,6 +63,7 @@ public:
   
 private:  
   bool OpenOrCreateLocalDB();
+  bool checkValidate();
   void initCache();
   void insertEmployee(vector<pair<string, EmployeeInfo*> >& elems);
   void updateEmployee(vector<pair<string, EmployeeInfo*> >& elems);
