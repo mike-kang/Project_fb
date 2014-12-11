@@ -50,7 +50,7 @@ MainWindow::MainWindow(QWidget *parent) :
     insertTable(UploadFilesCount);
     insertTable(UploadCacheCount);
     m_img_buf = NULL;
-    m_aninfinger = new QMovie("Images/finger.gif");
+    m_aninfinger = new QMovie(":/Images/finger.gif");
     ui->labelAnimation->setMovie(m_aninfinger);
     m_aninfinger->start();
 

@@ -1,8 +1,9 @@
-<!DOCTYPE RCC><RCC version="1.0">
- <qresource>
-     <file>Images/logo.bmp</file>
-     <file>Images/logo_lt.bmp</file>
-     <file>Images/authok.jpg</file>
-     <file>Images/authfail.jpg</file>
- </qresource>
- </RCC>
+<RCC>
+    <qresource prefix="/">
+        <file>Images/logo.bmp</file>
+        <file>Images/logo_lt.bmp</file>
+        <file>Images/authok.jpg</file>
+        <file>Images/authfail.jpg</file>
+        <file>Images/finger.gif</file>
+    </qresource>
+</RCC>
