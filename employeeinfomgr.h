@@ -43,7 +43,7 @@ public:
     virtual void onEmployeeMgrUpdateInsert(const unsigned char* userdata, int index) = 0;
     virtual void onEmployeeMgrUpdateUpdate(string& usercode, const unsigned char* userdata, int index) = 0;
     virtual void onEmployeeMgrUpdateDelete(string& usercode, int index) = 0;
-    virtual void onEmployeeMgrUpdateEnd() = 0;
+    virtual void onEmployeeMgrUpdateEnd(const char* updatetime) = 0;
     virtual void onEmployeeCountChanged(int length_16, int length_4) = 0;
   };
 

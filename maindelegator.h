@@ -38,7 +38,7 @@ public:
     virtual void onUpdateDeleteIndex(int index) = 0;
     virtual void onUpdateUpdateIndex(int index) = 0;
     virtual void onUpdateInsertIndex(int index) = 0;
-    virtual void onUpdateEnd() = 0;
+    virtual void onUpdateEnd(const char* updatetime) = 0;
     
     virtual void onMessage(std::string tag, std::string data) = 0; //for lable
     virtual void onLogo(std::string data) = 0;
@@ -65,7 +65,7 @@ public:
   virtual void onEmployeeMgrUpdateInsert(const unsigned char* userdata, int index);
   virtual void onEmployeeMgrUpdateUpdate(string& usercode, const unsigned char* userdata, int index);
   virtual void onEmployeeMgrUpdateDelete(string& usercode, int index);
-  virtual void onEmployeeMgrUpdateEnd();
+  virtual void onEmployeeMgrUpdateEnd(const char* updatetime);
   virtual void onEmployeeCountChanged(int length_16, int length_4);
 
   virtual void onTimeSheetFileCountChanged(int count);

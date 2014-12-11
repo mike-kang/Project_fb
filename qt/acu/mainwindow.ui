@@ -327,7 +327,7 @@
      <string>업로드</string>
     </property>
    </widget>
-   <widget class="QLabel" name="labelLUT_1">
+   <widget class="QLabel" name="labelLUT">
     <property name="geometry">
      <rect>
       <x>170</x>

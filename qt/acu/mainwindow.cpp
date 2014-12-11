@@ -149,9 +149,10 @@ void MainWindow::onUpdateInsertIndex(int index)
   m_updateDialog.setIndexOfInsert(index);
 }
 
-void MainWindow::onUpdateEnd()
+void MainWindow::onUpdateEnd(const char* updatetime)
 {
   cout << "onUpdateEnd" << endl;
+  m_updatetime = updatetime;
   emit sigEndUpdate();
 }
 
@@ -233,6 +234,7 @@ void MainWindow::endUpdate()
     cout << "endUpdate" << endl;
     m_aninfinger->start();
     m_updateDialog.close();
+    ui->labelLUT->setText(m_updatetime);
 }
 
 void MainWindow::updateEmployeeInfo()

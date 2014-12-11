@@ -390,10 +390,10 @@ void MainDelegator::onEmployeeMgrUpdateDelete(string& usercode, int index)
   m_fbs->deleteUsercode(usercode.c_str());
   m_el->onUpdateDeleteIndex(index);
 }
-void MainDelegator::onEmployeeMgrUpdateEnd()
+void MainDelegator::onEmployeeMgrUpdateEnd(const char* updatetime)
 {
   LOGV("onEmployeeMgrUpdateEnd\n");
-  m_el->onUpdateEnd();
+  m_el->onUpdateEnd(updatetime);
   if(!m_timer){
     m_timer = new Timer(cbTimer, this);
     int interval = m_settings->getInt("App::TIMER_INTERVAL");

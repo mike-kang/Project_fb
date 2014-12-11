@@ -29,7 +29,7 @@ public:
     virtual void onUpdateDeleteIndex(int index);
     virtual void onUpdateUpdateIndex(int index);
     virtual void onUpdateInsertIndex(int index);
-    virtual void onUpdateEnd();
+    virtual void onUpdateEnd(const char* updatetime);
     virtual void onMessage(std::string tag, std::string data);
     virtual void onLogo(std::string data);
     virtual void onEmployeeInfo(std::string CoName, std::string Name, std::string PinNo);
@@ -75,6 +75,7 @@ private:
     SyncDialog m_syncDialog;
     UpdateDialog m_updateDialog;
     QMovie *m_aninfinger;
+    const char* m_updatetime;
 };
 
 #endif // MAINWINDOW_H
