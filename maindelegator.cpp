@@ -209,9 +209,10 @@ void MainDelegator::onScanData(const char* usercode)
       goto error;
     }
 
-    if(m_bDisplayEmployeeInfo)
+    if(m_bDisplayEmployeeInfo){
+      //cout << "pinno: " << ei->pin_no << endl;
       m_el->onEmployeeInfo(ei->company_name, ei->lab_name, ei->pin_no);
-
+    }
     if(m_admin1 == usercode){
       LOGV("Mode Change : %s -> AM_NORMAL\n", debug_str(m_authMode));   
       m_authMode = AM_NORMAL;

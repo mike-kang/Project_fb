@@ -168,7 +168,7 @@ void WebService::WebApiInt::parsing()
 
   //contents
   char* p;
-  //cout << "parsing:" << startContent << endl;
+  //cout << "[WebApiInt]parsing:" << startContent << endl;
   p = strstr(startContent, "\n");
   p = strstr(p, "int");
   p = strstr(p, ">");

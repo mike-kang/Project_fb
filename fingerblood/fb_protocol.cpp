@@ -84,7 +84,7 @@ char FBProtocol::stat()
 {
   char status;
   byte* receive_buf; 
-  receive_buf = processCommand("STAT", 5000);
+  receive_buf = processCommand("STAT", 10000);
   status = receive_buf[STATUS];
   delete receive_buf;
   return status;  
@@ -98,7 +98,7 @@ char FBProtocol::stat(char* data, bool& bLong)
   char status;
   byte* receive_buf; 
   try {
-    receive_buf = processCommand("STAT", 5000);
+    receive_buf = processCommand("STAT", 10000);
     //printf("STAT 0x%x('%c')\n", receive_buf[STATUS], receive_buf[STATUS]);
     status = receive_buf[STATUS];
     short length = TOSHORT(receive_buf + 1);

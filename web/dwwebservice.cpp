@@ -84,7 +84,6 @@ void DWWebService::RfidInfoSelect_WebApi::parsing()
   //printf("end parsing\n");
 }
 
-/*
 void DWWebService::TimeSheetInsertString_WebApi::parsing()
 {
   char headerbuf[RCVHEADERBUFSIZE];
@@ -107,7 +106,6 @@ void DWWebService::TimeSheetInsertString_WebApi::parsing()
   m_ret = atoi(start) > 0;
 
 }
-*/
 
 /***********************************************************************************/
 /*                                                                                 */

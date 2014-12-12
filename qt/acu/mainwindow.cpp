@@ -18,7 +18,8 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow) , m_syncDialog(this), m_updateDialog(this)
 {
-    //m_codec = QTextCodec::codecForName("eucKR"); //UTF-8
+    //m_codec = QTextCodec::codecForName("UTF-8"); //UTF-8
+    QTextCodec::setCodecForLocale(QTextCodec::codecForName("UTF-8"));
 
     ui->setupUi(this);
     statusLabel = new QLabel;
@@ -42,7 +43,7 @@ MainWindow::MainWindow(QWidget *parent) :
     insertTable(FID);
     //insertTable(CoName);
     //insertTable(Name);
-    //insertTable(PinNo);
+    insertTable(PinNo);
     //insertTable(RfidNo);
     //insertTable(Result);
     insertTable(Msg);
@@ -245,6 +246,7 @@ void MainWindow::updateEmployeeInfo()
   m_timerEmployeeInfo->start(5000);
   ui->labelCoName->setText(m_CoName);
   ui->labelName->setText(m_Name);
+  ui->labelPinNo->setText(m_PinNo);
   //ui->labelPhoto->clear();
 }
 
@@ -255,6 +257,7 @@ void MainWindow::cleanInfo()
   ui->labelName->setText("");
   ui->labelImage->setPixmap(m_pm_logo);
   ui->labelMsg->setText("");
+  ui->labelPinNo->setText("");
   m_timerEmployeeInfo->stop();
 }
 

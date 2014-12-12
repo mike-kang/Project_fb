@@ -83,9 +83,9 @@ int main()
   Noti noti;
   cout << "start main\n" << endl;
   
-  log_init(true, 1, "/dev/pts/3", false, 3, "Log");
+  log_init(true, 1, "/dev/pts/2", false, 3, "Log");
   fbs = new FBService("/dev/ttyUSB0", Serial::SB38400, &noti, false);
-  if(!fbs->start(true)){
+  if(!fbs->start(false)){
     cout << "start fail!" << endl;
     return 1;
   }
