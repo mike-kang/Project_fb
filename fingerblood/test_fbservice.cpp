@@ -3,6 +3,7 @@
 #include "fbservice.h"
 #include <fstream>
 #include <vector>
+#include <stdlib.h>
 #include "tools/log.h"
 
 using namespace std;
@@ -78,49 +79,77 @@ const char* save_list[] = {
 //#define SCAN
 //#define FORMAT
 
-int main()
+void help()
+{
+    printf("Usage: ./test [OPTION] [FILE]\n"
+           "  -h                help\n"
+           "  -s [FILE]         save\n"
+           "  -f                format\n"
+           "  -l                list\n");
+    exit(0);
+}
+
+int main(int argc, char* argv[])
 {
   Noti noti;
-  cout << "start main\n" << endl;
+  int opt;
+  //cout << "start main\n" << endl;
   
+  if(argc < 2)
+    help(); //exit(0)
+
   log_init(true, 1, "/dev/pts/2", false, 3, "Log");
   fbs = new FBService("/dev/ttyUSB0", Serial::SB38400, &noti, false);
-  if(!fbs->start(false)){
+  if(!fbs->start(true)){
     cout << "start fail!" << endl;
     return 1;
   }
-  
   fbs->buzzer(false);
-#ifdef GETLIST
-  list<string> listUserCode;
-  fbs->getList(listUserCode);
-  ofstream oOut("usercodelist.txt");
-  for(list<string>::iterator itr = listUserCode.begin(); itr != listUserCode.end(); itr++)
-    oOut << *itr << endl;
-  oOut.close();
-#endif
-#ifdef FORMAT
-  fbs->format();
-  sleep(5);
-#endif
+  
+  while((opt = getopt(argc, argv, "lfs:")) != -1) 
+  {
+      switch(opt) 
+      { 
+          case 'l':
+            {
+              list<string> listUserCode;
+              fbs->getList(listUserCode);
+              ofstream oOut("usercodelist.txt");
+              for(list<string>::iterator itr = listUserCode.begin(); itr != listUserCode.end(); itr++){
+                oOut << *itr << endl;
+              }
+              oOut.close();
+              cout << "usercodelist.txt saved" << endl;
+            }
+            break; 
+          case 'f':
+            fbs->format();  
+            cout << "start sleep" << endl;
+            sleep(5);
+            cout << "stop sleep" << endl;
+            exit(0);
+          case 's':
+            /*
+              for(int i=0; i<sizeof(save_list)/sizeof(char*); i++){
+                char buf[USERDATA_SIZE];
+                ifstream infile (save_list[i], ofstream::binary);
+                infile.read (buf, USERDATA_SIZE);
+                infile.close();
+                fbs->save((const unsigned char*)buf, USERDATA_SIZE);
+              }
+            */
+            char filename[255];
+            fbs->save(optarg);
+            cout << "save:" << optarg << endl;
+            break;
+      }
+  } 
+
+  
 #ifdef DELETE
   for(int i=0; i<sizeof(save_list)/sizeof(char*); i++){
     fbs->deleteUsercode(save_list[i]);
   }
-#endif
-  
-#ifdef SAVE  
-/*
-  for(int i=0; i<sizeof(save_list)/sizeof(char*); i++){
-    char buf[USERDATA_SIZE];
-    ifstream infile (save_list[i], ofstream::binary);
-    infile.read (buf, USERDATA_SIZE);
-    infile.close();
-    fbs->save((const unsigned char*)buf, USERDATA_SIZE);
-  }
-*/
-  fbs->save("FID0000000000000012.bin");
-
 #endif
 
 #ifdef SCAN

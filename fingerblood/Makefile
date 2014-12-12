@@ -4,7 +4,7 @@ $(info current dir is ${CURDIR})
 MACHINE=$(shell uname -m)
 
 CPPFLAGS =  -g -I.. 
-EXE = test_fbservice
+EXE = test
 
 
 SRCS = fbservice.cpp fbprotocolCMSerial.cpp fb_protocol.cpp test_fbservice.cpp
