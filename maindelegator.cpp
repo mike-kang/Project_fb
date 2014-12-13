@@ -29,12 +29,12 @@ string str_fail = "인증에 실패했습니다. 재시도 하세요.";
 
 MainDelegator* MainDelegator::my = NULL;
 
-MainDelegator* MainDelegator::createInstance(EventListener* el)
+MainDelegator* MainDelegator::createInstance(EventListener* el, const char* config)
 {
   if(my){
     return my;
   }
-  my = new MainDelegator(el);
+  my = new MainDelegator(el, config);
   return my;
 }   
 
@@ -560,7 +560,7 @@ void MainDelegator::cbTimer(void* arg)
       
     default:
       //upload timesheet
-      md->m_timeSheetMgr->upload();
+      //md->m_timeSheetMgr->upload();
       count++;
       break;
   }
@@ -611,9 +611,12 @@ void MainDelegator::displayNetworkStatus(bool val)
     bInitialized = true;
 }
 
-bool MainDelegator::SettingInit()
+bool MainDelegator::SettingInit(const char* configPath)
 {
-  m_settings = new Settings("/etc/acufb/FID.ini");
+  if(configPath)
+    m_settings = new Settings(configPath);
+  else
+    m_settings = new Settings("/etc/acufb/FID.ini");
 
 #ifdef CAMERA  
   m_cameraDelayOffTime = m_settings->getInt("Camera::DELAY_OFF_TIME"); //600 sec
@@ -679,12 +682,12 @@ bool MainDelegator::SettingInit()
   return true;
 }
 
-MainDelegator::MainDelegator(EventListener* el) : m_el(el), m_bProcessingAuth(false), m_bFBServiceRunning(false), m_bSyncDeviceAndModule(false), m_timer_checkFBSerivce(NULL), m_timer(NULL)
+MainDelegator::MainDelegator(EventListener* el, const char* configPath) : m_el(el), m_bProcessingAuth(false), m_bFBServiceRunning(false), m_bSyncDeviceAndModule(false), m_timer_checkFBSerivce(NULL), m_timer(NULL)
 {
   bool ret;
   cout << "start" << endl;
   el->onStatus("System Start");
-  SettingInit();
+  SettingInit(configPath);
   string curdir = m_settings->get("App::WORKING_DIRECTORY");
   filesystem::dir_chdir(curdir.c_str());
   cout << "chdir:" << curdir.c_str() << endl;
@@ -797,11 +800,30 @@ MainDelegator::~MainDelegator()
 //#ifdef SIMULATOR
 void MainDelegator::cbTestTimer(void* arg)
 {
-   my->onScanData(my->m_test_serial_number.c_str());
+  MainDelegator* my = (MainDelegator*)arg;
+  
+  if(my->m_signo == SIGUSR1)
+    my->onScanData(my->m_test_serial_number.c_str());
+  else{
+    my->m_fbs->requestStopScan();
+    my->onEmployeeMgrUpdateStart();
+    my->onEmployeeMgrUpdateCount(0, 1, 0);
+    unsigned char* buf = new unsigned char[USERDATA_SIZE];
+    ifstream ud("fingerblood/FID000000000012.bin", ifstream::binary);
+    ud.read((char*)buf, USERDATA_SIZE);
+    ud.close();
+    string usercode("000000000012");
+    my->onEmployeeMgrUpdateUpdate(usercode, buf, 0);
+    DateTime d;
+    my->onEmployeeMgrUpdateEnd(d.toString('+'));
+    my->m_fbs->requestStartScan();
+    delete buf;
+  }
 }
 
 void MainDelegator::test_signal_handler(int signo)
 {
+  my->m_signo = signo; 
   if(signo == SIGUSR1){
     LOGI("signal_handler SIGUSR1\n");
     //my->m_test_serial_number = "253161024009"; //validate
@@ -810,7 +832,6 @@ void MainDelegator::test_signal_handler(int signo)
   }
   else if(signo == SIGUSR2){
     LOGI("signal_handler SIGUSR2\n");
-    my->m_test_serial_number = "4716"; //invalidate
     my->mTimerForTest->start(1);
   }
 }

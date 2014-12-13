@@ -98,15 +98,15 @@ int main(int argc, char* argv[])
   if(argc < 2)
     help(); //exit(0)
 
-  log_init(true, 1, "/dev/pts/2", false, 3, "Log");
+  log_init(true, 1, "/dev/pts/1", false, 3, "Log");
   fbs = new FBService("/dev/ttyUSB0", Serial::SB38400, &noti, false);
   if(!fbs->start(true)){
     cout << "start fail!" << endl;
     return 1;
   }
-  fbs->buzzer(false);
+  fbs->buzzer(true);
   
-  while((opt = getopt(argc, argv, "lfs:")) != -1) 
+  while((opt = getopt(argc, argv, "lfs:c")) != -1) 
   {
       switch(opt) 
       { 
@@ -141,6 +141,10 @@ int main(int argc, char* argv[])
             char filename[255];
             fbs->save(optarg);
             cout << "save:" << optarg << endl;
+            break;
+          case 'c':
+            cout << "start scan" << endl;
+            fbs->requestStartScan(300);
             break;
       }
   } 

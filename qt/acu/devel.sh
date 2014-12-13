@@ -1,3 +1,4 @@
-_PATH=/home/mikekang/Project_il
+_PATH=$(pwd)
+LIB_PATH=${_PATH}/../..
 
-LD_LIBRARY_PATH=${_PATH}:${_PATH}/tools/:${_PATH}/camera/:${_PATH}/inih_r29/ ${_PATH}/qt/acu/acu
+LD_LIBRARY_PATH=${LIB_PATH}:${LIB_PATH}/tools/:${LIB_PATH}/camera/:${LIB_PATH}/inih_r29/ ${_PATH}/acu -c FID.test.ini

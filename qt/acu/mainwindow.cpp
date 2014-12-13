@@ -64,7 +64,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(this, SIGNAL(sigStartUpdate()), this, SLOT(startUpdate()));
     connect(this, SIGNAL(sigEndUpdate()), this, SLOT(endUpdate()));
 
-    MainDelegator* md = MainDelegator::createInstance(this);
+    //MainDelegator* md = MainDelegator::createInstance(this);
     //md->setEventListener(this);
 
     //QDate* date = new QDate();
@@ -89,6 +89,13 @@ MainWindow::MainWindow(QWidget *parent) :
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::runMainDelegator(const char* config)
+{
+  cout << config << endl;
+  
+  MainDelegator* md = MainDelegator::createInstance(this, config);
 }
 
 void MainWindow::onEmployeeInfo(std::string CoName, std::string Name, std::string PinNo)

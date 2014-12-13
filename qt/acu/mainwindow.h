@@ -35,7 +35,8 @@ public:
     virtual void onEmployeeInfo(std::string CoName, std::string Name, std::string PinNo);
     virtual void onStatus(std::string status);
     virtual void onImage(bool val);
-
+    void runMainDelegator(const char* config);
+    
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
     

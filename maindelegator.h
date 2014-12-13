@@ -72,7 +72,7 @@ public:
   virtual void onTimeSheetCacheCountChanged(int count);
 
 
-  static MainDelegator* createInstance(EventListener* el);
+  static MainDelegator* createInstance(EventListener* el, const char* config);
   ~MainDelegator(); 
 
 
@@ -82,14 +82,14 @@ public:
 
 private:
   static MainDelegator* my;
-  MainDelegator(EventListener* el);
+  MainDelegator(EventListener* el, const char* configPath);
   void run(); 
 
   //void _processRfidSerialData(void* arg);
 #ifdef LOCATION
   string getLocationName();
 #endif
-  bool SettingInit();
+  bool SettingInit(const char* configPath);
   bool checkValidate(EmployeeInfoMgr::EmployeeInfo* ei, string& msg);
 #ifdef LOCATION
   bool checkZone(string& sAuth);
@@ -190,6 +190,7 @@ private:
   bool m_bTimeAvailable;
   bool m_bSyncDeviceAndModule;
   bool m_bTestSignal; //for debug
+  int m_signo; //for debug
   AuthMode m_authMode;
   bool m_bDisplayEmployeeInfo;
   bool m_bCheckUsercode4;

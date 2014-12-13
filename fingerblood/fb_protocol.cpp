@@ -36,7 +36,7 @@ using namespace tools;
                                 status = stat();      \
                               } while(status != (k))
 
-bool _debug = false;
+bool _debug = true;
 
 char* FBProtocol::didr()
 {
@@ -80,11 +80,33 @@ char* FBProtocol::vers()
   return version;
 }
 
+bool FBProtocol::stop()
+{
+  char status;
+  byte* receive_buf; 
+  bool ret = false;
+  try {
+    receive_buf = processCommand("STOP", 10000);  //with Exception
+    status = receive_buf[STATUS];
+    if(status != 'A')
+      STAT_LOOP_CHECK('A');
+    ret = true;
+  }
+  catch(Exception e){
+    LOGE("[stop]exception fail! %d\n", e);
+  }
+
+  delete receive_buf;
+  return false;
+    
+}
+
+
 char FBProtocol::stat()
 {
   char status;
   byte* receive_buf; 
-  receive_buf = processCommand("STAT", 10000);
+  receive_buf = processCommand("STAT", 10000);  //with Exception
   status = receive_buf[STATUS];
   delete receive_buf;
   return status;  

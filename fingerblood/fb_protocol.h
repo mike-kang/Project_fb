@@ -37,6 +37,7 @@ public:
   char* didr();
   bool didk(const char* key);
   char* vers();
+  bool stop();
   char stat();
   char stat(char* data, bool& bLong);
   bool init();
