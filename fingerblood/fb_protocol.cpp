@@ -36,7 +36,7 @@ using namespace tools;
                                 status = stat();      \
                               } while(status != (k))
 
-bool _debug = true;
+bool _debug = false;
 
 char* FBProtocol::didr()
 {

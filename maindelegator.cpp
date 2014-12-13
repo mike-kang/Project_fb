@@ -809,14 +809,14 @@ void MainDelegator::cbTestTimer(void* arg)
     my->onEmployeeMgrUpdateStart();
     my->onEmployeeMgrUpdateCount(0, 1, 0);
     unsigned char* buf = new unsigned char[USERDATA_SIZE];
-    ifstream ud("fingerblood/FID000000000012.bin", ifstream::binary);
+    ifstream ud("fingerblood/FID0000000000000012.bin", ifstream::binary);
     ud.read((char*)buf, USERDATA_SIZE);
     ud.close();
-    string usercode("000000000012");
+    string usercode("0000000000000012");
     my->onEmployeeMgrUpdateUpdate(usercode, buf, 0);
     DateTime d;
     my->onEmployeeMgrUpdateEnd(d.toString('+'));
-    my->m_fbs->requestStartScan();
+    my->m_fbs->requestStartScan(300);
     delete buf;
   }
 }
