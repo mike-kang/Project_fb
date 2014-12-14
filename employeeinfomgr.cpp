@@ -231,6 +231,9 @@ void EmployeeInfoMgr::run_updateLocalDB()
 
   m_eil->onEmployeeMgrUpdateStart();
   
+  m_arrUpdateUserCode.clear();
+  m_arrUpdateUserCodeDelete.clear();
+  
   char *p = m_xml_buf;
   char *start, *end;
   vector<pair<string, EmployeeInfo*> > arrEmployeeInsert;
@@ -330,6 +333,9 @@ void EmployeeInfoMgr::run_updateLocalDB()
 
   m_eil->onEmployeeMgrUpdateCount(delete_count, update_count, insert_count);
 
+  m_arrUpdateUserCode.reserve(insert_count + update_count);
+  m_arrUpdateUserCodeDelete.reserve(delete_count);
+
   if(delete_count)
     deleteEmployee(arrEmployeeDelete);
   if(update_count)
@@ -351,7 +357,7 @@ void EmployeeInfoMgr::run_updateLocalDB()
   if (rc != SQLITE_OK) {
     LOGE("Failed to update : %s\n", err);
   }
-  m_eil->onEmployeeMgrUpdateEnd(m_lastSyncTime.c_str());
+  m_eil->onEmployeeMgrUpdateEnd(m_lastSyncTime.c_str(), &m_arrUpdateUserCode, &m_arrUpdateUserCodeDelete);
   m_eil->onEmployeeCountChanged(m_arrEmployee.size(), m_arrEmployee_4.size());   
   m_bUpdateThreadRunning = false;
   LOGV("updateLocalDB ---\n");
@@ -379,10 +385,11 @@ void EmployeeInfoMgr::insertEmployee(vector<pair<string, EmployeeInfo*> >& elems
     //db
     string& usercode = elems[i].first;
     EmployeeInfo* ei = elems[i].second;
+    const char* strUsercode = usercode.c_str();
     sqlite3_bind_text(stmt, 1, ei->company_name.c_str(), ei->company_name.length(), SQLITE_STATIC);
     sqlite3_bind_text(stmt, 2, ei->lab_name.c_str(), ei->lab_name.length(), SQLITE_STATIC);
     sqlite3_bind_text(stmt, 3, ei->pin_no.c_str(), ei->pin_no.length(), SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 4, usercode.c_str(), usercode.length(), SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 4, strUsercode, usercode.length(), SQLITE_STATIC);
     sqlite3_bind_blob(stmt, 5, ei->userdata, USERDATA_SIZE, SQLITE_STATIC);
     sqlite3_bind_text(stmt, 6, ei->blacklistinfo.c_str(), ei->blacklistinfo.length(), SQLITE_STATIC);
     sqlite3_bind_int(stmt, 7, ei->pnt_cnt);
@@ -401,7 +408,7 @@ void EmployeeInfoMgr::insertEmployee(vector<pair<string, EmployeeInfo*> >& elems
 //    oOut2.close();
 //end debug
     if(!m_check_code || usercode.length() != 4)
-      m_eil->onEmployeeMgrUpdateInsert(ei->userdata, index++);
+      m_arrUpdateUserCode.push_back(ei->userdata);
   }
   mtx.unlock();
   sqlite3_finalize(stmt);
@@ -424,6 +431,7 @@ void EmployeeInfoMgr::updateEmployee(vector<pair<string, EmployeeInfo*> >& elems
     
     string& usercode = elems[i].first;
     EmployeeInfo* ei = elems[i].second;
+    const char* strUsercode = usercode.c_str();
     
     //cache
     if(usercode.length() == 16){
@@ -438,7 +446,7 @@ void EmployeeInfoMgr::updateEmployee(vector<pair<string, EmployeeInfo*> >& elems
     //db
     sqlite3_bind_text(stmt, 1, ei->company_name.c_str(), ei->company_name.length(), SQLITE_STATIC);
     sqlite3_bind_text(stmt, 2, ei->lab_name.c_str(), ei->lab_name.length(), SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 3, usercode.c_str(), usercode.length(), SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 3, strUsercode, usercode.length(), SQLITE_STATIC);
     sqlite3_bind_blob(stmt, 4, ei->userdata, USERDATA_SIZE, SQLITE_STATIC);
     sqlite3_bind_text(stmt, 5, ei->blacklistinfo.c_str(), ei->blacklistinfo.length(), SQLITE_STATIC);
     sqlite3_bind_int(stmt, 6, ei->pnt_cnt);
@@ -454,7 +462,7 @@ void EmployeeInfoMgr::updateEmployee(vector<pair<string, EmployeeInfo*> >& elems
     sqlite3_reset(stmt);
     
     if(!m_check_code || usercode.length() != 4)
-      m_eil->onEmployeeMgrUpdateUpdate(usercode, ei->userdata, index++);
+      m_arrUpdateUserCode.push_back(ei->userdata);
   }
   mtx.unlock();
   sqlite3_finalize(stmt);
@@ -480,7 +488,7 @@ void EmployeeInfoMgr::deleteEmployee(vector<pair<string, EmployeeInfo*> >& elems
     //cache
     if(usercode.length() == 16){
       delete m_arrEmployee[usercode];
-      m_arrEmployee_4.erase(usercode);
+      m_arrEmployee.erase(usercode);
     }  
     else{
       delete m_arrEmployee_4[usercode];
@@ -497,7 +505,7 @@ void EmployeeInfoMgr::deleteEmployee(vector<pair<string, EmployeeInfo*> >& elems
       throw 1;
     }
     sqlite3_reset(stmt);
-    m_eil->onEmployeeMgrUpdateDelete(usercode, index++);
+    m_arrUpdateUserCodeDelete.push_back(usercode);
     delete ei;
   }
   mtx.unlock();

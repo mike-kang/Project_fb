@@ -20,22 +20,31 @@ public:
     virtual void onScanData(const char* buf) = 0;
     virtual bool onNeedDeviceKey(char* id, char* key) = 0;
     virtual void onNeedUserCodeList(std::vector<std::pair<const char*, unsigned char*> >& arr_16, std::vector<std::pair<const char*, unsigned char*> >& arr_4) = 0;
-    virtual void onSync(IFBService::IFBServiceEventListener::SyncStatus status, 
-    int index=0) = 0;
+    virtual void onSync(IFBService::IFBServiceEventListener::SyncStatus status, int index=0) = 0;
+    virtual void onFormat(bool ret) = 0;
+
+    virtual void onUpdateBegin(int save_count, int delete_count) = 0;
+    virtual void onUpdateSave(int index) = 0;
+    virtual void onUpdateDelete(int index) = 0;
+    virtual void onUpdateEnd() = 0;
   };
 
-  virtual bool start(bool check = false) = 0;
-  virtual void stop() = 0;
-  virtual char* getVersion() = 0;
-  virtual bool getList(std::list<std::string>& li) = 0;
-  virtual bool format() = 0;  //auto restart
-  virtual bool requestStartScan(int interval)= 0;
-  virtual int requestStopScan() = 0;
-  virtual bool save(const char* filename) = 0;
-  virtual bool save(const unsigned char* buf, int length) = 0;
-  virtual bool deleteUsercode(const char* usercode) = 0;
-  virtual void buzzer(bool val) = 0;
-  virtual void sync() = 0;
+  virtual bool request_openDevice(bool check_device_id) = 0; //only sync
+  virtual void request_closeDevice() = 0; //only sync
+  virtual void request_sync(void) = 0; //only async
+  virtual bool request_getList(std::list<std::string>* li) = 0; //only sync
+  virtual void request_format() = 0; //only async
+  virtual void request_startScan(int interval) = 0; //only async
+  virtual void request_stopScan() = 0; //only async
+  virtual void request_buzzer(bool val) = 0; //only async
+  virtual bool request_saveUsercode(const unsigned char* userdata, int length) = 0; //only sync
+  virtual bool request_saveUsercode(const char* filename) = 0; //only sync
+  virtual bool request_deleteUsercode(const char* usercode) = 0; //only sync
+  virtual bool request_stopCmd() = 0; //only sync
+  virtual void request_update(std::vector<unsigned char*>* arrSave, 
+  std::vector<std::string>* arrDelete) = 0; //only async
+  //virtual void update(std::vector<std::pair<const char*, unsigned char*> >& arrSave, std::vector<string>& arrDelete) = 0;
+  
 };
 
 

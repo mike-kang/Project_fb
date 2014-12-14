@@ -35,10 +35,12 @@ public:
     virtual void onSyncEnd(bool val) = 0;
     virtual void onUpdateStart() = 0;
     virtual void onUpdateCount(int delete_count, int update_count, int insert_count) = 0;
-    virtual void onUpdateDeleteIndex(int index) = 0;
-    virtual void onUpdateUpdateIndex(int index) = 0;
-    virtual void onUpdateInsertIndex(int index) = 0;
-    virtual void onUpdateEnd(const char* updatetime) = 0;
+    virtual void onUpdateLocalDBEnd(const char* updatetime) = 0;
+
+    virtual void onUpdateFBBegin(int delete_count, int save_count) = 0;
+    virtual void onUpdateFBDeleteIndex(int index) = 0;
+    virtual void onUpdateFBSaveIndex(int index) = 0;
+    virtual void onUpdateFBEnd() = 0;
     
     virtual void onMessage(std::string tag, std::string data) = 0; //for lable
     virtual void onLogo(std::string data) = 0;
@@ -58,19 +60,23 @@ public:
   virtual bool onNeedDeviceKey(char* id, char* key);
   virtual void onNeedUserCodeList(std::vector<pair<const char*, unsigned char*> >& arr_16, std::vector<pair<const char*, unsigned char*> >& arr_4);
   virtual void onSync(IFBService::IFBServiceEventListener::SyncStatus status, int index);
+  virtual void onFormat(bool ret);
+  virtual void onUpdateBegin(int save_count, int delete_count);
+  virtual void onUpdateSave(int index);
+  virtual void onUpdateDelete(int index);
+  virtual void onUpdateEnd();
   //virtual std::map<string, EmployeeInfo*>& onNeedUserCodeList();
 
   virtual void onEmployeeMgrUpdateStart();
   virtual void onEmployeeMgrUpdateCount(int delete_count, int update_count, int insert_count);
-  virtual void onEmployeeMgrUpdateInsert(const unsigned char* userdata, int index);
-  virtual void onEmployeeMgrUpdateUpdate(string& usercode, const unsigned char* userdata, int index);
-  virtual void onEmployeeMgrUpdateDelete(string& usercode, int index);
-  virtual void onEmployeeMgrUpdateEnd(const char* updatetime);
+  //virtual void onEmployeeMgrUpdateInsert(const unsigned char* userdata, int index);
+  //virtual void onEmployeeMgrUpdateUpdate(string& usercode, const unsigned char* userdata, int index);
+  //virtual void onEmployeeMgrUpdateDelete(string& usercode, int index);
+  virtual void onEmployeeMgrUpdateEnd(const char* updatetime, vector<unsigned char*>* arrSave, vector<string>* arrDelete);
   virtual void onEmployeeCountChanged(int length_16, int length_4);
 
   virtual void onTimeSheetFileCountChanged(int count);
   virtual void onTimeSheetCacheCountChanged(int count);
-
 
   static MainDelegator* createInstance(EventListener* el, const char* config);
   ~MainDelegator(); 

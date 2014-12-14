@@ -33,6 +33,7 @@ using namespace tools;
 //#define BUF_SZ_USERE 13
 //#define BUF_SZ_AUTH 12
 #define STAT_LOOP_CHECK(k)    do {                    \
+                                usleep(100000);       \
                                 status = stat();      \
                               } while(status != (k))
 

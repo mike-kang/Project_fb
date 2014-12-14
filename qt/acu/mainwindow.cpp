@@ -141,28 +141,34 @@ void MainWindow::onUpdateStart()
 void MainWindow::onUpdateCount(int delete_count, int update_count, int insert_count)
 {
   cout << "onUpdateCount" << endl;
-  m_updateDialog.setCount(delete_count, update_count, insert_count);
+  m_updateDialog.setLocalDBCount(delete_count, update_count, insert_count);
 }
 
-void MainWindow::onUpdateDeleteIndex(int index)
+void MainWindow::onUpdateLocalDBEnd(const char* updatetime)
 {
-  m_updateDialog.setIndexOfDelete(index);
-}
-void MainWindow::onUpdateUpdateIndex(int index)
-{
-  m_updateDialog.setIndexOfUpdate(index);
-}
-void MainWindow::onUpdateInsertIndex(int index)
-{
-  m_updateDialog.setIndexOfInsert(index);
+  cout << "onUpdateLocalDBEnd" << endl;
+  QMetaObject::invokeMethod(ui->labelLUT, "setText", Q_ARG(QString, updatetime));
 }
 
-void MainWindow::onUpdateEnd(const char* updatetime)
+void MainWindow::onUpdateFBBegin(int delete_count, int save_count)
 {
-  cout << "onUpdateEnd" << endl;
-  m_updatetime = updatetime;
+  m_updateDialog.setFBCount(delete_count, save_count);
+}
+
+void MainWindow::onUpdateFBDeleteIndex(int index)
+{
+  m_updateDialog.setFBIndexOfDelete(index);
+}
+void MainWindow::onUpdateFBSaveIndex(int index)
+{
+  m_updateDialog.setFBIndexOfSave(index);
+}
+void MainWindow::onUpdateFBEnd()
+{
+  cout << "onUpdateFBEnd" << endl;
   emit sigEndUpdate();
 }
+
 
 void MainWindow::onMessage(std::string tag, std::string data)
 {
@@ -242,7 +248,6 @@ void MainWindow::endUpdate()
     cout << "endUpdate" << endl;
     m_aninfinger->start();
     m_updateDialog.close();
-    ui->labelLUT->setText(m_updatetime);
 }
 
 void MainWindow::updateEmployeeInfo()

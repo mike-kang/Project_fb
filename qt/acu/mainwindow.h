@@ -26,10 +26,11 @@ public:
     virtual void onSyncEnd(bool val);
     virtual void onUpdateStart();
     virtual void onUpdateCount(int delete_count, int update_count, int insert_count);
-    virtual void onUpdateDeleteIndex(int index);
-    virtual void onUpdateUpdateIndex(int index);
-    virtual void onUpdateInsertIndex(int index);
-    virtual void onUpdateEnd(const char* updatetime);
+    virtual void onUpdateLocalDBEnd(const char* updatetime);
+    virtual void onUpdateFBBegin(int delete_count, int save_count);
+    virtual void onUpdateFBDeleteIndex(int index);
+    virtual void onUpdateFBSaveIndex(int index);
+    virtual void onUpdateFBEnd();
     virtual void onMessage(std::string tag, std::string data);
     virtual void onLogo(std::string data);
     virtual void onEmployeeInfo(std::string CoName, std::string Name, std::string PinNo);
@@ -76,7 +77,7 @@ private:
     SyncDialog m_syncDialog;
     UpdateDialog m_updateDialog;
     QMovie *m_aninfinger;
-    const char* m_updatetime;
+    //const char* m_updatetime;
 };
 
 #endif // MAINWINDOW_H

@@ -332,7 +332,7 @@ void MainDelegator::onSync(IFBService::IFBServiceEventListener::SyncStatus statu
         LOGI("timer interval= %d\n", interval);
         m_timer->start(interval, true);
         
-        m_fbs->requestStartScan(300);
+        m_fbs->request_startScan(300);
       }
       break;
     case SS_FAIL:
@@ -342,6 +342,34 @@ void MainDelegator::onSync(IFBService::IFBServiceEventListener::SyncStatus statu
   }
 }
 
+void MainDelegator::onFormat(bool ret)
+{
+  LOGV("onformat %d\n", ret);
+}
+void MainDelegator::onUpdateBegin(int save_count, int delete_count)
+{
+  m_el->onUpdateFBBegin(delete_count, save_count);
+}
+void MainDelegator::onUpdateSave(int index)
+{
+  m_el->onUpdateFBSaveIndex(index);
+}
+void MainDelegator::onUpdateDelete(int index)
+{
+  m_el->onUpdateFBDeleteIndex(index);
+}
+void MainDelegator::onUpdateEnd()
+{
+  m_el->onUpdateFBEnd();
+  m_timer = new Timer(cbTimer, this);
+  int interval = m_settings->getInt("App::TIMER_INTERVAL");
+  LOGI("timer interval= %d\n", interval);
+  m_timer->start(interval, true);
+  
+  m_fbs->request_startScan(300);
+}
+
+/*
 void MainDelegator::run()
 {
   while(true)
@@ -361,7 +389,7 @@ void MainDelegator::run()
   }
 
 }
-
+*/
 void MainDelegator::onEmployeeMgrUpdateStart()
 {
   m_el->onUpdateStart();
@@ -372,7 +400,7 @@ void MainDelegator::onEmployeeMgrUpdateCount(int delete_count, int update_count,
   LOGV("onEmployeeMgrUpdateCount delete:%d update:%d insert:%d\n", delete_count, update_count, insert_count);
   m_el->onUpdateCount(delete_count, update_count, insert_count);
 }
-
+/*
 void MainDelegator::onEmployeeMgrUpdateInsert(const unsigned char* userdata, int index)
 {
   LOGV("onEmployeeMgrUpdateInsert %d\n", index);
@@ -391,18 +419,12 @@ void MainDelegator::onEmployeeMgrUpdateDelete(string& usercode, int index)
   m_fbs->deleteUsercode(usercode.c_str());
   m_el->onUpdateDeleteIndex(index);
 }
-void MainDelegator::onEmployeeMgrUpdateEnd(const char* updatetime)
+*/
+void MainDelegator::onEmployeeMgrUpdateEnd(const char* updatetime, vector<unsigned char*>* arrSave, vector<string>* arrDelete)
 {
   LOGV("onEmployeeMgrUpdateEnd\n");
-  m_el->onUpdateEnd(updatetime);
-  if(!m_timer){
-    m_timer = new Timer(cbTimer, this);
-    int interval = m_settings->getInt("App::TIMER_INTERVAL");
-    LOGI("timer interval= %d\n", interval);
-    m_timer->start(interval, true);
-    
-    m_fbs->requestStartScan(300);
-  }
+  m_el->onUpdateLocalDBEnd(updatetime);
+  m_fbs->request_update(arrSave, arrDelete);  //async
 }
 
 void MainDelegator::onEmployeeCountChanged(int length_16, int length_4)
@@ -493,7 +515,7 @@ void MainDelegator::cbStatusUpdate(void *client_data, int status, void* ret)
 void MainDelegator::checkAndRunFBService()
 {
   if(!m_bFBServiceRunning){
-    m_bFBServiceRunning = m_fbs->start(m_settings->getBool("FB::CHECK_DEVICE_ID"));
+    m_bFBServiceRunning = m_fbs->request_openDevice(m_settings->getBool("FB::CHECK_DEVICE_ID"));
     if(m_bFBServiceRunning){
       m_el->onMessage("FID", "FID On");
       if(m_timer_checkFBSerivce){
@@ -501,8 +523,8 @@ void MainDelegator::checkAndRunFBService()
         delete m_timer_checkFBSerivce;
         m_timer_checkFBSerivce = NULL;
       }
-      m_fbs->buzzer(m_settings->getBool("FB::BUZZER"));
-      m_fbs->sync();
+      m_fbs->request_buzzer(m_settings->getBool("FB::BUZZER"));
+      m_fbs->request_sync();
     }
     else{
       m_el->onMessage("FID", "FID Off");
@@ -539,21 +561,19 @@ void MainDelegator::cbTimer(void* arg)
   }
 
   LOGV("cbTimer count=%d\n", count);
-
+/*
   if(md->m_bProcessingAuth){
     LOGV("cbTimer returned by processing card\n");
     return;
   }
-
+*/
   if(md->checkNetwork() && !md->m_bTimeAvailable)
     md->m_bTimeAvailable = md->getSeverTime();
 
   switch(count){
     case 4:
       if(md->m_bTimeAvailable/* && md->m_bSyncDeviceAndModule*/){
-        md->m_fbs->requestStopScan();
         md->m_employInfoMgr->updateLocalDBfromServer();
-        md->m_fbs->requestStartScan(300);
       }
       count = 0;
       break;
@@ -805,19 +825,7 @@ void MainDelegator::cbTestTimer(void* arg)
   if(my->m_signo == SIGUSR1)
     my->onScanData(my->m_test_serial_number.c_str());
   else{
-    my->m_fbs->requestStopScan();
-    my->onEmployeeMgrUpdateStart();
-    my->onEmployeeMgrUpdateCount(0, 1, 0);
-    unsigned char* buf = new unsigned char[USERDATA_SIZE];
-    ifstream ud("fingerblood/FID0000000000000012.bin", ifstream::binary);
-    ud.read((char*)buf, USERDATA_SIZE);
-    ud.close();
-    string usercode("0000000000000012");
-    my->onEmployeeMgrUpdateUpdate(usercode, buf, 0);
-    DateTime d;
-    my->onEmployeeMgrUpdateEnd(d.toString('+'));
-    my->m_fbs->requestStartScan(300);
-    delete buf;
+    my->m_fbs->request_saveUsercode("/home/pi/Project_fb/fingerblood/FID0000000000000012.bin");
   }
 }
 

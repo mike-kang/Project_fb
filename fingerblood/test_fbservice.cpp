@@ -4,6 +4,7 @@
 #include <fstream>
 #include <vector>
 #include <stdlib.h>
+#include "tools/timer.h"
 #include "tools/log.h"
 
 using namespace std;
@@ -11,7 +12,18 @@ using namespace tools;
 
 FBService* fbs;
 #define USERDATA_SIZE 864
+#define LOG_TAG "TEST"
 
+void cbTimerformat(void* arg)
+{
+  fbs->request_closeDevice();
+  cout << "opendevice" << endl;
+  if(!fbs->request_openDevice(true)){
+    cout << "openDevice fail!" << endl;
+    return ;
+  }
+  cout << "opendevice--" << endl;
+}
 
 class Noti: public IFBService::IFBServiceEventListener {
 public:  
@@ -39,7 +51,7 @@ public:
   
   virtual bool onNeedDeviceKey(char* id, char* key)
   {
-    cout << "onNeedDeviceKey:" << id << endl;
+    LOGV("onNeedDeviceKey:%s\n");
     static char num[] = { 0,1,2,3,4,5,6,7,8,9, 0,0,0,0,0,0,0, 10,11,12,13,14,15};
     try{
       string strkey = "2C2DE78A4F113209";
@@ -59,8 +71,19 @@ public:
   {
   }
 
-  void onSync(IFBService::IFBServiceEventListener::SyncStatus status, 
-    int index=0){}
+  void onSync(IFBService::IFBServiceEventListener::SyncStatus status, int index=0){}
+
+  void onFormat(bool ret)
+  {
+    LOGV("onformat %d\n", ret);
+
+    Timer* timer = new Timer(cbTimerformat, NULL);
+    timer->start(7);     
+  }
+  
+  void onUpdateSave(int index){}
+  void onUpdateDelete(int index){}
+
 };
 
 const char* save_list[] = {
@@ -85,6 +108,7 @@ void help()
            "  -h                help\n"
            "  -s [FILE]         save\n"
            "  -f                format\n"
+           "  -d usercode       delete\n"
            "  -l                list\n");
     exit(0);
 }
@@ -100,34 +124,36 @@ int main(int argc, char* argv[])
 
   log_init(true, 1, "/dev/pts/1", false, 3, "Log");
   fbs = new FBService("/dev/ttyUSB0", Serial::SB38400, &noti, false);
-  if(!fbs->start(true)){
-    cout << "start fail!" << endl;
+  cout << "opendevice" << endl;
+  if(!fbs->request_openDevice(true)){
+    cout << "openDevice fail!" << endl;
     return 1;
   }
-  fbs->buzzer(true);
+  cout << "opendevice--" << endl;
+  fbs->request_buzzer(true);
   
-  while((opt = getopt(argc, argv, "lfs:c")) != -1) 
+  while((opt = getopt(argc, argv, "lfs:cd:")) != -1) 
   {
       switch(opt) 
       { 
           case 'l':
             {
               list<string> listUserCode;
-              fbs->getList(listUserCode);
-              ofstream oOut("usercodelist.txt");
-              for(list<string>::iterator itr = listUserCode.begin(); itr != listUserCode.end(); itr++){
-                oOut << *itr << endl;
+              bool ret = fbs->request_getList(&listUserCode);
+              if(ret){
+                ofstream oOut("usercodelist.txt");
+                for(list<string>::iterator itr = listUserCode.begin(); itr != listUserCode.end(); itr++){
+                  oOut << *itr << endl;
+                }
+                oOut.close();
+                cout << "usercodelist.txt saved" << endl;
               }
-              oOut.close();
-              cout << "usercodelist.txt saved" << endl;
             }
             break; 
           case 'f':
-            fbs->format();  
-            cout << "start sleep" << endl;
-            sleep(5);
-            cout << "stop sleep" << endl;
-            exit(0);
+            fbs->request_format();  
+            //exit(0);
+            break;
           case 's':
             /*
               for(int i=0; i<sizeof(save_list)/sizeof(char*); i++){
@@ -139,12 +165,16 @@ int main(int argc, char* argv[])
               }
             */
             char filename[255];
-            fbs->save(optarg);
+            fbs->request_saveUsercode(optarg);
             cout << "save:" << optarg << endl;
             break;
           case 'c':
             cout << "start scan" << endl;
-            fbs->requestStartScan(300);
+            fbs->request_startScan(300);
+            break;
+          case 'd':
+            cout << "delete:" << optarg << endl;
+            fbs->request_deleteUsercode(optarg);
             break;
       }
   } 
@@ -152,12 +182,12 @@ int main(int argc, char* argv[])
   
 #ifdef DELETE
   for(int i=0; i<sizeof(save_list)/sizeof(char*); i++){
-    fbs->deleteUsercode(save_list[i]);
+    fbs->request_deleteUsercode(save_list[i]);
   }
 #endif
 
 #ifdef SCAN
-  fbs->requestStartScan(300);
+  fbs->request_startScan(300);
 #endif
   //fbs->deleteUsercode(12);
   //fbs->requestStartScan(300);

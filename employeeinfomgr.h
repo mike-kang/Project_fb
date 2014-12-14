@@ -40,10 +40,10 @@ public:
   public:
     virtual void onEmployeeMgrUpdateStart() = 0;
     virtual void onEmployeeMgrUpdateCount(int delete_count, int update_count, int insert_count) = 0;
-    virtual void onEmployeeMgrUpdateInsert(const unsigned char* userdata, int index) = 0;
-    virtual void onEmployeeMgrUpdateUpdate(string& usercode, const unsigned char* userdata, int index) = 0;
-    virtual void onEmployeeMgrUpdateDelete(string& usercode, int index) = 0;
-    virtual void onEmployeeMgrUpdateEnd(const char* updatetime) = 0;
+    //virtual void onEmployeeMgrUpdateInsert(const unsigned char* userdata, int index) = 0;
+    //virtual void onEmployeeMgrUpdateUpdate(string& usercode, const unsigned char* userdata, int index) = 0;
+    //virtual void onEmployeeMgrUpdateDelete(string& usercode, int index) = 0;
+    virtual void onEmployeeMgrUpdateEnd(const char* updatetime, vector<unsigned char*>* arrSave, vector<string>* arrDelete) = 0;
     virtual void onEmployeeCountChanged(int length_16, int length_4) = 0;
   };
 
@@ -93,6 +93,9 @@ private:
   Thread<EmployeeInfoMgr>* m_thread_update;
   char* m_xml_buf;
   bool m_bUpdateThreadRunning;
+  
+  vector<unsigned char*> m_arrUpdateUserCode; //insert or update
+  vector<string> m_arrUpdateUserCodeDelete; 
 };
 
 
