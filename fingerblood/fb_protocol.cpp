@@ -26,7 +26,7 @@ using namespace tools;
 #define TOSHORT(buf) (((buf)[0] << 8) + (buf)[1])
 //beffer size
 #define BUF_SZ_VERS 70 
-#define BUF_SZ_DEVICE_ID 8 
+#define DEVICE_ID_LENGTH 8 
 //#define BUF_SZ_STAT_NORMAL 20
 //#define BUF_SZ_USERS 13 //4+1+1+5+2
 //#define BUF_SZ_USERD (16+21*USER_COUNT+2) //4+1+1+5+4+1+21*USER_COUNT + 2
@@ -41,10 +41,11 @@ bool _debug = false;
 
 char* FBProtocol::didr()
 {
-  static char device_id[BUF_SZ_DEVICE_ID];
+  static char device_id[DEVICE_ID_LENGTH + 1];
   byte* receive_buf; 
   receive_buf = processCommand("DIDR", 1000);
-  memcpy(device_id, &receive_buf[10], BUF_SZ_DEVICE_ID);
+  memcpy(device_id, &receive_buf[10], DEVICE_ID_LENGTH);
+  device_id[DEVICE_ID_LENGTH] = '\0';
   delete receive_buf;
   return device_id;
 }
@@ -70,7 +71,7 @@ bool FBProtocol::didk(const char* key)
 
 
 //version 정보를 얻는다.
-char* FBProtocol::vers()
+char* FBProtocol::vers() //with Exception
 {
   static char version[BUF_SZ_VERS];
   byte* receive_buf; 
@@ -115,7 +116,7 @@ char FBProtocol::stat()
 
 #define S_INIT 0
 #define S_READY 1
-char FBProtocol::stat(char* data, bool& bLong)
+char FBProtocol::stat(char* data, bool& bLong)  //with Exception
 {
   static int state = S_INIT;
   char status;
