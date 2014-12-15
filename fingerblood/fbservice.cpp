@@ -420,8 +420,10 @@ void FBService::sync(void* arg)
           m_protocol->stop();
         d++;
       }
+      
       if(m == module_list.end()){
         for(; d < device_arr_16.size() ; d++){
+          m_fn->onSync(IFBService::IFBServiceEventListener::SS_PROCESS, d);
           if(!m_protocol->save(device_arr_16[d].second, 864))
             m_protocol->stop();
         }
