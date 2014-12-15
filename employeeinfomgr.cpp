@@ -239,7 +239,7 @@ void EmployeeInfoMgr::run_updateLocalDB()
   vector<pair<string, EmployeeInfo*> > arrEmployeeInsert;
   vector<pair<string, EmployeeInfo*> > arrEmployeeDelete;
   vector<pair<string, EmployeeInfo*> > arrEmployeeUpdate;
-  //cout << xml_buf << endl;
+  //cout << m_xml_buf << endl;
   //LOGV("***fillEmployeeInfo:%s\n", xml_buf);
   //mtx.lock();
   

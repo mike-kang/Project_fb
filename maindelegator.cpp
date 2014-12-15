@@ -361,12 +361,14 @@ void MainDelegator::onUpdateDelete(int index)
 void MainDelegator::onUpdateEnd()
 {
   m_el->onUpdateFBEnd();
-  m_timer = new Timer(cbTimer, this);
-  int interval = m_settings->getInt("App::TIMER_INTERVAL");
-  LOGI("timer interval= %d\n", interval);
-  m_timer->start(interval, true);
-  
-  m_fbs->request_startScan(300);
+  if(!m_timer){
+    m_timer = new Timer(cbTimer, this);
+    int interval = m_settings->getInt("App::TIMER_INTERVAL");
+    LOGI("timer interval= %d\n", interval);
+    m_timer->start(interval, true);
+    
+    m_fbs->request_startScan(300);
+  }
 }
 
 /*
@@ -580,7 +582,7 @@ void MainDelegator::cbTimer(void* arg)
       
     default:
       //upload timesheet
-      //md->m_timeSheetMgr->upload();
+      md->m_timeSheetMgr->upload();
       count++;
       break;
   }

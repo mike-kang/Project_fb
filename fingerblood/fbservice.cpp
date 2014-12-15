@@ -416,12 +416,14 @@ void FBService::sync(void* arg)
         m++;
       }
       else{
-        m_protocol->save(device_arr_16[d].second, 864);
+        if(!m_protocol->save(device_arr_16[d].second, 864))
+          m_protocol->stop();
         d++;
       }
       if(m == module_list.end()){
         for(; d < device_arr_16.size() ; d++){
-          m_protocol->save(device_arr_16[d].second, 864);
+          if(!m_protocol->save(device_arr_16[d].second, 864))
+            m_protocol->stop();
         }
         break;
       }
@@ -437,7 +439,8 @@ void FBService::sync(void* arg)
   if(!m_bCheckUserCode4){
     for(d = 0; d < devicelist_4_count ; d++){
       m_fn->onSync(IFBService::IFBServiceEventListener::SS_PROCESS, devicelist_count + d);
-      m_protocol->save(device_arr_4[d].second, 864);
+      if(!m_protocol->save(device_arr_4[d].second, 864))
+        m_protocol->stop();
     }
   }
   else{
@@ -573,7 +576,8 @@ void FBService::saveUsercodeFile(void* arg)
   
   LOGV("saveUsercodeFile %s\n", client->m_path);
   client->m_ret = m_protocol->save(client->m_path);
-  
+  if(client->m_ret)
+    m_protocol->stop();
   client->m_SemCompleteProcessEvent.post();
 }
 
@@ -582,7 +586,8 @@ void FBService::saveUsercodeBuffer(void* arg)
   LOGV("saveUsercodeBuffer\n");
   saveUsercodeClient_t* client = (saveUsercodeClient_t*)arg;
   client->m_ret = m_protocol->save(client->m_userdata, client->m_length);
-
+  if(client->m_ret)
+    m_protocol->stop();
   client->m_SemCompleteProcessEvent.post();
 }
 
@@ -627,6 +632,7 @@ void FBService::update(void* arg)
       m_fn->onUpdateSave(i+1);
     }
     else{
+      m_protocol->stop();
       LOGE("update - save fail\n");
     }
   }

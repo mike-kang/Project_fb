@@ -213,6 +213,7 @@ bool FBProtocol::save(const char* filename)
   }
   catch(Exception e){
     LOGE("[save]exception fail! %d\n", e);
+    return false;
   }
 
   return true;
@@ -230,6 +231,7 @@ bool FBProtocol::save(const byte* buf, int length)
   }
   catch(Exception e){
     LOGE("[save]exception fail! %d\n", e);
+    return false;
   }
 
   return true;
