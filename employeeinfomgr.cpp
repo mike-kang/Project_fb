@@ -290,7 +290,7 @@ void EmployeeInfoMgr::run_updateLocalDB()
         int size = 0;
         base64::base64d(p, length, (char*)(ei->userdata), &size);
         if(size != USERDATA_SIZE){
-          LOGE("userdata size: %d\n", size);
+          LOGE("error userdata size: %d\n", size);
           throw EXCEPTION_USERDATA_SIZE;
         }
         p += length + 1;
