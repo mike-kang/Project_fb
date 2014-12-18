@@ -37,6 +37,11 @@ using namespace tools;
                                 status = stat();      \
                               } while(status != (k))
 
+#define STAT_LOOP_CHECK2(a, b)    do {                    \
+                                usleep(100000);       \
+                                status = stat();      \
+                              } while(status != (a) && status != (b))
+
 bool _debug = false;
 
 char* FBProtocol::didr()
@@ -368,8 +373,8 @@ void FBProtocol::saveS()
   receive_buf = processCommand("SAVES", 5000);
   status = receive_buf[STATUS];
   delete receive_buf;
-  if(status != '3'){
-    STAT_LOOP_CHECK('3');
+  if(status != '3' && status != 'A'){
+    STAT_LOOP_CHECK2('3', 'A');
   }
 }
 
@@ -505,14 +510,14 @@ void FBProtocol::saveD(const byte* userdata, int len)
     status = receive_buf[STATUS];
     delete receive_buf;
 
-    if(status == '3'){
+    if(status == '3' || status == 'A'){
       serial++;
       if(serial == FINGER_COUNT_IN_FILE)
         break;
 
     }
     else{
-      STAT_LOOP_CHECK('3');
+      STAT_LOOP_CHECK2('3', 'A');
       serial++;
       if(serial == FINGER_COUNT_IN_FILE)
         break;

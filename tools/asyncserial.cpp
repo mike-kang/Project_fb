@@ -28,21 +28,20 @@ int AsyncSerial::read(byte* buf, int len, int timeout)
   //LOGV("read: time %d\n", timeout);
   fds.fd = m_fd;
   fds.events = POLLIN;
-  do{
-    ret = poll(&fds, 1, timeout);
-    if(ret > 0)
-      return Serial::read(buf, len);
-    
-    if(ret == -1){
-      LOGE("EXCEPTION_POLL\n");
-    }
-    else if(ret == 0){
-      LOGE("EXCEPTION_TIMEOUT\n");
-      throw EXCEPTION_TIMEOUT;
-    }
-  }while(--count > 0);
   
-  throw EXCEPTION_POLL;
+  ret = poll(&fds, 1, timeout);
+  if(ret > 0)
+    return Serial::read(buf, len);
+  
+  if(ret == -1){
+    LOGE("EXCEPTION_POLL\n");
+    throw EXCEPTION_POLL;
+  }
+  else if(ret == 0){
+    LOGE("EXCEPTION_TIMEOUT\n");
+    throw EXCEPTION_TIMEOUT;
+  }
+  
 }
 
 bool AsyncSerial::open()

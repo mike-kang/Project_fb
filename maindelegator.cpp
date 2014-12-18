@@ -804,7 +804,7 @@ MainDelegator::MainDelegator(EventListener* el, const char* configPath) : m_el(e
   m_el->onMessage("GateNo", "No." + m_sDvNo);
   
   m_wp = media::WavPlayer::createInstance(); 
-  m_wp->play("SoundFiles/start.wav");
+  //m_wp->play("SoundFiles/start.wav");
 
   string reboot_time = m_settings->get("App::REBOOT_TIME");
   LOGV("reboot time= %s\n", reboot_time.c_str()); 

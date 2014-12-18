@@ -2,6 +2,7 @@
 #include "tools/log.h"
 #include <stdio.h>
 #include <fstream>
+#include <signal.h>
 
 using namespace std;
 using namespace tools;
@@ -30,6 +31,12 @@ FBService::~FBService()
 
 void FBService::run()
 {
+  int s;
+  sigset_t set;
+  sigemptyset(&set);
+  sigaddset(&set, SIGCHLD);
+  s = pthread_sigmask(SIG_BLOCK, &set, NULL);
+  
   while(1)
   {
     //dispatch event
