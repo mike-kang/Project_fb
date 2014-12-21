@@ -479,9 +479,10 @@ bool FBService::checkdeviceID()
   try{
     char* device_id = m_protocol->didr();
     char key[8];
-    if(m_fn->onNeedDeviceKey(device_id, key))
-      if(m_protocol->didk(key))
-        return true;
+    if(m_fn->onNeedDeviceKey(device_id, key)){
+      m_protocol->didk(key);
+      return true;
+    }
   }
   catch (FBProtocol::Exception e){
     LOGE("[checkdeviceID]exception fail! %d", e);
@@ -512,9 +513,15 @@ void FBService::getList(void* arg)
 void FBService::format(void* arg)
 {
   LOGV("format +++\n");
-  bool ret = m_protocol->init();
+  try{
+    m_protocol->init();
+    m_fn->onFormat(true);
+  }
+  catch(FBProtocol::Exception e){
+    LOGE("[format]exception fail! %d\n", e);
+    m_fn->onFormat(false);
+  }
   LOGV("format ---\n");
-  m_fn->onFormat(ret);
 }
 
 //static
@@ -650,12 +657,13 @@ void FBService::update(void* arg)
   vector<unsigned char*>::size_type d = 0;
   while(d < save_count){
     if(m_protocol->save( (*(client->m_arrSave))[d], USERDATA_SIZE)){
+      //LOGV("update - save[%d] success\n", d+1);
       m_fn->onUpdateSave(d+1);
       d++;
     }
     else{
-      m_protocol->stop();
-      LOGE("update - save fail\n");
+      LOGE("update - save[%d] fail\n", d+1);
+      while(!m_protocol->stop());
     }
   }
   m_fn->onUpdateEnd();

@@ -83,6 +83,9 @@ public:
   
   void onUpdateSave(int index){}
   void onUpdateDelete(int index){}
+  void onUpdateBegin(int save_count, int delete_count){};
+  void onUpdateEnd(){};
+  
 
 };
 

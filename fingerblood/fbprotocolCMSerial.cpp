@@ -17,7 +17,7 @@ int FBProtocolCMSerial::onRead(byte* buf, int len, int timeout)
   try {
     return read(buf, len, timeout);
   }
-  catch(FBProtocol::FBProtocolCommMethod::Exception e){
+  catch(AsyncSerial::Exception e){
     throw FBProtocol::FBProtocolCommMethod::EXCEPTION_READ;
   }
 }

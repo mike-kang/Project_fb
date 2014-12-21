@@ -294,6 +294,11 @@ void EmployeeInfoMgr::run_updateLocalDB()
           throw EXCEPTION_USERDATA_SIZE;
         }
         p += length + 1;
+ /*       
+        ofstream oOut2(usercode.c_str(), ofstream::binary);
+        oOut2.write((const char*)ei->userdata, USERDATA_SIZE);
+        oOut2.close();
+ */       
       }
       catch(int e){}
       try {
@@ -402,11 +407,12 @@ void EmployeeInfoMgr::insertEmployee(vector<pair<string, EmployeeInfo*> >& elems
       throw 1;
     }
     sqlite3_reset(stmt);
-//debug
-//    ofstream oOut2(usercode.c_str(), ofstream::binary);
-//    oOut2.write((const char*)ei->userdata, USERDATA_SIZE);
-//    oOut2.close();
-//end debug
+
+#ifdef _DEBUG
+    ofstream oOut2(usercode.c_str(), ofstream::binary);
+    oOut2.write((const char*)ei->userdata, USERDATA_SIZE);
+    oOut2.close();
+#endif
     if(!m_check_code || usercode.length() != 4)
       m_arrUpdateUserCode.push_back(ei->userdata);
   }

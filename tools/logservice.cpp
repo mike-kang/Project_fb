@@ -182,7 +182,7 @@ void LogService::run()
     //dispatch event
     Entry *e = m_EntryQ.pop();
     if(e){
-      sprintf(buf, "[%s][%lu][%s] %s", e->m_tag, e->m_threadID, e->m_t->toString(), e->m_msg);
+      sprintf(buf, "[%d][%s][%lu][%s] %s", e->m_pri, e->m_tag, e->m_threadID, e->m_t->toString(), e->m_msg);
       if(m_bFile && e->m_pri >= m_fileLevel)
         fileWrite(buf);
       if(m_bConsole && e->m_pri >= m_consoleLevel)

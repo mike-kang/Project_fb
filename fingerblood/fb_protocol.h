@@ -8,14 +8,24 @@ class FBProtocol {
 public:
   enum Exception {
     EXCEPTION_COMMAND,
-    EXCEPTION_NOT_ACK,
-    EXCEPTION_CHECKSUM,
-    EXCEPTION_POLL,
-    EXCEPTION_TIMEOUT,
-    EXCEPTION_ERROR,
+    EXCEPTION_RESP_NOT_ACK,
+    EXCEPTION_RESP_COMMMETHOD,
+    EXCEPTION_RESP_CHECKSUM,
+    EXCEPTION_RESP_ERROR,
+
+    EXCEPTION_DIDR,
+    EXCEPTION_DIDK,
+    EXCEPTION_VERS,
+//    EXCEPTION_STOP,
+    EXCEPTION_STAT,
+    EXCEPTION_STAT_LONG,
+    EXCEPTION_INIT,
     EXCEPTION_USERS,
+    EXCEPTION_USERD,
+    EXCEPTION_USERE,
+    EXCEPTION_SAVES,
     EXCEPTION_SAVED,
-    EXCEPTION_COMMMETHOD,
+    EXCEPTION_SAVEE
   };
   class FBProtocolCommMethod {
   public:
@@ -35,12 +45,12 @@ public:
 
   
   char* didr();
-  bool didk(const char* key);
+  void didk(const char* key);
   char* vers();
   bool stop();
   char stat();
   char stat(char* data, bool& bLong);
-  bool init();
+  void init();
   bool user(std::list<std::string>& li);
   bool save(const char* filename);
   bool save(const byte* buf, int length);
@@ -49,6 +59,7 @@ public:
 
 
 private:  
+  bool stat_loop_check(char check_char, byte& ret_char, int limit_count = 10);
   byte* processCommand(const char* cmd, int timeout);
   byte* processCommand(const char* cmd, const byte* data, int data_sz, int timeout);
   byte* processCommand(const byte* chunk, int chunk_sz, int timeout);
