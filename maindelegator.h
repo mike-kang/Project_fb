@@ -8,9 +8,6 @@
 #include "fingerblood/fbservice.h"
 
 #include "web/iwebservice.h"
-#ifdef CAMERA
-#include "camera/camerastill.h"
-#endif
 #include "hardware/switchgpio.h"
 #include "tools/date.h"
 #include "settings.h"
@@ -181,12 +178,6 @@ private:
   
   int m_fbCheckInterval; //ms
   string m_fbPort; // /dev/ttyUSB0
-#ifdef CAMERA  
-  CameraStill* m_cameraStill;
-  int m_takePictureMaxWaitTime; //sec
-  int m_cameraDelayOffTime; //sec
-  bool m_bSavePictureFile;
-#endif
   string m_sLocalIP;
   string m_sLocalMacAddr;
   //string m_sServerURL;

@@ -640,11 +640,6 @@ bool MainDelegator::SettingInit(const char* configPath)
   else
     m_settings = new Settings("/etc/acufb/FID.ini");
 
-#ifdef CAMERA  
-  m_cameraDelayOffTime = m_settings->getInt("Camera::DELAY_OFF_TIME"); //600 sec
-  m_takePictureMaxWaitTime = m_settings->getInt("Camera::TAKEPICTURE_MAX_WAIT_TIME"); // 2 sec
-  m_bSavePictureFile = m_settings->getBool("Camera::SAVE_PICTURE_FILE");
-#endif
   //App
   //m_sAuthCd = m_settings->get("App::AUTH_CD");
   m_sMemcoCd = m_settings->get("App::MEMCO");
@@ -759,6 +754,8 @@ MainDelegator::MainDelegator(EventListener* el, const char* configPath) : m_el(e
   LOGV("m_sServerURL= %s\n", m_sLotteIdServerUrl.c_str()); 
   LOGV("m_sServerURL= %s\n", m_sSafeIdServerUrl.c_str()); 
   m_el->onLogo(m_sServerType.c_str());
+  
+
   if(m_sServerType == "DW"){
     DWWebService* dw = new DWWebService(m_sDWServerUrl.c_str(), m_sMemcoCd.c_str(), m_sSiteCd.c_str(), m_sEmbedCd.c_str(), m_sDvNo.c_str(), m_sInOut.c_str()[0]);
     SafemanWebService* sm = new SafemanWebService(m_sSafeIdServerUrl.c_str(), m_sMemcoCd.c_str(), m_sSiteCd.c_str(), m_sEmbedCd.c_str(), m_sDvNo.c_str(), m_sInOut.c_str()[0]);
@@ -773,6 +770,8 @@ MainDelegator::MainDelegator(EventListener* el, const char* configPath) : m_el(e
     m_ws = new SafemanWebService(m_sSafeIdServerUrl.c_str(), m_sMemcoCd.c_str(), m_sSiteCd.c_str(), m_sEmbedCd.c_str(), m_sDvNo.c_str(), m_sInOut.c_str()[0]);
     el->onStatus(m_sSafeIdServerUrl.c_str());
   }
+
+  
   checkNetwork();
   m_bTimeAvailable = getSeverTime();
   m_employInfoMgr = new EmployeeInfoMgr(m_settings, m_ws, this);
@@ -784,10 +783,6 @@ MainDelegator::MainDelegator(EventListener* el, const char* configPath) : m_el(e
   //m_timesheetFilesCount = m_timesheetCacheCount = 0;
 
   m_timeSheetMgr = new TimeSheetMgr(m_settings, m_ws, this);
-
-#ifdef CAMERA  
-  m_cameraStill = new CameraStill(m_cameraDelayOffTime);
-#endif
 
   if(m_bTestSignal){
     signal(SIGUSR1, test_signal_handler);
