@@ -608,11 +608,11 @@ void MainDelegator::cbTimer(void* arg)
 
 bool MainDelegator::checkServerAlive()
 {
+  mtx.lock();
   bool ret = false;
   if(!m_ws){
     LOGE("m_ws is NULL!\n");
-    displayNetworkStatus(false);
-    return false;
+    goto error;
   }
   
   try{
@@ -625,11 +625,13 @@ bool MainDelegator::checkServerAlive()
   
   if(ret){
     displayNetworkStatus(true);
+    mtx.unlock();
     return true;
   }
 
 error:  
   displayNetworkStatus(false);
+  mtx.unlock();
   return false;
 }
 

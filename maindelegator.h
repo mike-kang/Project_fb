@@ -200,6 +200,7 @@ private:
   SwitchGpio* m_redLed;
   //Relay
   SwitchGpio* m_Relay;
+  Mutex mtx;
 
   //int m_timesheetFilesCount, m_timesheetCacheCount;
 };
