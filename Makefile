@@ -6,12 +6,6 @@ MACHINE=$(shell uname -m)
 CPPFLAGS =  -g -I. -fPIC 
 LIB = libfid.so
 
-#ifeq ($(MACHINE), x86_64)
-# CPPFLAGS += -DSIMULATOR
-#else
-#  CPPFLAGS += -DCAMERA
-#endif
-
 
 SRCS =  maindelegator.cpp  settings.cpp employeeinfomgr.cpp timesheetmgr.cpp  \
               web/webservice.cpp web/safemanwebservice.cpp web/dwwebservice.cpp  \
@@ -36,7 +30,6 @@ INSTALL_DIR = /home/pi/acufb
 install:
 	cp libfid.so $(INSTALL_DIR)/libs/
 	cp tools/libtool.so $(INSTALL_DIR)/libs/
-#	-cp camera/libcamera.so $(INSTALL_DIR)/libs/
 	cp inih_r29/libinih.so $(INSTALL_DIR)/libs/
 	cp qt/acu/acu $(INSTALL_DIR)
 #	cp qt/acu/start.sh $(INSTALL_DIR)
