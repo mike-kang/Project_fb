@@ -46,6 +46,11 @@ TimeSheetMgr::~TimeSheetMgr()
     delete *itr;
 }
 
+void TimeSheetMgr::setServer(web::IWebService* ws)
+{
+  m_ws = ws;
+}
+
 TimeSheetMgr::TimeSheet::TimeSheet(string pinno)
   :m_pinno(pinno)
 {
@@ -72,6 +77,12 @@ bool TimeSheetMgr::upload()
 {
   vector<list<TimeSheet*>::iterator> vector_erase;
   int file_count;
+
+  if(!m_ws){
+    LOGE("upload - m_ws is NULL!\n");
+    return false;
+  }
+
   // 1. send files
   vector<string*> filelist;
   try{

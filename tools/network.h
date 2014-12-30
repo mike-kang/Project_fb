@@ -3,6 +3,7 @@
 namespace tools {
 namespace network {
 enum Exception {
+  EXCEPTION_RESOLVENAME,
   EXCEPTION_IPADDR,
   EXCEPTION_MACADDR,  
 

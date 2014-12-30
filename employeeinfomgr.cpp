@@ -52,6 +52,11 @@ EmployeeInfoMgr::EmployeeInfoMgr(Settings* settings, web::IWebService* ws, Emplo
   
 }
 
+void EmployeeInfoMgr::setServer(web::IWebService* ws)
+{
+  m_ws = ws;
+}
+
 bool EmployeeInfoMgr::OpenOrCreateLocalDB()
 {
   char* err;
@@ -102,6 +107,11 @@ bool EmployeeInfoMgr::updateLocalDBfromServer()
 {
   LOGV("updateLocalDBfromServer\n");
 
+  if(!m_ws){
+    LOGE("m_ws is NULL!\n");
+    return false;
+  }
+  
   if(m_bUpdateThreadRunning){
     LOGE("Update thread is running\n");
     return false;

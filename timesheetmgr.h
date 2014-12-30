@@ -27,6 +27,7 @@ public:
   TimeSheetMgr(Settings* settings, web::IWebService* ws, TimeSheetMgrEventListener* el);
   virtual ~TimeSheetMgr();
 
+  void setServer(web::IWebService* ws);
   void insert(std::string lab_no);
   bool upload();
   

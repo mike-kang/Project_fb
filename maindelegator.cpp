@@ -514,34 +514,51 @@ void MainDelegator::cbStatusUpdate(void *client_data, int status, void* ret)
   LOGV("cbStatusUpdate status:%d, ret:%d\n", status, *((bool*)ret));
 }
 
-void MainDelegator::checkAndRunFBService()
+bool MainDelegator::checkAndRunFBService()
 {
+  bool ret = true;
   if(!m_bFBServiceRunning){
     m_bFBServiceRunning = m_fbs->request_openDevice(m_settings->getBool("FB::CHECK_DEVICE_ID"));
     if(m_bFBServiceRunning){
       m_el->onMessage("FID", "FID On");
-      if(m_timer_checkFBSerivce){
-        //m_timer_checkFBSerivce->stop();
-        delete m_timer_checkFBSerivce;
-        m_timer_checkFBSerivce = NULL;
-      }
       m_fbs->request_buzzer(m_settings->getBool("FB::BUZZER"));
       m_fbs->request_sync();
     }
     else{
       m_el->onMessage("FID", "FID Off");
-      m_timer_checkFBSerivce = new Timer(cbTimerCheckFBService, this);
-      m_timer_checkFBSerivce->start(10, false);
+      ret = false;
     }
   }
+
+  return ret;
 }
 
 //static
-void MainDelegator::cbTimerCheckFBService(void* arg)
+void MainDelegator::cbTimerDeferredInit(void* arg)
 {
-  MainDelegator* md = (MainDelegator*)arg;
+  MainDelegator* my = (MainDelegator*)arg;
+  bool repeat = false;
 
-  md->checkAndRunFBService();
+  if(!my->checkAndRunFBService())
+    repeat = true;
+
+  if(!my->m_ws){
+    if(my->createWebService()){
+      if(my->checkServerAlive()){
+        my->m_bTimeAvailable = my->getSeverTime();
+      }
+    }
+    else
+      repeat = true;
+  }
+  
+  if(repeat){
+    my->m_timer_deferredInit->start(10, false);
+  }
+  else{
+    delete my->m_timer_deferredInit;
+    my->m_timer_deferredInit = NULL;
+  }
 }
 
 //static
@@ -569,7 +586,7 @@ void MainDelegator::cbTimer(void* arg)
     return;
   }
 */
-  if(md->checkNetwork() && !md->m_bTimeAvailable)
+  if(md->checkServerAlive() && !md->m_bTimeAvailable)
     md->m_bTimeAvailable = md->getSeverTime();
 
   switch(count){
@@ -589,9 +606,15 @@ void MainDelegator::cbTimer(void* arg)
   
 }
 
-bool MainDelegator::checkNetwork()
+bool MainDelegator::checkServerAlive()
 {
   bool ret = false;
+  if(!m_ws){
+    LOGE("m_ws is NULL!\n");
+    displayNetworkStatus(false);
+    return false;
+  }
+  
   try{
     ret = m_ws->request_CheckNetwork(2000);  //blocked I/O
   }
@@ -699,9 +722,11 @@ bool MainDelegator::SettingInit(const char* configPath)
   return true;
 }
 
-MainDelegator::MainDelegator(EventListener* el, const char* configPath) : m_el(el), m_bProcessingAuth(false), m_bFBServiceRunning(false), m_bSyncDeviceAndModule(false), m_timer_checkFBSerivce(NULL), m_timer(NULL)
+MainDelegator::MainDelegator(EventListener* el, const char* configPath) : m_el(el), m_bProcessingAuth(false), m_bFBServiceRunning(false), m_bSyncDeviceAndModule(false), m_timer_deferredInit(NULL), m_timer(NULL), m_ws(NULL)
 {
   bool ret;
+  bool bNeedDeferredTimer = false;
+  
   cout << "start" << endl;
   el->onStatus("System Start");
   SettingInit(configPath);
@@ -755,30 +780,20 @@ MainDelegator::MainDelegator(EventListener* el, const char* configPath) : m_el(e
   LOGV("m_sServerURL= %s\n", m_sSafeIdServerUrl.c_str()); 
   m_el->onLogo(m_sServerType.c_str());
   
-
-  if(m_sServerType == "DW"){
-    DWWebService* dw = new DWWebService(m_sDWServerUrl.c_str(), m_sMemcoCd.c_str(), m_sSiteCd.c_str(), m_sEmbedCd.c_str(), m_sDvNo.c_str(), m_sInOut.c_str()[0]);
-    SafemanWebService* sm = new SafemanWebService(m_sSafeIdServerUrl.c_str(), m_sMemcoCd.c_str(), m_sSiteCd.c_str(), m_sEmbedCd.c_str(), m_sDvNo.c_str(), m_sInOut.c_str()[0]);
-    m_ws = new MyDWWebService(dw, sm);
-    el->onStatus(m_sDWServerUrl.c_str());
-  }
-  else if(m_sServerType == "LT"){
-    m_ws = new SafemanWebService(m_sLotteIdServerUrl.c_str(), m_sMemcoCd.c_str(), m_sSiteCd.c_str(), m_sEmbedCd.c_str(), m_sDvNo.c_str(), m_sInOut.c_str()[0]);
-    el->onStatus(m_sLotteIdServerUrl.c_str());
-  }
-  else{
-    m_ws = new SafemanWebService(m_sSafeIdServerUrl.c_str(), m_sMemcoCd.c_str(), m_sSiteCd.c_str(), m_sEmbedCd.c_str(), m_sDvNo.c_str(), m_sInOut.c_str()[0]);
-    el->onStatus(m_sSafeIdServerUrl.c_str());
+  if(!createWebService()){
+    bNeedDeferredTimer = true;
   }
 
+  if(checkServerAlive()){
+    m_bTimeAvailable = getSeverTime();
+  }
   
-  checkNetwork();
-  m_bTimeAvailable = getSeverTime();
   m_employInfoMgr = new EmployeeInfoMgr(m_settings, m_ws, this);
   
   m_fbs = new FBService(m_settings->get("FB::PORT").c_str(), Serial::SB38400, this, m_bCheckUsercode4);
 
-  checkAndRunFBService();
+  if(!checkAndRunFBService())
+    bNeedDeferredTimer = true;
 
   //m_timesheetFilesCount = m_timesheetCacheCount = 0;
 
@@ -806,6 +821,11 @@ MainDelegator::MainDelegator(EventListener* el, const char* configPath) : m_el(e
   if(reboot_time != "")
     setRebootTimer(reboot_time.c_str());
 
+  if(bNeedDeferredTimer){
+    m_timer_deferredInit = new Timer(cbTimerDeferredInit, this);
+    m_timer_deferredInit->start(10, false);
+  }
+  
   LOGV("MainDelegator ---\n");
 }
 
@@ -813,6 +833,32 @@ MainDelegator::~MainDelegator()
 {
   m_timer->stop();
 } 
+
+bool MainDelegator::createWebService()
+{
+  bool ret = false;
+  try{
+    if(m_sServerType == "DW"){
+      DWWebService* dw = new DWWebService(m_sDWServerUrl.c_str(), m_sMemcoCd.c_str(), m_sSiteCd.c_str(), m_sEmbedCd.c_str(), m_sDvNo.c_str(), m_sInOut.c_str()[0]);
+      SafemanWebService* sm = new SafemanWebService(m_sSafeIdServerUrl.c_str(), m_sMemcoCd.c_str(), m_sSiteCd.c_str(), m_sEmbedCd.c_str(), m_sDvNo.c_str(), m_sInOut.c_str()[0]);
+      m_ws = new MyDWWebService(dw, sm);
+      m_el->onStatus(m_sDWServerUrl.c_str());
+    }
+    else if(m_sServerType == "LT"){
+      m_ws = new SafemanWebService(m_sLotteIdServerUrl.c_str(), m_sMemcoCd.c_str(), m_sSiteCd.c_str(), m_sEmbedCd.c_str(), m_sDvNo.c_str(), m_sInOut.c_str()[0]);
+      m_el->onStatus(m_sLotteIdServerUrl.c_str());
+    }
+    else{
+      m_ws = new SafemanWebService(m_sSafeIdServerUrl.c_str(), m_sMemcoCd.c_str(), m_sSiteCd.c_str(), m_sEmbedCd.c_str(), m_sDvNo.c_str(), m_sInOut.c_str()[0]);
+      m_el->onStatus(m_sSafeIdServerUrl.c_str());
+    }
+    ret = true;
+  }
+  catch(network::Exception e){
+    LOGE("createWebService fail\n");
+  }
+  return ret;
+}
 
 //#ifdef SIMULATOR
 void MainDelegator::cbTestTimer(void* arg)
@@ -895,6 +941,11 @@ void MainDelegator::cb_ServerTimeGet(void* arg)
 bool MainDelegator::getSeverTime()
 {
   LOGV("getServerTime\n");
+  if(!m_ws){
+    LOGE("m_ws is NULL!\n");
+    return false;
+  }
+  
   try{
     char* time_buf = m_ws->request_ServerTime(3000);  //blocked I/O
     //time_buf = m_ws->request_ServerTime(cbServerTimeGet, NULL);  //blocked I/O

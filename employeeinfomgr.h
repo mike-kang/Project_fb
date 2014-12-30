@@ -55,6 +55,7 @@ public:
     sqlite3_close(m_db);
   }
 
+  void setServer(web::IWebService* ws);
   void getEmployeeList(std::vector<pair<const char*, unsigned char*> >& arr_16, std::vector<pair<const char*, unsigned char*> >& arr_4);
   void getEmployeeCount(int& count_16, int& count_4);
   bool updateLocalDBfromServer(); //from Server

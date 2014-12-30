@@ -98,11 +98,11 @@ private:
   bool checkZone(string& sAuth);
 #endif
   bool checkDate(Date* start, Date* end, string& msg);
-  bool checkNetwork();
+  bool checkServerAlive();
   void displayNetworkStatus(bool val);
   bool getSeverTime();
   void setRebootTimer(const char* time_buf);
-  void checkAndRunFBService();
+  bool checkAndRunFBService();
 //#ifdef SIMULATOR  
   static void cbTestTimer(void* arg);
   static void test_signal_handler(int signo);
@@ -111,12 +111,13 @@ private:
 //#endif
   static void cbStatusUpdate(void *client_data, int status, void* ret);
   static void cbTimer(void* arg);
-  static void cbTimerCheckFBService(void* arg);
+  static void cbTimerDeferredInit(void* arg);
   //static void cb_ServerTimeGet(void* arg);
   //void _cb_ServerTimeGet(void* arg);
   static void cbRebootTimer(void* arg);
   const char* debug_str(AuthMode m);
   void processAuthResult(bool result, const char* sound_path, string msg);
+  bool createWebService();
 
 
   Thread<MainDelegator> *m_thread;
@@ -137,7 +138,7 @@ private:
   tools::media::WavPlayer* m_wp;
   EventListener* m_el;
   tools::Timer* m_RebootTimer;
-  tools::Timer* m_timer_checkFBSerivce;
+  tools::Timer* m_timer_deferredInit;
 
 
   bool m_bFirstDown;
@@ -191,6 +192,7 @@ private:
   AuthMode m_authMode;
   bool m_bDisplayEmployeeInfo;
   bool m_bCheckUsercode4;
+  bool m_needDeferredInitTimer;
   //Led
   SwitchGpio* m_yellowLed;
   SwitchGpio* m_blueLed;

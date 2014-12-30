@@ -70,7 +70,8 @@ char* ResolveName(char* name)  //getIP
   struct hostent *host;            /* Structure containing host information */
 
   if ((host = gethostbyname(name)) == NULL){
-      printf("gethostbyname() failed\n");
+    LOGE("gethostbyname() failed\n");
+    throw EXCEPTION_RESOLVENAME;
   }
   printf("host=%p\n", host);
   /* Return the binary, network byte ordered address */
