@@ -953,34 +953,39 @@ bool MainDelegator::getSeverTime()
     //time_buf = m_ws->request_ServerTime(cbServerTimeGet, NULL);  //blocked I/O
     if(time_buf){
       LOGV("getSeverTime %s\n", time_buf);
-      char * tok = strtok(time_buf, "-T:");
+      char * tok = strtok(time_buf, "-: ");
       int t[10];
       int i = 0;
       t[i++] = atoi(tok);
-      while((tok = strtok(NULL, "-T:"))){
+      while((tok = strtok(NULL, "-: "))){
         t[i++] = atoi(tok);
         if(i > 5)
           break;
       }
       delete time_buf;
-      if(i == 6){ //ok
-        struct tm tm;
-        tm.tm_year = t[0] - 1900;
-        tm.tm_mon = t[1] - 1;
-        tm.tm_mday = t[2];
-        tm.tm_hour = t[3];
-        tm.tm_min = t[4];
-        tm.tm_sec = t[5];
-        time_t tt = mktime(&tm);
-        if (tt < 0){
-          LOGE("mktime error: %d-%d-%dT%d:%d:%d\n", t[0], t[1], t[2], t[3], t[4], t[5]);
-          return false;
-        }
-        if(stime(&tt) < 0){
-          LOGE("stime error: %s", strerror(errno));
-          return false;
-        }
+
+      if(i != 6){
+        LOGE("parsing error!\n");
+        return false;
       }
+
+      struct tm tm;
+      tm.tm_year = t[0] - 1900;
+      tm.tm_mon = t[1] - 1;
+      tm.tm_mday = t[2];
+      tm.tm_hour = t[3];
+      tm.tm_min = t[4];
+      tm.tm_sec = t[5];
+      time_t tt = mktime(&tm);
+      if (tt < 0){
+        LOGE("mktime error: %d-%d-%d %d:%d:%d\n", t[0], t[1], t[2], t[3], t[4], t[5]);
+        return false;
+      }
+      if(stime(&tt) < 0){
+        LOGE("stime error: %s\n", strerror(errno));
+        return false;
+      }
+
       return true;  
     }
   }
