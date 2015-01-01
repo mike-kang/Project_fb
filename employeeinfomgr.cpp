@@ -237,10 +237,11 @@ void EmployeeInfoMgr::updateLocalDB(char *xml_buf)
 void EmployeeInfoMgr::run_updateLocalDB()
 {
   LOGV("run_updateLocalDB\n");
+  char* err;
+  char buf[100];
+
   m_bUpdateThreadRunning = true;
 
-  m_eil->onEmployeeMgrUpdateStart();
-  
   m_arrUpdateUserCode.clear();
   m_arrUpdateUserCodeDelete.clear();
   
@@ -346,6 +347,11 @@ void EmployeeInfoMgr::run_updateLocalDB()
   int update_count = arrEmployeeUpdate.size();
   int delete_count = arrEmployeeDelete.size();
 
+  if(!insert_count && !update_count && !delete_count)
+    goto end;
+  
+  m_eil->onEmployeeMgrUpdateStart();
+
   m_eil->onEmployeeMgrUpdateCount(delete_count, update_count, insert_count);
 
   m_arrUpdateUserCode.reserve(insert_count + update_count);
@@ -358,22 +364,20 @@ void EmployeeInfoMgr::run_updateLocalDB()
   if(insert_count)
     insertEmployee(arrEmployeeInsert);
 
-  //mtx.unlock();
-   //cout << "members = " << num << endl;
+  m_eil->onEmployeeMgrUpdateEnd(m_lastSyncTime.c_str(), &m_arrUpdateUserCode, &m_arrUpdateUserCodeDelete);
+
+  m_eil->onEmployeeCountChanged(m_arrEmployee.size(), m_arrEmployee_4.size());   
+
+end:
   delete m_xml_buf;
   m_xml_buf = NULL;
-  
   //update lastsync time
-  char* err;
-  char buf[100];
-
   sprintf(buf, "update time set lastsync = '%s'", m_lastSyncTime.c_str());
   int rc = sqlite3_exec(m_db, buf, NULL, NULL, &err);
   if (rc != SQLITE_OK) {
     LOGE("Failed to update : %s\n", err);
   }
-  m_eil->onEmployeeMgrUpdateEnd(m_lastSyncTime.c_str(), &m_arrUpdateUserCode, &m_arrUpdateUserCodeDelete);
-  m_eil->onEmployeeCountChanged(m_arrEmployee.size(), m_arrEmployee_4.size());   
+
   m_bUpdateThreadRunning = false;
   LOGV("updateLocalDB ---\n");
     
