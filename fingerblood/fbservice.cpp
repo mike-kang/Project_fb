@@ -555,24 +555,28 @@ void FBService::scan(void* arg)
   char buf[17];
   buf[16] = '\0';
   bool bLong;
-  ret = m_protocol->stat(buf, bLong);
-  //printf("result %c %d\n", ret, bLong);
+  try{
+    ret = m_protocol->stat(buf, bLong);
+    //printf("result %c %d\n", ret, bLong);
 
-  if(state == S_SCAN_INIT){
-    if(ret == '2')
-      state = S_SCAN_READY;
-  }
-  else if (state == S_SCAN_READY){
-    if(bLong && ret == 'A'){
-      m_fn->onScanData(buf);
-      state = S_SCAN_INIT;
+    if(state == S_SCAN_INIT){
+      if(ret == '2')
+        state = S_SCAN_READY;
     }
-    else if(ret == 'B'){
-      m_fn->onScanData(NULL);
-      state = S_SCAN_INIT;
+    else if (state == S_SCAN_READY){
+      if(bLong && ret == 'A'){
+        m_fn->onScanData(buf);
+        state = S_SCAN_INIT;
+      }
+      else if(ret == 'B'){
+        m_fn->onScanData(NULL);
+        state = S_SCAN_INIT;
+      }
     }
   }
-
+  catch(FBProtocol::Exception e){
+    LOGE("scan error!\n");
+  }
   m_tmrScan->start(0, m_scan_interval);
 }
 

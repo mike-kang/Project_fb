@@ -364,7 +364,7 @@ void EmployeeInfoMgr::run_updateLocalDB()
   if(insert_count)
     insertEmployee(arrEmployeeInsert);
 
-  m_eil->onEmployeeMgrUpdateEnd(m_lastSyncTime.c_str(), &m_arrUpdateUserCode, &m_arrUpdateUserCodeDelete);
+  m_eil->onEmployeeMgrUpdateEnd(&m_arrUpdateUserCode, &m_arrUpdateUserCodeDelete);
 
   m_eil->onEmployeeCountChanged(m_arrEmployee.size(), m_arrEmployee_4.size());   
 
@@ -377,6 +377,7 @@ end:
   if (rc != SQLITE_OK) {
     LOGE("Failed to update : %s\n", err);
   }
+  m_eil->onEmployeeMgrUpdateTime(m_lastSyncTime.c_str());
 
   m_bUpdateThreadRunning = false;
   LOGV("updateLocalDB ---\n");

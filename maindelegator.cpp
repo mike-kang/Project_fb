@@ -422,10 +422,16 @@ void MainDelegator::onEmployeeMgrUpdateDelete(string& usercode, int index)
   m_el->onUpdateDeleteIndex(index);
 }
 */
-void MainDelegator::onEmployeeMgrUpdateEnd(const char* updatetime, vector<unsigned char*>* arrSave, vector<string>* arrDelete)
+
+void MainDelegator::onEmployeeMgrUpdateTime(const char* updatetime)
+{
+  LOGV("onEmployeeMgrUpdateTime\n");
+  m_el->onUpdateLocalDBEnd(updatetime);
+}
+
+void MainDelegator::onEmployeeMgrUpdateEnd(vector<unsigned char*>* arrSave, vector<string>* arrDelete)
 {
   LOGV("onEmployeeMgrUpdateEnd\n");
-  m_el->onUpdateLocalDBEnd(updatetime);
   m_fbs->request_update(arrSave, arrDelete);  //async
 }
 

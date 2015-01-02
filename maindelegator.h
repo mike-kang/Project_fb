@@ -69,7 +69,8 @@ public:
   //virtual void onEmployeeMgrUpdateInsert(const unsigned char* userdata, int index);
   //virtual void onEmployeeMgrUpdateUpdate(string& usercode, const unsigned char* userdata, int index);
   //virtual void onEmployeeMgrUpdateDelete(string& usercode, int index);
-  virtual void onEmployeeMgrUpdateEnd(const char* updatetime, vector<unsigned char*>* arrSave, vector<string>* arrDelete);
+  virtual void onEmployeeMgrUpdateTime(const char* updatetime);
+  virtual void onEmployeeMgrUpdateEnd(vector<unsigned char*>* arrSave, vector<string>* arrDelete);
   virtual void onEmployeeCountChanged(int length_16, int length_4);
 
   virtual void onTimeSheetFileCountChanged(int count);

@@ -711,12 +711,17 @@ byte* FBProtocol::response(int timeout)
   byte _xor = 0xff;
   byte sum = 0;
   byte tempBuf[10];
-  int readbyte = m_cm->onRead(tempBuf, 10, timeout);
-  while(readbyte < 3){
-    int t = m_cm->onRead(tempBuf + readbyte, 3 - readbyte, timeout);
-    readbyte += t;
+  int readbyte;
+  try{
+    readbyte = m_cm->onRead(tempBuf, 10, timeout);
+    while(readbyte < 3){
+      int t = m_cm->onRead(tempBuf + readbyte, 3 - readbyte, timeout);
+      readbyte += t;
+    }
   }
-  
+  catch(FBProtocolCommMethod::Exception e){
+    throw EXCEPTION_RESP_COMMMETHOD;
+  }
   if(tempBuf[0] != SYNC){
     utils::hexdump("RECEIVE", tempBuf, readbyte);
     throw EXCEPTION_RESP_NOT_ACK;
