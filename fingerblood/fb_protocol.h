@@ -60,6 +60,7 @@ public:
 
 private:  
   bool stat_loop_check(char check_char, byte& ret_char, int limit_count = 10);
+  bool stat_loop_check2(char check_char, byte media_char, byte& ret_char, int limit_count = 10);
   byte* processCommand(const char* cmd, int timeout);
   byte* processCommand(const char* cmd, const byte* data, int data_sz, int timeout);
   byte* processCommand(const byte* chunk, int chunk_sz, int timeout);

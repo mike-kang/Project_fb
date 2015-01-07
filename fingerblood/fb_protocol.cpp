@@ -285,10 +285,13 @@ bool FBProtocol::dele(const char* usercode)
     receive_buf = processCommand("DELE", (byte*)sUsercode, 20, 1000);
     status = receive_buf[STATUS];
     delete receive_buf;
-
-    if(status != '2')
+/*
+    if(status != '2'){
+      LOGE("[dele]error(expect:%c result:%c\n", '2', status);
       return false;
-    if(!stat_loop_check('A', status)){
+    }
+*/    
+    if(!stat_loop_check2('A', '2', status)){
       LOGE("[dele]error loop_check(expect:%c result:%c\n", 'A', status);
       return false;
     }
@@ -777,6 +780,20 @@ bool FBProtocol::stat_loop_check(char check_char, byte& ret_char, int limit_coun
   for(int i = 0; i < limit_count; i++){   
     usleep(100000);       
     ret_char = stat();      
+    if(ret_char == check_char){
+      return true;
+    }
+  }
+  return false;
+}
+
+bool FBProtocol::stat_loop_check2(char check_char, byte media_char, byte& ret_char, int limit_count)
+{
+  for(int i = 0; i < limit_count; i++){   
+    usleep(100000);       
+    ret_char = stat(); 
+    if(ret_char == media_char)
+      continue;
     if(ret_char == check_char){
       return true;
     }

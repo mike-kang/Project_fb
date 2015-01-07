@@ -355,6 +355,22 @@ void FBService::closeDevice(void* arg)
   client->m_SemCompleteProcessEvent.post();
 }
 
+void FBService::deleForce(const char* usercode)
+{
+  while(!m_protocol->dele(usercode)){
+    LOGE("delete fail %s\n", usercode);
+    while(!m_protocol->stop());
+  }
+}
+
+void FBService::saveForce(const byte* buf, int length)
+{
+  while(!m_protocol->save(buf, length)){
+    LOGE("save fail\n");
+    while(!m_protocol->stop());
+  }
+}
+
 void FBService::sync(void* arg)
 {
   //m_sync_running = true;
@@ -386,11 +402,8 @@ void FBService::sync(void* arg)
   if(modulelist_count == 0){
     while(d < devicelist_count){
       m_fn->onSync(IFBService::IFBServiceEventListener::SS_PROCESS, d);
-      if(!m_protocol->save(device_arr_16[d].second, USERDATA_SIZE)){
-        m_protocol->stop();
-      }
-      else
-        d++;
+      saveForce(device_arr_16[d].second, USERDATA_SIZE);
+      d++;
     }
   }
   else{
@@ -423,30 +436,26 @@ void FBService::sync(void* arg)
         d++, m++;
       }
       else if(compare > 0){
-        m_protocol->dele(module_usercode);
+        deleForce(module_usercode);
         m++;
       }
       else{
-        if(!m_protocol->save(device_arr_16[d].second, USERDATA_SIZE))
-          m_protocol->stop();
-        else
-          d++;
+        saveForce(device_arr_16[d].second, USERDATA_SIZE);
+        d++;
       }
       
       if(m == module_list.end()){
         while(d < device_arr_16.size()){
           m_fn->onSync(IFBService::IFBServiceEventListener::SS_PROCESS, d);
-          if(!m_protocol->save(device_arr_16[d].second, USERDATA_SIZE))
-            m_protocol->stop();
-          else
-            d++;
+          saveForce(device_arr_16[d].second, USERDATA_SIZE);
+          d++;
         }
         break;
       }
     }
     
     for(; m != module_list.end(); m++){
-      m_protocol->dele(m->c_str());
+      deleForce(m->c_str());
     }
     
   }
@@ -456,16 +465,14 @@ void FBService::sync(void* arg)
     d = 0;
     while(d < devicelist_4_count){
       m_fn->onSync(IFBService::IFBServiceEventListener::SS_PROCESS, devicelist_count + d);
-      if(!m_protocol->save(device_arr_4[d].second, USERDATA_SIZE))
-        m_protocol->stop();
-      else
-        d++;
+      saveForce(device_arr_4[d].second, USERDATA_SIZE);
+      d++;
     }
   }
   else{
     for(d = 0; d < devicelist_4_count ; d++){
       m_fn->onSync(IFBService::IFBServiceEventListener::SS_PROCESS, devicelist_count + d);
-      m_protocol->dele(device_arr_4[d].first);
+      deleForce(device_arr_4[d].first);
     }
   }
 
@@ -650,25 +657,15 @@ void FBService::update(void* arg)
   m_fn->onUpdateBegin(client->m_arrSave->size(), client->m_arrDelete->size());
 
   for(vector<string>::size_type i=0;i<delete_count;i++){
-    if(m_protocol->dele( (*(client->m_arrDelete))[i].c_str())){
-      m_fn->onUpdateDelete(i+1);
-    }
-    else{
-      LOGE("update - delete fail %s\n", (*(client->m_arrDelete))[i].c_str() );
-    }
+    deleForce( (*(client->m_arrDelete))[i].c_str());
+    m_fn->onUpdateDelete(i+1);
   }
   
   vector<unsigned char*>::size_type d = 0;
   while(d < save_count){
-    if(m_protocol->save( (*(client->m_arrSave))[d], USERDATA_SIZE)){
-      //LOGV("update - save[%d] success\n", d+1);
-      m_fn->onUpdateSave(d+1);
-      d++;
-    }
-    else{
-      LOGE("update - save[%d] fail\n", d+1);
-      while(!m_protocol->stop());
-    }
+    saveForce( (*(client->m_arrSave))[d], USERDATA_SIZE);
+    m_fn->onUpdateSave(d+1);
+    d++;
   }
   m_fn->onUpdateEnd();
 }
