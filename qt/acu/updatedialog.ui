@@ -216,6 +216,19 @@
      </property>
     </widget>
    </widget>
+   <widget class="QLabel" name="label_7">
+    <property name="geometry">
+     <rect>
+      <x>100</x>
+      <y>0</y>
+      <width>61</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>업데이트</string>
+    </property>
+   </widget>
   </widget>
   <zorder>frame</zorder>
   <zorder>label</zorder>
