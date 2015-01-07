@@ -50,6 +50,8 @@ private:
   void deleteUsercode(void* args);
   void stopCmd(void* arg);
   void update(void* arg);
+  void deleForce(const char* usercode);
+  void saveForce(const byte* buf, int length);
   
   bool checkdeviceID();
   char* getVersion();
