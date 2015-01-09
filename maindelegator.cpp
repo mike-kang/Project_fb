@@ -394,13 +394,17 @@ void MainDelegator::run()
 */
 void MainDelegator::onEmployeeMgrUpdateStart()
 {
-  m_el->onUpdateStart();
+  LOGV("onEmployeeMgrUpdateStart\n");
 }
 
 void MainDelegator::onEmployeeMgrUpdateCount(int delete_count, int update_count, int insert_count)
 {
   LOGV("onEmployeeMgrUpdateCount delete:%d update:%d insert:%d\n", delete_count, update_count, insert_count);
-  m_el->onUpdateCount(delete_count, update_count, insert_count);
+  
+  if(insert_count || update_count || delete_count){
+    m_el->onUpdateStart();
+    m_el->onUpdateCount(delete_count, update_count, insert_count);
+  }
 }
 /*
 void MainDelegator::onEmployeeMgrUpdateInsert(const unsigned char* userdata, int index)
@@ -432,7 +436,18 @@ void MainDelegator::onEmployeeMgrUpdateTime(const char* updatetime)
 void MainDelegator::onEmployeeMgrUpdateEnd(vector<unsigned char*>* arrSave, vector<string>* arrDelete)
 {
   LOGV("onEmployeeMgrUpdateEnd\n");
-  m_fbs->request_update(arrSave, arrDelete);  //async
+  if(arrSave || arrDelete)
+    m_fbs->request_update(arrSave, arrDelete);  //async
+  else{
+    if(!m_timer){
+      m_timer = new Timer(cbTimer, this);
+      int interval = m_settings->getInt("App::TIMER_INTERVAL");
+      LOGI("timer interval= %d\n", interval);
+      m_timer->start(interval, true);
+      
+      m_fbs->request_startScan(300);
+    }
+  }
 }
 
 void MainDelegator::onEmployeeCountChanged(int length_16, int length_4)
@@ -795,7 +810,7 @@ MainDelegator::MainDelegator(EventListener* el, const char* configPath) : m_el(e
   if(checkServerAlive()){
     m_bTimeAvailable = getSeverTime();
   }
-  
+  //m_bTimeAvailable = true;  //test
   m_employInfoMgr = new EmployeeInfoMgr(m_settings, m_ws, this);
   
   m_fbs = new FBService(m_settings->get("FB::PORT").c_str(), Serial::SB38400, this, m_bCheckUsercode4);

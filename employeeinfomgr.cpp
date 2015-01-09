@@ -241,6 +241,7 @@ void EmployeeInfoMgr::run_updateLocalDB()
   char buf[100];
 
   m_bUpdateThreadRunning = true;
+  m_eil->onEmployeeMgrUpdateStart();
 
   m_arrUpdateUserCode.clear();
   m_arrUpdateUserCodeDelete.clear();
@@ -347,26 +348,25 @@ void EmployeeInfoMgr::run_updateLocalDB()
   int update_count = arrEmployeeUpdate.size();
   int delete_count = arrEmployeeDelete.size();
 
-  if(!insert_count && !update_count && !delete_count)
-    goto end;
-  
-  m_eil->onEmployeeMgrUpdateStart();
-
   m_eil->onEmployeeMgrUpdateCount(delete_count, update_count, insert_count);
 
-  m_arrUpdateUserCode.reserve(insert_count + update_count);
-  m_arrUpdateUserCodeDelete.reserve(delete_count);
+  if(insert_count || update_count || delete_count){
+    m_arrUpdateUserCode.reserve(insert_count + update_count);
+    m_arrUpdateUserCodeDelete.reserve(delete_count);
 
-  if(delete_count)
-    deleteEmployee(arrEmployeeDelete);
-  if(update_count)
-    updateEmployee(arrEmployeeUpdate);
-  if(insert_count)
-    insertEmployee(arrEmployeeInsert);
+    if(delete_count)
+      deleteEmployee(arrEmployeeDelete);
+    if(update_count)
+      updateEmployee(arrEmployeeUpdate);
+    if(insert_count)
+      insertEmployee(arrEmployeeInsert);
 
-  m_eil->onEmployeeMgrUpdateEnd(&m_arrUpdateUserCode, &m_arrUpdateUserCodeDelete);
-
-  m_eil->onEmployeeCountChanged(m_arrEmployee.size(), m_arrEmployee_4.size());   
+    m_eil->onEmployeeCountChanged(m_arrEmployee.size(), m_arrEmployee_4.size());   
+    m_eil->onEmployeeMgrUpdateEnd(&m_arrUpdateUserCode, &m_arrUpdateUserCodeDelete);
+  }
+  else{
+    m_eil->onEmployeeMgrUpdateEnd(NULL, NULL);
+  }
 
 end:
   delete m_xml_buf;

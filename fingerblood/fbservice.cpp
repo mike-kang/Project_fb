@@ -318,31 +318,37 @@ char* FBService::getVersion()
 
 void FBService::openDevice(void* arg)
 {
+  char* ver;
   openDeviceClient_t* client = (openDeviceClient_t*)arg;
 
   m_bActive = false;
   
   if(!m_serial->open()){
-    return;
+    goto error;
   }
   
   m_protocol->stop();
   
-  char* ver = getVersion();
+  ver = getVersion();
   if(!ver){
-    return;
+    goto error;
   }
   LOGV("Version: %s\n", ver);
   
   if(client->m_check_device_id && !checkdeviceID()){
     LOGE("openDevice-check device fail\n");
-    return;
+    goto error;
   }
 
   m_bActive = true;
   //m_fn->onStart(true);
   client->m_ret = true; 
-
+  
+  client->m_SemCompleteProcessEvent.post();
+  return;
+  
+error:
+  m_serial->close();
   client->m_SemCompleteProcessEvent.post();
 }
 
