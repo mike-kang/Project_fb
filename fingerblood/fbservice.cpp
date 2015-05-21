@@ -182,7 +182,7 @@ void FBService::request_stopScan() //only async
   m_eventQ.push(e);
 }
 
-void FBService::request_buzzer(bool val) //only sync
+void FBService::request_buzzer(bool val) //only async
 {
   LOGV("request_buzzer\n");
   boolClient_t* client = new boolClient_t(val);
@@ -300,6 +300,26 @@ void FBService::request_update(vector<unsigned char*>* arrSave, vector<string>* 
   TEvent<FBService>* e = new TEvent<FBService>(&FBService::update, client);
   m_eventQ.push(e);
 }
+
+bool FBService::request_getScanImage() //only sync
+{
+  LOGV("request_getScanImage\n");
+  syncRClient_t* client = new syncRClient_t();
+  TEvent<FBService>* e = new TEvent<FBService>(&FBService::stopCmd, client);
+  m_eventQ.push(e);
+
+  int ret = client->m_SemCompleteProcessEvent.timedwait(5);  //blocking for maxWaitTime.
+
+  LOGV("request_getScanImage end waiting\n");
+  if(ret < 0){
+	LOGE("request_getScanImage time expired\n");
+	delete client;
+	return false;
+  }
+  delete client;
+  return client->m_ret;
+}
+
 
 
 //////////////////////////////////////////////////////////////////////////////////////////

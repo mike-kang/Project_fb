@@ -33,6 +33,7 @@ public:
   virtual bool request_stopCmd(); //only sync
   virtual void request_update(std::vector<unsigned char*>* arrSave, std::vector<string>* arrDelete); //only async
   //virtual void update(std::vector<std::pair<const char*, unsigned char*> >& arrSave, std::vector<string>& arrDelete);
+  virtual bool request_getScanImage(); //only sync
   
 private:  
   void run();

@@ -44,7 +44,7 @@ public:
   virtual void request_update(std::vector<unsigned char*>* arrSave, 
   std::vector<std::string>* arrDelete) = 0; //only async
   //virtual void update(std::vector<std::pair<const char*, unsigned char*> >& arrSave, std::vector<string>& arrDelete) = 0;
-  
+  virtual bool request_getScanImage() = 0; //only sync
 };
 
 
