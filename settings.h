@@ -4,6 +4,8 @@
 #include <iostream>
 #include <map>
 
+#define FEATURE_FINGER_IMAGE
+
 class Settings {
 public:
   enum Exception {

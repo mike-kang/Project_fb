@@ -93,7 +93,7 @@ bool FBService::request_openDevice(bool check_device_id) //only sync
 {
   LOGV("request_openDevice\n");
   openDeviceClient_t* client = new openDeviceClient_t(check_device_id);
-  TEvent<FBService>* e = new TEvent<FBService>(&FBService::openDevice, (void*)client);
+  TEvent<FBService>* e = new TEvent<FBService>(&FBService::onOpenDevice, (void*)client);
   m_eventQ.push(e);
 
   int ret = client->m_SemCompleteProcessEvent.timedwait(10);  //blocking for maxWaitTime.
@@ -111,7 +111,7 @@ void FBService::request_closeDevice() //only sync
 {
   LOGV("request_closeDevice\n");
   syncRClient_t* client = new syncRClient_t();
-  TEvent<FBService>* e = new TEvent<FBService>(&FBService::closeDevice, client);
+  TEvent<FBService>* e = new TEvent<FBService>(&FBService::onCloseDevice, client);
   m_eventQ.push(e);
 
   int ret = client->m_SemCompleteProcessEvent.timedwait(5);  //blocking for maxWaitTime.
@@ -124,7 +124,7 @@ void FBService::request_closeDevice() //only sync
 void FBService::request_sync(void) //only async
 {
   LOGV("request_sync\n");
-  TEvent<FBService>* e = new TEvent<FBService>(&FBService::sync, NULL);
+  TEvent<FBService>* e = new TEvent<FBService>(&FBService::onSync, NULL);
   m_eventQ.push(e);
 }
 
@@ -140,7 +140,7 @@ bool FBService::request_getList(list<string>* li) //only sync
 {
   LOGV("request_getList\n");
   getListClient_t* client = new getListClient_t(li);
-  TEvent<FBService>* e = new TEvent<FBService>(&FBService::getList, (void*)client);
+  TEvent<FBService>* e = new TEvent<FBService>(&FBService::onGetList, (void*)client);
   m_eventQ.push(e);
 
   int ret = client->m_SemCompleteProcessEvent.timedwait(10);  //blocking for maxWaitTime.
@@ -157,7 +157,7 @@ bool FBService::request_getList(list<string>* li) //only sync
 void FBService::request_format() //only async
 {
   LOGV("request_format\n");
-  TEvent<FBService>* e = new TEvent<FBService>(&FBService::format, NULL);
+  TEvent<FBService>* e = new TEvent<FBService>(&FBService::onFormat, NULL);
   m_eventQ.push(e);
 }
 
@@ -171,14 +171,14 @@ void FBService::request_startScan(int interval) //only async
 {
   LOGV("request_startScan: %d\n", interval); 
   startScanClient_t* client = new startScanClient_t(interval);
-  TEvent<FBService>* e = new TEvent<FBService>(&FBService::startScan, client);
+  TEvent<FBService>* e = new TEvent<FBService>(&FBService::onStartScan, client);
   m_eventQ.push(e);
 }
 
 void FBService::request_stopScan() //only async
 {
   LOGV("request_stopScan\n");
-  TEvent<FBService>* e = new TEvent<FBService>(&FBService::stopScan, NULL);
+  TEvent<FBService>* e = new TEvent<FBService>(&FBService::onStopScan, NULL);
   m_eventQ.push(e);
 }
 
@@ -186,7 +186,7 @@ void FBService::request_buzzer(bool val) //only async
 {
   LOGV("request_buzzer\n");
   boolClient_t* client = new boolClient_t(val);
-  TEvent<FBService>* e = new TEvent<FBService>(&FBService::buzzer, client);
+  TEvent<FBService>* e = new TEvent<FBService>(&FBService::onBuzzer, client);
   m_eventQ.push(e);
 }
 
@@ -208,7 +208,7 @@ bool FBService::request_saveUsercode(const byte* userdata, int length) //only sy
 {
   LOGV("request_saveUsercode\n");
   saveUsercodeClient_t* client = new saveUsercodeClient_t(userdata, length);
-  TEvent<FBService>* e = new TEvent<FBService>(&FBService::saveUsercodeBuffer, (void*)client);
+  TEvent<FBService>* e = new TEvent<FBService>(&FBService::onSaveUsercodeBuffer, (void*)client);
   m_eventQ.push(e);
 
   int ret = client->m_SemCompleteProcessEvent.timedwait(5);  //blocking for maxWaitTime.
@@ -226,7 +226,7 @@ bool FBService::request_saveUsercode(const char* filename) //only sync
 {
   LOGV("request_saveUsercode\n");
   saveUsercodeClient_t* client = new saveUsercodeClient_t(filename);
-  TEvent<FBService>* e = new TEvent<FBService>(&FBService::saveUsercodeFile, (void*)client);
+  TEvent<FBService>* e = new TEvent<FBService>(&FBService::onSaveUsercodeFile, (void*)client);
   m_eventQ.push(e);
 
   int ret = client->m_SemCompleteProcessEvent.timedwait(5);  //blocking for maxWaitTime.
@@ -253,7 +253,7 @@ bool FBService::request_deleteUsercode(const char* usercode) //only sync
 {
   LOGV("request_deleteUsercode\n");
   deleteUsercodeClient_t* client = new deleteUsercodeClient_t(usercode);
-  TEvent<FBService>* e = new TEvent<FBService>(&FBService::deleteUsercode, (void*)client);
+  TEvent<FBService>* e = new TEvent<FBService>(&FBService::onDeleteUsercode, (void*)client);
   m_eventQ.push(e);
 
   int ret = client->m_SemCompleteProcessEvent.timedwait(5);  //blocking for maxWaitTime.
@@ -271,7 +271,7 @@ bool FBService::request_stopCmd() //only sync
 {
   LOGV("request_stopCmd\n");
   syncRClient_t* client = new syncRClient_t();
-  TEvent<FBService>* e = new TEvent<FBService>(&FBService::stopCmd, client);
+  TEvent<FBService>* e = new TEvent<FBService>(&FBService::onStopCmd, client);
   m_eventQ.push(e);
 
   int ret = client->m_SemCompleteProcessEvent.timedwait(5);  //blocking for maxWaitTime.
@@ -297,29 +297,37 @@ void FBService::request_update(vector<unsigned char*>* arrSave, vector<string>* 
 {
   LOGV("request_update\n"); 
   updateClient_t* client = new updateClient_t(arrSave, arrDelete);
-  TEvent<FBService>* e = new TEvent<FBService>(&FBService::update, client);
+  TEvent<FBService>* e = new TEvent<FBService>(&FBService::onUpdate, client);
   m_eventQ.push(e);
 }
 
-bool FBService::request_getScanImage() //only sync
+#ifdef FEATURE_FINGER_IMAGE
+struct getScanImageClient_t {
+  char* m_imageBuf;
+  bool m_ret;
+  Semaphore m_SemCompleteProcessEvent;
+  getScanImageClient_t(char* imageBuf):m_imageBuf(imageBuf), m_ret(false), m_SemCompleteProcessEvent(0)
+  {
+  }
+};
+char* FBService::request_getScanImage() //only sync
 {
   LOGV("request_getScanImage\n");
-  syncRClient_t* client = new syncRClient_t();
-  TEvent<FBService>* e = new TEvent<FBService>(&FBService::stopCmd, client);
+  getScanImageClient_t* client = new getScanImageClient_t(m_fingerImage);
+  TEvent<FBService>* e = new TEvent<FBService>(&FBService::onGetScanImage, (void*)client);
   m_eventQ.push(e);
 
-  int ret = client->m_SemCompleteProcessEvent.timedwait(5);  //blocking for maxWaitTime.
-
+  int ret = client->m_SemCompleteProcessEvent.timedwait(1000);  //blocking for maxWaitTime.
   LOGV("request_getScanImage end waiting\n");
   if(ret < 0){
-	LOGE("request_getScanImage time expired\n");
-	delete client;
-	return false;
+    LOGE("request_getScanImage time expired\n");
+    delete client;
+    return NULL;
   }
   delete client;
-  return client->m_ret;
+  return m_fingerImage;
 }
-
+#endif
 
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -336,7 +344,7 @@ char* FBService::getVersion()
   }
 }
 
-void FBService::openDevice(void* arg)
+void FBService::onOpenDevice(void* arg)
 {
   char* ver;
   openDeviceClient_t* client = (openDeviceClient_t*)arg;
@@ -372,7 +380,7 @@ error:
   client->m_SemCompleteProcessEvent.post();
 }
 
-void FBService::closeDevice(void* arg)
+void FBService::onCloseDevice(void* arg)
 {
   syncRClient_t* client = (syncRClient_t*)arg;
   m_bActive = false;
@@ -397,7 +405,7 @@ void FBService::saveForce(const byte* buf, int length)
   }
 }
 
-void FBService::sync(void* arg)
+void FBService::onSync(void* arg)
 {
   //m_sync_running = true;
   LOGV("run_sync\n");
@@ -523,7 +531,7 @@ bool FBService::checkdeviceID()
   return false;
 }
 
-void FBService::getList(void* arg)
+void FBService::onGetList(void* arg)
 {
   getListClient_t* client = (getListClient_t*)arg;
   try{
@@ -543,7 +551,7 @@ void FBService::getList(void* arg)
 }
 
 
-void FBService::format(void* arg)
+void FBService::onFormat(void* arg)
 {
   LOGV("format +++\n");
   try{
@@ -561,11 +569,11 @@ void FBService::format(void* arg)
 void FBService::cbTimerScan(void* arg)
 {
   FBService* my = (FBService*)arg;
-  TEvent<FBService>* e = new TEvent<FBService>(&FBService::scan, NULL);
+  TEvent<FBService>* e = new TEvent<FBService>(&FBService::onScan, NULL);
   my->m_eventQ.push(e);
 }
 
-void FBService::startScan(void* arg)
+void FBService::onStartScan(void* arg)
 {
   startScanClient_t* client = (startScanClient_t*)arg;
 
@@ -574,11 +582,11 @@ void FBService::startScan(void* arg)
   delete client;
   cout << "interval:" << m_scan_interval << endl;
 
-  TEvent<FBService>* e = new TEvent<FBService>(&FBService::scan, NULL);
+  TEvent<FBService>* e = new TEvent<FBService>(&FBService::onScan, NULL);
   m_eventQ.push(e);
 }
 
-void FBService::scan(void* arg)
+void FBService::onScan(void* arg)
 {
   if(!m_scan_running)
     return;
@@ -613,12 +621,12 @@ void FBService::scan(void* arg)
   m_tmrScan->start(0, m_scan_interval);
 }
 
-void FBService::stopScan(void* arg)
+void FBService::onStopScan(void* arg)
 {
   m_scan_running = false;
 }
 
-void FBService::buzzer(void* arg)
+void FBService::onBuzzer(void* arg)
 {
   boolClient_t* client = (boolClient_t*)arg;
   
@@ -633,7 +641,7 @@ void FBService::buzzer(void* arg)
   m_protocol->optf(buf);
 }
 
-void FBService::saveUsercodeFile(void* arg)
+void FBService::onSaveUsercodeFile(void* arg)
 {
   saveUsercodeClient_t* client = (saveUsercodeClient_t*)arg;
   
@@ -644,7 +652,7 @@ void FBService::saveUsercodeFile(void* arg)
   client->m_SemCompleteProcessEvent.post();
 }
 
-void FBService::saveUsercodeBuffer(void* arg)
+void FBService::onSaveUsercodeBuffer(void* arg)
 {
   LOGV("saveUsercodeBuffer\n");
   saveUsercodeClient_t* client = (saveUsercodeClient_t*)arg;
@@ -654,7 +662,7 @@ void FBService::saveUsercodeBuffer(void* arg)
   client->m_SemCompleteProcessEvent.post();
 }
 
-void FBService::deleteUsercode(void* arg)
+void FBService::onDeleteUsercode(void* arg)
 {
   deleteUsercodeClient_t* client = (deleteUsercodeClient_t*)arg;
   LOGV("deleteUsercode: %s\n", client->m_usercode);
@@ -664,7 +672,7 @@ void FBService::deleteUsercode(void* arg)
   client->m_SemCompleteProcessEvent.post();
 }
 
-void FBService::stopCmd(void* arg)
+void FBService::onStopCmd(void* arg)
 {
   syncRClient_t* client = (syncRClient_t*)arg;
   
@@ -673,7 +681,7 @@ void FBService::stopCmd(void* arg)
   client->m_SemCompleteProcessEvent.post();
 }
 
-void FBService::update(void* arg)
+void FBService::onUpdate(void* arg)
 {
   updateClient_t* client = (updateClient_t*)arg;
   int delete_count = client->m_arrDelete->size();
@@ -696,7 +704,21 @@ void FBService::update(void* arg)
   m_fn->onUpdateEnd();
 }
 
+#ifdef FEATURE_FINGER_IMAGE
+void FBService::onGetScanImage(void* arg)
+{
+  getScanImageClient_t* client = static_cast<getScanImageClient_t*>(arg);
+  try{
+    client->m_ret = m_protocol->vimg(client->m_imageBuf);
+  }
+  catch (FBProtocol::Exception e){
+    LOGE("[getList]exception fail! %d", e);
+    client->m_ret = false; 
+  }
 
+  client->m_SemCompleteProcessEvent.post();
 
+}
+#endif
 
 

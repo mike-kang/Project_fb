@@ -26,6 +26,8 @@ string str_prohibition_entrance = "출입금지 ";
 string str_prohibition_entrance_3out = "출입금지 삼진아웃";
 string str_success = " 인증에 성공했습니다.";
 string str_fail = "인증에 실패했습니다. 재시도 하세요.";
+string str_pinno_title = "인증 실패";
+string str_pinno = "PIN 번호를 입력하세요.";
 
 MainDelegator* MainDelegator::my = NULL;
 
@@ -171,8 +173,31 @@ const char* MainDelegator::debug_str(AuthMode m)
 }
 void MainDelegator::processAuthResult(bool result, const char* sound_path, string msg)
 {
+  switch(m_authMode){
+    case AM_NORMAL:
+      processAuthResult(false, "SoundFiles/authfail.wav", str_fail);
+      break;
+      
+    case AM_PASS_NOREGISTOR:
+      processAuthResult(true, "SoundFiles/authok.wav", str_success);
+      break;
+  
+    case AM_PASS_THREEOUT:
+      if(m_outCount < 2){
+        m_outCount++;
+        processAuthResult(false, "SoundFiles/authfail.wav", str_fail);
+      }
+      else{
+        processAuthResult(true, "SoundFiles/authok.wav", str_success);
+        m_outCount = 0;
+      }
+      break;
+      
+  }
+
   if(m_bSound)
     m_wp->play(sound_path);
+  
   if(result){
     m_Relay->on(1500);
     m_greenLed->on(1500);
@@ -183,6 +208,56 @@ void MainDelegator::processAuthResult(bool result, const char* sound_path, strin
   m_el->onMessage("Msg", msg);
   m_el->onImage(result);
 }
+
+bool MainDelegator::checkByUsercode(const char* usercode)
+{
+  string str_usercode(usercode);
+  EmployeeInfoMgr::EmployeeInfo* ei;
+  bool ret = m_employInfoMgr->getInfo(usercode, &ei);
+
+  if(!ret){
+    LOGE("get employee info fail!\n");
+    m_el->onEmployeeInfo("", "", "");
+    processAuthResult(false, "SoundFiles/authfail.wav", str_usercode + str_nodata);
+    goto end;
+  }
+
+  if(m_bDisplayEmployeeInfo){
+    //cout << "pinno: " << ei->pin_no << endl;
+    m_el->onEmployeeInfo(ei->company_name, ei->lab_name, ei->pin_no);
+  }
+  if(m_admin1 == usercode){
+    LOGV("Mode Change : %s -> AM_NORMAL\n", debug_str(m_authMode));   
+    m_authMode = AM_NORMAL;
+    m_outCount = 0;
+  }
+  else if(m_admin2 == usercode){
+    LOGV("Mode Change : %s -> AM_PASS_NOREGISTOR\n", debug_str(m_authMode));   
+    m_authMode = AM_PASS_NOREGISTOR;
+  }
+  else if(m_admin3 == usercode){
+    LOGV("Mode Change : %s -> AM_PASS_THREEOUT\n", debug_str(m_authMode));   
+    m_authMode = AM_PASS_THREEOUT;
+  }
+  else if(m_admin4 == usercode){
+    LOGV("admin4\n");   
+    ; // todo
+  }
+
+  if(m_bCheck){
+    if(ei->blacklistinfo != ""){
+      LOGV("blacklist: %s\n", ei->blacklistinfo.c_str());   
+      processAuthResult(false, "SoundFiles/authcheck.wav", str_prohibition_entrance + ei->blacklistinfo);
+      goto end;
+    }
+    if(ei->pnt_cnt >= 3){
+      LOGV("penalty count: %d\n", ei->pnt_cnt);   
+      processAuthResult(false, "SoundFiles/authcheck.wav", str_prohibition_entrance_3out);
+      goto end;
+    }
+  }
+}
+
 void MainDelegator::onScanData(const char* usercode)
 {
   LOGI("onScanData %s +++\n", usercode);
@@ -190,14 +265,24 @@ void MainDelegator::onScanData(const char* usercode)
   int imgLength = 0;
   static int out_count = 0;
   string msg;
+  const char* pinNo;
   
   m_bProcessingAuth = true;
 
   m_wp->stop();
   m_greenLed->off();
   m_redLed->off();
-  //m_el->onMessage("RfidNo", usercode);
-  if(usercode){
+
+#ifdef FEATURE_FINGER_IMAGE
+  if(m_bPinFirstCheck){
+    pinNo = m_el->onGetPinNo();
+    if(strlen(pinNo) == 0){
+      m_el->onWarning(str_pinno_title, str_pinno);
+      goto end;
+    }
+  }    
+#endif  
+  if(usercode){ //verify success
     string str_usercode(usercode);
     EmployeeInfoMgr::EmployeeInfo* ei;
     bool ret = m_employInfoMgr->getInfo(usercode, &ei);
@@ -206,7 +291,7 @@ void MainDelegator::onScanData(const char* usercode)
       LOGE("get employee info fail!\n");
       m_el->onEmployeeInfo("", "", "");
       processAuthResult(false, "SoundFiles/authfail.wav", str_usercode + str_nodata);
-      goto error;
+      goto end;
     }
 
     if(m_bDisplayEmployeeInfo){
@@ -235,21 +320,33 @@ void MainDelegator::onScanData(const char* usercode)
       if(ei->blacklistinfo != ""){
         LOGV("blacklist: %s\n", ei->blacklistinfo.c_str());   
         processAuthResult(false, "SoundFiles/authcheck.wav", str_prohibition_entrance + ei->blacklistinfo);
-        goto error;
+        goto end;
       }
       if(ei->pnt_cnt >= 3){
         LOGV("penalty count: %d\n", ei->pnt_cnt);   
         processAuthResult(false, "SoundFiles/authcheck.wav", str_prohibition_entrance_3out);
-        goto error;
+        goto end;
       }
     }
     
     processAuthResult(true, "SoundFiles/authok.wav", str_usercode + str_success);
-    out_count = 0;
+    m_outCount = 0;
     m_timeSheetMgr->insert(ei->pin_no);
  
   }
   else {
+    //verify fail
+    //second check by pinno
+#ifdef FEATURE_FINGER_IMAGE
+    if(m_bPinFirstCheck){
+      pinNo = m_el->onGetPinNo();
+      if(strlen(pinNo) == 0){
+        m_el->onWarning(str_pinno_title, str_pinno);
+        goto end;
+      }
+    }    
+#endif  
+    
     m_el->onEmployeeInfo("", "", "");
     switch(m_authMode){
       case AM_NORMAL:
@@ -261,20 +358,20 @@ void MainDelegator::onScanData(const char* usercode)
         break;
 
       case AM_PASS_THREEOUT:
-        if(out_count < 2){
-          out_count++;
+        if(m_outCount < 2){
+          m_outCount++;
           processAuthResult(false, "SoundFiles/authfail.wav", str_fail);
         }
         else{
           processAuthResult(true, "SoundFiles/authok.wav", str_success);
-          out_count = 0;
+          m_outCount = 0;
         }
         break;
         
     }
   }
 
-error:
+end:
   LOGI("onScanData ---\n");
   m_bProcessingAuth = false;
 }
@@ -326,7 +423,7 @@ void MainDelegator::onSync(IFBService::IFBServiceEventListener::SyncStatus statu
       if(m_bTimeAvailable){
         m_employInfoMgr->updateLocalDBfromServer();
       }
-      else{
+      else if(!m_timer){
         m_timer = new Timer(cbTimer, this);
         int interval = m_settings->getInt("App::TIMER_INTERVAL");
         LOGI("timer interval= %d\n", interval);
@@ -620,7 +717,9 @@ void MainDelegator::cbTimer(void* arg)
       
     default:
       //upload timesheet
-      md->m_timeSheetMgr->upload();
+      if(!md->m_bUploadTimesheetDisable){
+        md->m_timeSheetMgr->upload();
+      }
       count++;
       break;
   }
@@ -696,14 +795,16 @@ bool MainDelegator::SettingInit(const char* configPath)
   m_sEmbedCd = m_settings->get("App::EMBED"); // = "0000000008";
   m_bCheck = m_settings->getBool("App::CHECK");
   m_sAuthCode = m_settings->get("App::AUTH_CODE");
-  m_bTestSignal = m_settings->getBool("App::TEST_SIGNAL");
   m_admin1 = m_settings->get("App::ADMIN1");
   m_admin2 = m_settings->get("App::ADMIN2");
   m_admin3 = m_settings->get("App::ADMIN3");
   m_admin4 = m_settings->get("App::ADMIN4");
   m_bDisplayEmployeeInfo = m_settings->getBool("App::DISPLAY_EMPLOYEE_INFO");
-  m_bCheckUsercode4 = m_settings->getBool("FB::CHECK_CODE_4");
-  
+  m_bPinFirstCheck = m_settings->getBool("App::PIN_FIRST_CHECK");
+  m_bDisplayVIMG = m_settings->getBool("App::DISPLAY_VIMG");
+  m_bTestSignal = m_settings->getBool("App::TEST_SIGNAL");
+  m_bUploadTimesheetDisable = m_settings->getBool("App::UPLOAD_TIMESHEET_DISABLE");; //for test
+
   //Action
   m_bCapture = m_settings->getBool("Action::CAPTURE");
   m_bSound = m_settings->getBool("Action::SOUND");
@@ -715,9 +816,13 @@ bool MainDelegator::SettingInit(const char* configPath)
   m_sRfid1356Port = m_settings->get("Rfid::RFID1356_PORT"); // /dev/ttyAMA0
   m_sRfid900Port = m_settings->get("Rfid::RFID800_PORT"); // /dev/ttyUSB0
 #endif
+
+  //FB
   m_fbCheckInterval = m_settings->getInt("FB::CHECK_INTERVAL"); //300 ms
   m_fbPort = m_settings->get("FB::PORT"); // /dev/ttyUSB0
-
+  m_bCheckUsercode4 = m_settings->getBool("FB::CHECK_CODE_4");
+  m_fbCompThreshold = m_settings->getInt("FB::COMP_THRESHOLD"); //300 ms
+  
   //Server
   m_sServerType = m_settings->get("Server::TYPE");
   m_sSafeIdServerUrl = m_settings->get("Server::SAFEIDSVC_URL");

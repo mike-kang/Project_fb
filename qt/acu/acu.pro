@@ -13,16 +13,19 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
         syncdialog.cpp \
-        updatedialog.cpp
+        updatedialog.cpp \
+    warningdialog.cpp
 
 
 HEADERS  += mainwindow.h \
     syncdialog.h \
-    updatedialog.h
+    updatedialog.h \
+    warningdialog.h
 
 FORMS    += mainwindow.ui \
     syncdialog.ui \
-    updatedialog.ui
+    updatedialog.ui \
+    warningdialog.ui
 
 #DEFINES = SIMULATOR
 INCLUDEPATH += ../../

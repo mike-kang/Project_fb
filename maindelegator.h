@@ -44,6 +44,8 @@ public:
     virtual void onEmployeeInfo(std::string CoName, std::string Name, std::string PinNo) = 0;
     virtual void onStatus(std::string status) = 0;
     virtual void onImage(bool) = 0;
+    virtual const char* onGetPinNo() = 0;
+    virtual void onWarning(std::string msg1, std::string msg2) = 0;
   };
   enum Ret {
     RET_SUCCESS,
@@ -167,6 +169,7 @@ private:
   string m_sDvNo; // = "1";
   string m_sInOut; // = "I";
   bool m_bCheck;
+  int m_outCount;
   string m_sAuthCode;
   int m_rfidCheckInterval; //ms
   int m_rfid_processMaxTime; //ms
@@ -177,9 +180,12 @@ private:
   string m_admin2;
   string m_admin3;
   string m_admin4;
-  
+
+  //fb
   int m_fbCheckInterval; //ms
   string m_fbPort; // /dev/ttyUSB0
+  int m_fbCompThreshold;
+
   string m_sLocalIP;
   string m_sLocalMacAddr;
   //string m_sServerURL;
@@ -188,8 +194,6 @@ private:
   bool m_bProcessingAuth;
   bool m_bTimeAvailable;
   bool m_bSyncDeviceAndModule;
-  bool m_bTestSignal; //for debug
-  int m_signo; //for debug
   AuthMode m_authMode;
   bool m_bDisplayEmployeeInfo;
   bool m_bCheckUsercode4;
@@ -202,6 +206,13 @@ private:
   //Relay
   SwitchGpio* m_Relay;
   Mutex mtx;
+
+  bool m_bPinFirstCheck;
+  bool m_bDisplayVIMG;
+  bool m_bTestSignal; //for debug
+  int m_signo; //for debug
+  bool m_bUploadTimesheetDisable; //for test
+  
 
   //int m_timesheetFilesCount, m_timesheetCacheCount;
 };

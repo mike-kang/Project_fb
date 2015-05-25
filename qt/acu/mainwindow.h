@@ -4,9 +4,11 @@
 #include <QMainWindow>
 #include "maindelegator.h"
 #include <QtGui/QLabel>
+#include <QLineEdit>
 #include <QTextCodec>
 #include "syncdialog.h"
 #include "updatedialog.h"
+#include "warningdialog.h"
 #include <QMovie>
 
 namespace Ui {
@@ -36,6 +38,9 @@ public:
     virtual void onEmployeeInfo(std::string CoName, std::string Name, std::string PinNo);
     virtual void onStatus(std::string status);
     virtual void onImage(bool val);
+    virtual const char* onGetPinNo();
+    virtual void onWarning(std::string msg1, std::string msg2);
+
     void runMainDelegator(const char* config);
     
     explicit MainWindow(QWidget *parent = 0);
@@ -48,6 +53,7 @@ signals:
     void sigEndUpdate();
     void employeeInfo();
     void resultImage();
+    void sigWarning();
     
 private slots:
     void startSync();
@@ -58,10 +64,11 @@ private slots:
     void updateEmployeeInfo();
     void cleanInfo();
     void displayResultImage();
+    void warning();
     
 private:
     Ui::MainWindow *ui;
-    QLabel* statusLabel; 
+    QLabel* m_statusLabel; 
     std::map<std::string, QLabel*> labelTable;
     QString m_CoName;
     QString m_Name;
@@ -76,8 +83,10 @@ private:
     static QTextCodec * m_codec;
     SyncDialog m_syncDialog;
     UpdateDialog m_updateDialog;
+    WarningDialog m_warningDialog;
     QMovie *m_aninfinger;
     //const char* m_updatetime;
+    QLineEdit *m_qlePinNo;
 };
 
 #endif // MAINWINDOW_H

@@ -15,6 +15,10 @@
 
 using namespace tools;
 
+#ifdef FEATURE_FINGER_IMAGE
+#define FINGER_IMAGE_SIZE 838
+#endif	
+
 class FBService : public IFBService{
 public:
   FBService(const char* path, Serial::Baud baud, IFBService::IFBServiceEventListener* fn, bool bCheckUserCode4);
@@ -33,24 +37,30 @@ public:
   virtual bool request_stopCmd(); //only sync
   virtual void request_update(std::vector<unsigned char*>* arrSave, std::vector<string>* arrDelete); //only async
   //virtual void update(std::vector<std::pair<const char*, unsigned char*> >& arrSave, std::vector<string>& arrDelete);
-  virtual bool request_getScanImage(); //only sync
-  
+#ifdef FEATURE_FINGER_IMAGE
+  virtual char* request_getScanImage(); //only sync
+#endif
+
 private:  
   void run();
-  void openDevice(void* args);
-  void closeDevice(void* args);
-  void sync(void* args);
-  void getList(void* args);
-  void format(void* args);  //auto restart
-  void startScan(void* args);
-  void stopScan(void* args);
-  void scan(void* args);
-  void buzzer(void* args);
-  void saveUsercodeFile(void* args);
-  void saveUsercodeBuffer(void* args);
-  void deleteUsercode(void* args);
-  void stopCmd(void* arg);
-  void update(void* arg);
+  void onOpenDevice(void* args);
+  void onCloseDevice(void* args);
+  void onSync(void* args);
+  void onGetList(void* args);
+  void onFormat(void* args);  //auto restart
+  void onStartScan(void* args);
+  void onStopScan(void* args);
+  void onScan(void* args);
+  void onBuzzer(void* args);
+  void onSaveUsercodeFile(void* args);
+  void onSaveUsercodeBuffer(void* args);
+  void onDeleteUsercode(void* args);
+  void onStopCmd(void* arg);
+  void onUpdate(void* arg);
+#ifdef FEATURE_FINGER_IMAGE
+  void onGetScanImage(void* arg);
+#endif
+
   void deleForce(const char* usercode);
   void saveForce(const byte* buf, int length);
   
@@ -76,6 +86,9 @@ private:
   //bool m_sync_running;
   bool m_bCheckUserCode4;
   
+#ifdef FEATURE_FINGER_IMAGE
+	char m_fingerImage[FINGER_IMAGE_SIZE];
+#endif	
 };
 
 

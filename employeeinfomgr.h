@@ -12,7 +12,11 @@
 #include <map>
 #include "tools/thread.h"
 
+#define FEATURE_FINGER_IMAGE
 #define USERDATA_SIZE 864
+#ifdef FEATURE_FINGER_IMAGE
+#define USERENABLE_SIZE 838
+#endif
 class Settings;
 //class web::IWebService;
 
@@ -20,6 +24,9 @@ class EmployeeInfoMgr {
 public:
   enum Exception {
     EXCEPTION_USERDATA_SIZE,
+#ifdef FEATURE_FINGER_IMAGE	
+	EXCEPTION_USERENABLE_SIZE,
+#endif	
     EXCEPTION_DB,
   };
   struct EmployeeInfo {
@@ -30,10 +37,23 @@ public:
     unsigned char userdata[USERDATA_SIZE];
     std::string blacklistinfo;
     int pnt_cnt;
+#ifdef FEATURE_FINGER_IMAGE
+  	unsigned char* userenable;	//fingerblood image
+#endif
     //char usercode[17];
-    
+
+#ifdef FEATURE_FINGER_IMAGE
+    EmployeeInfo():pnt_cnt(0), userenable(NULL){};
+#else
     EmployeeInfo():pnt_cnt(0){};
-    ~EmployeeInfo(){}
+#endif
+    ~EmployeeInfo()
+    {
+#ifdef FEATURE_FINGER_IMAGE
+      if(userenable)
+        delete userenable;
+#endif      
+    }
   };
   
   class EmployeeInfoMgrListener {

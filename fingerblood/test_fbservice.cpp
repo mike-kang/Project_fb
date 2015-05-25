@@ -99,11 +99,6 @@ const char* save_list[] = {
 //  "FID0000000000000007",
   "FID0000000000000012",
 };
-#define GETLIST
-//#define DELETE
-#define SAVE
-//#define SCAN
-//#define FORMAT
 
 void help()
 {
@@ -112,7 +107,9 @@ void help()
            "  -s [FILE]         save\n"
            "  -f                format\n"
            "  -d usercode       delete\n"
-           "  -l                list\n");
+           "  -l                list\n"
+           "  -a                getScanImage\n"
+           );
     exit(0);
 }
 
@@ -128,14 +125,14 @@ int main(int argc, char* argv[])
   log_init(true, 1, "/dev/pts/1", false, 3, "Log");
   fbs = new FBService("/dev/ttyUSB0", Serial::SB38400, &noti, false);
   cout << "opendevice" << endl;
-  if(!fbs->request_openDevice(true)){
+  if(!fbs->request_openDevice(true)){ 
     cout << "openDevice fail!" << endl;
     return 1;
   }
   cout << "opendevice--" << endl;
   fbs->request_buzzer(true);
   
-  while((opt = getopt(argc, argv, "lfs:cd:")) != -1) 
+  while((opt = getopt(argc, argv, "lfs:cd:a")) != -1) 
   {
       switch(opt) 
       { 
@@ -179,6 +176,14 @@ int main(int argc, char* argv[])
             cout << "delete:" << optarg << endl;
             fbs->request_deleteUsercode(optarg);
             break;
+            
+          case 'a':
+            cout << "getScanImage:" << endl;
+            char* buf = fbs->request_getScanImage();
+            std::ofstream outfile ("fingerimage.bmp",std::ofstream::binary);
+            outfile.write(buf, FINGER_IMAGE_SIZE);
+            outfile.close();
+            break;
       }
   } 
 
@@ -189,11 +194,6 @@ int main(int argc, char* argv[])
   }
 #endif
 
-#ifdef SCAN
-  fbs->request_startScan(300);
-#endif
-  //fbs->deleteUsercode(12);
-  //fbs->requestStartScan(300);
   while(1){
     cout << "Koong" << endl;
     sleep(1);

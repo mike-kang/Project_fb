@@ -14,14 +14,21 @@ using namespace tools;
 using namespace std;
 using namespace web;
 
-//#define DB_FILE "employee.xml"
 #define EMPLOYEE_FILE "employee.xml"
 #define DB_NAME "employee.db"
+#ifdef FEATURE_FINGER_IMAGE
+#define CREATE_TABLE_EMPLOYEE "create table employee( company TEXT, name TEXT, pinno INTEGER, usercode TEXT, userdata BLOB, blacklistinfo TEXT, pntcnt INTEGER, fingerimage BLOB)"
+#define INSERT_EMPLOYEE "insert into employee(company, name, pinno, usercode, userdata, blacklistinfo, pntcnt, fingerimage) values (?,?,?,?,?,?,?,?)"
+#define UPDATE_EMPLOYEE "update employee set company=?, name=?, usercode=?, userdata=?, blacklistinfo=?, pntcnt=?, fingerimage=? where pinno=?"
+#else
 #define CREATE_TABLE_EMPLOYEE "create table employee( company TEXT, name TEXT, pinno INTEGER, usercode TEXT, userdata BLOB, blacklistinfo TEXT, pntcnt INTEGER)"
-#define CREATE_TABLE_TIME "create table time( lastsync TEXT );" \
-                          "insert into time(lastsync) VALUES('')"
+
 #define INSERT_EMPLOYEE "insert into employee(company, name, pinno, usercode, userdata, blacklistinfo, pntcnt) values (?,?,?,?,?,?,?)"
 #define UPDATE_EMPLOYEE "update employee set company=?, name=?, usercode=?, userdata=?, blacklistinfo=?, pntcnt=? where pinno=?"
+#endif
+#define CREATE_TABLE_TIME "create table time( lastsync TEXT );" \
+                          "insert into time(lastsync) VALUES('')"
+
 #define GET_ALL "select * from employee"
 #define DELETE_EMPLOYEE "delete from employee where pinno=?"
 
@@ -194,6 +201,9 @@ void EmployeeInfoMgr::initCache()
     LOGE("Failed to read: %s\n", err);
   }
   string usercode;
+#ifdef FEATURE_FINGER_IMAGE
+  const unsigned char* userenable;
+#endif
   while(sqlite3_step(stmt) == SQLITE_ROW){
     EmployeeInfo* ei = new EmployeeInfo();
     ei->company_name = (const char*)sqlite3_column_text(stmt , 0);
@@ -208,6 +218,13 @@ void EmployeeInfoMgr::initCache()
       m_arrEmployee.insert(pair<string, EmployeeInfo*>(usercode, ei));
     else
       m_arrEmployee_4.insert(pair<string, EmployeeInfo*>(usercode, ei));
+#ifdef FEATURE_FINGER_IMAGE
+    userenable = static_cast<const unsigned char*>(sqlite3_column_blob(stmt,7));
+    if(userenable){
+      ei->userenable = new unsigned char[USERENABLE_SIZE];
+      memcpy(ei->userenable, userenable, USERENABLE_SIZE);
+    }
+#endif
   }
   sqlite3_finalize(stmt);
   //dump(m_arrEmployee);
@@ -295,6 +312,27 @@ void EmployeeInfoMgr::run_updateLocalDB()
     }
     catch(int e){}
 
+#ifdef FEATURE_FINGER_IMAGE
+    try {
+      p = utils::getElementData(p, "USERENABLE");  //base64 encoded
+      int length = strlen(p);
+      int size = 0;
+      unsigned char* buf = new unsigned char[USERENABLE_SIZE]; 
+      base64::base64d(p, length, (char*)buf, &size);
+      if(size != USERENABLE_SIZE){
+        delete buf;
+      }
+      else
+        ei->userenable = buf;
+      p += length + 1;
+      /*       
+          ofstream oOut2(usercode.c_str(), ofstream::binary);
+          oOut2.write((const char*)ei->userenable, USERENABLE_SIZE);
+          oOut2.close();
+          */       
+    }
+    catch(int e){}
+#endif
     if(status != "D"){
       try {
         p = utils::getElementData(p, "USER_DATA");  //base64 encoded
@@ -384,7 +422,7 @@ end:
     
 }
 
-//cache & DB
+//insert to cache & DB
 void EmployeeInfoMgr::insertEmployee(vector<pair<string, EmployeeInfo*> >& elems)
 {
   int rc;
@@ -413,7 +451,12 @@ void EmployeeInfoMgr::insertEmployee(vector<pair<string, EmployeeInfo*> >& elems
     sqlite3_bind_blob(stmt, 5, ei->userdata, USERDATA_SIZE, SQLITE_STATIC);
     sqlite3_bind_text(stmt, 6, ei->blacklistinfo.c_str(), ei->blacklistinfo.length(), SQLITE_STATIC);
     sqlite3_bind_int(stmt, 7, ei->pnt_cnt);
-
+#ifdef FEATURE_FINGER_IMAGE
+    if(ei->userenable){
+      printf("[%s]insert ei->userenable\n", ei->pin_no.c_str());
+      sqlite3_bind_blob(stmt, 8, ei->userenable, USERENABLE_SIZE, SQLITE_STATIC);
+    }
+#endif
     rc = sqlite3_step(stmt);
     if(rc != SQLITE_DONE){
       LOGE("Failed to insert : %s\n", sqlite3_errmsg(m_db));
@@ -472,6 +515,9 @@ void EmployeeInfoMgr::updateEmployee(vector<pair<string, EmployeeInfo*> >& elems
     sqlite3_bind_text(stmt, 5, ei->blacklistinfo.c_str(), ei->blacklistinfo.length(), SQLITE_STATIC);
     sqlite3_bind_int(stmt, 6, ei->pnt_cnt);
     sqlite3_bind_text(stmt, 7, ei->pin_no.c_str(), ei->pin_no.length(), SQLITE_STATIC);
+#ifdef FEATURE_FINGER_IMAGE
+    sqlite3_bind_blob(stmt, 8, ei->userenable, USERENABLE_SIZE, SQLITE_STATIC);
+#endif
 
     rc = sqlite3_step(stmt);
     if(rc != SQLITE_DONE){
@@ -594,6 +640,9 @@ void EmployeeInfoMgr::dump(map<string, EmployeeInfo*>& arr)
     printf("pinno :%s\n", ei->pin_no.c_str());
     printf("usercode :%s\n", itr->first.c_str());
     utils::hexdump("userdata", ei->userdata, USERDATA_SIZE);
+#ifdef FEATURE_FINGER_IMAGE
+    utils::hexdump("userenable", ei->userenable, USERENABLE_SIZE);
+#endif	
   }
 }
 

@@ -146,7 +146,7 @@ char FBProtocol::stat()
 #define S_READY 1
 char FBProtocol::stat(char* data, bool& bLong)  //with Exception
 {
-  static int state = S_INIT;
+  //static int state = S_INIT;
   char status;
   byte* receive_buf; 
   try {
@@ -230,6 +230,27 @@ bool FBProtocol::user(list<string>& li)
   return true;
 }
 
+#ifdef FEATURE_FINGER_IMAGE
+bool FBProtocol::vimg(char* buf)
+{
+  char status;
+  byte* receive_buf; 
+  try {
+    receive_buf = processCommand("VIMG", 10000);
+    //printf("vimg 0x%x('%c')\n", receive_buf[STATUS], receive_buf[STATUS]);
+    status = receive_buf[STATUS];
+    memcpy(buf, &receive_buf[16], FINGER_IMAGE_SIZE); 
+    delete receive_buf;
+    return true;  
+  }
+  catch(Exception e){
+    if(e == EXCEPTION_RESP_ERROR)
+      return false;
+    LOGE("[statlong]exception fail! %d\n", e);
+    throw EXCEPTION_FINGER_IMAGE;
+  }
+}
+#endif
 bool FBProtocol::save(const char* filename)
 {
   byte status;

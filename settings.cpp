@@ -39,13 +39,18 @@ Settings::Settings(const char* filename)
      mapStrInsert(App, WORKING_DIRECTORY, /home/pi/acu);
      //mapBoolInsert(App, DISPLAY_PHOTO, true);
      mapIntInsert(App, TIMER_INTERVAL, 60);  //60 sec
-     mapBoolInsert(App, TEST_SIGNAL, false);
      mapStrInsert(App, ADMIN1, 0000001111111111);
      mapStrInsert(App, ADMIN2, 0000001111111112);
      mapStrInsert(App, ADMIN3, 0000001111111113);
      mapStrInsert(App, ADMIN4, 0000001111111114);
      mapBoolInsert(App, DISPLAY_EMPLOYEE_INFO, true);
-     
+#ifdef FEATURE_FINGER_IMAGE
+     mapBoolInsert(App, PIN_FIRST_CHECK, true);
+     mapBoolInsert(App, DISPLAY_VIMG, true);
+#endif 
+     mapBoolInsert(App, TEST_SIGNAL, false);
+     mapBoolInsert(App, UPLOAD_TIMESHEET_DISABLE, false);
+
      //Action
      mapBoolInsert(Action, CAPTURE, true);
      mapBoolInsert(Action, SOUND, true);
@@ -63,9 +68,12 @@ Settings::Settings(const char* filename)
      mapStrInsert(FB, PORT, /dev/ttyUSB0); 
      mapBoolInsert(FB, BUZZER, true);
      mapBoolInsert(FB, CHECK_CODE_4, false);
+#ifdef FEATURE_FINGER_IMAGE
+     mapIntInsert(FB, COMP_THRESHOLD, 50);  // 300 ms
+#endif 
 
      //FB_KEY
-     mapStrInsert(FB_KEY, 14070588 , 2C2DE78A4F113209);
+     mapStrInsert(FB_KEY, 14070687 , 2C2DE78A4F113209);
      mapStrInsert(FB_KEY, 14070589 , 5EC38CB4B3AA2C9B);
      mapStrInsert(FB_KEY, 14070590 , 80D4FEB2EC4B5CB3);
 
@@ -120,6 +128,12 @@ Settings::Settings(const char* filename)
   mapStrInsertFromReader(App, ADMIN3, 0000001111111113);
   mapStrInsertFromReader(App, ADMIN4, 0000001111111114);
   mapBoolInsertFromReader(App, DISPLAY_EMPLOYEE_INFO, true);
+#ifdef FEATURE_FINGER_IMAGE
+  mapBoolInsertFromReader(App, PIN_FIRST_CHECK, true);
+  mapBoolInsertFromReader(App, DISPLAY_VIMG, true);
+#endif
+  mapBoolInsertFromReader(App, TEST_SIGNAL, false);
+  mapBoolInsertFromReader(App, UPLOAD_TIMESHEET_DISABLE, false);
 
   //Action
   mapBoolInsertFromReader(Action, CAPTURE, true);
@@ -138,9 +152,12 @@ Settings::Settings(const char* filename)
   mapStrInsertFromReader(FB, PORT, /dev/ttyUSB0); 
   mapBoolInsertFromReader(FB, BUZZER, true);
   mapBoolInsertFromReader(FB, CHECK_CODE_4, false);
+#ifdef FEATURE_FINGER_IMAGE
+  mapIntInsertFromReader(FB, COMP_THRESHOLD, 50);  // 300 ms
+#endif
 
   //FB_KEY
-  mapStrInsertFromReader(FB_KEY, 14070588 , 2C2DE78A4F113209);
+  mapStrInsertFromReader(FB_KEY, 14070687 , 2C2DE78A4F113209);
   mapStrInsertFromReader(FB_KEY, 14070589 , 5EC38CB4B3AA2C9B);
   mapStrInsertFromReader(FB_KEY, 14070590 , 80D4FEB2EC4B5CB3);
 

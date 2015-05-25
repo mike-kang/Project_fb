@@ -3,6 +3,11 @@
 #include <iostream>
 #include <list>
 
+#define FEATURE_FINGER_IMAGE
+#ifdef FEATURE_FINGER_IMAGE
+#define FINGER_IMAGE_SIZE 838
+#endif	
+
 typedef unsigned char byte;
 class FBProtocol {
 public:
@@ -25,7 +30,10 @@ public:
     EXCEPTION_USERE,
     EXCEPTION_SAVES,
     EXCEPTION_SAVED,
-    EXCEPTION_SAVEE
+    EXCEPTION_SAVEE,
+#ifdef FEATURE_FINGER_IMAGE
+    EXCEPTION_FINGER_IMAGE,
+#endif    
   };
   class FBProtocolCommMethod {
   public:
@@ -56,6 +64,9 @@ public:
   bool save(const byte* buf, int length);
   bool dele(const char* usercode);
   bool optf(byte* data);
+#ifdef FEATURE_FINGER_IMAGE
+  bool vimg(char* buf);
+#endif
 
 
 private:  
@@ -73,8 +84,6 @@ private:
   void saveD(const char* filename);
   void saveD(const byte* buf, int length);
   void saveE();
-
-  
   FBProtocolCommMethod* m_cm;
 };
 
