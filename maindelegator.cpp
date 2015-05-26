@@ -171,56 +171,86 @@ const char* MainDelegator::debug_str(AuthMode m)
     case AM_PASS_THREEOUT: return "AM_PASS_THREEOUT";
   }
 }
-void MainDelegator::processAuthResult(bool result, const char* sound_path, string msg)
-{
-  switch(m_authMode){
-    case AM_NORMAL:
-      processAuthResult(false, "SoundFiles/authfail.wav", str_fail);
-      break;
-      
-    case AM_PASS_NOREGISTOR:
-      processAuthResult(true, "SoundFiles/authok.wav", str_success);
-      break;
-  
-    case AM_PASS_THREEOUT:
-      if(m_outCount < 2){
-        m_outCount++;
-        processAuthResult(false, "SoundFiles/authfail.wav", str_fail);
-      }
-      else{
-        processAuthResult(true, "SoundFiles/authok.wav", str_success);
-        m_outCount = 0;
-      }
-      break;
-      
-  }
 
-  if(m_bSound)
-    m_wp->play(sound_path);
-  
-  if(result){
-    m_Relay->on(1500);
-    m_greenLed->on(1500);
+
+void MainDelegator::processAuthResult(RET_TYPE result, string msg)
+{
+  bool bImagePass = false;
+
+  switch(result){
+    case RET_PASS:
+      if(m_bSound)
+        m_wp->play("SoundFiles/authok.wav");
+      m_Relay->on(1500);
+      m_greenLed->on(1500);
+      m_el->onMessage("Msg", str_success);
+      m_el->onImage(true);
+      break;
+      
+    case RET_FAIL_NOREG:
+      switch(m_authMode){
+        case AM_NORMAL:
+          if(m_bSound)
+            m_wp->play("SoundFiles/authfail.wav");
+          m_redLed->on(1500);
+          m_el->onMessage("Msg", str_fail);
+          m_el->onImage(false);
+          break;
+          
+        case AM_PASS_NOREGISTOR:
+          if(m_bSound)
+            m_wp->play("SoundFiles/authok.wav");
+          m_Relay->on(1500);
+          m_greenLed->on(1500);
+          m_el->onMessage("Msg", str_success);
+          m_el->onImage(true);
+          break;
+      
+        case AM_PASS_THREEOUT:
+          if(m_outCount < 2){
+            m_outCount++;
+            if(m_bSound)
+              m_wp->play("SoundFiles/authfail.wav");
+            m_redLed->on(1500);
+            m_el->onMessage("Msg", str_fail);
+            m_el->onImage(false);
+          }
+          else{
+            if(m_bSound)
+              m_wp->play("SoundFiles/authok.wav");
+            m_Relay->on(1500);
+            m_greenLed->on(1500);
+            m_el->onMessage("Msg", str_success);
+            m_el->onImage(true);
+            m_outCount = 0;
+          }
+          break;
+          
+      }
+      break;
+      
+    case RET_FAIL_BLACK_LIST:
+      if(m_bSound)
+        m_wp->play("SoundFiles/authcheck.wav");
+      m_redLed->on(1500);
+      m_el->onMessage("Msg", str_prohibition_entrance_3out);
+      m_el->onImage(false);
+      break;
+
+    case RET_FAIL_PANALTY:
+      if(m_bSound)
+        m_wp->play("SoundFiles/authcheck.wav");
+      m_redLed->on(1500);
+      m_el->onMessage("Msg", msg);
+      m_el->onImage(false);
+      break;
+
   }
-  else{
-    m_redLed->on(1500);
-  }
-  m_el->onMessage("Msg", msg);
-  m_el->onImage(result);
 }
 
 bool MainDelegator::checkByUsercode(const char* usercode)
 {
   string str_usercode(usercode);
-  EmployeeInfoMgr::EmployeeInfo* ei;
-  bool ret = m_employInfoMgr->getInfo(usercode, &ei);
-
-  if(!ret){
-    LOGE("get employee info fail!\n");
-    m_el->onEmployeeInfo("", "", "");
-    processAuthResult(false, "SoundFiles/authfail.wav", str_usercode + str_nodata);
-    goto end;
-  }
 
   if(m_bDisplayEmployeeInfo){
     //cout << "pinno: " << ei->pin_no << endl;

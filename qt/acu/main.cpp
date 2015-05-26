@@ -1,6 +1,6 @@
 #include <QtGui/QApplication>
 #include "mainwindow.h"
-
+#include <unistd.h>
 int main(int argc, char *argv[])
 {
     const char* config = NULL;

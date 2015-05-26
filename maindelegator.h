@@ -23,6 +23,14 @@ public:
   enum Exception {
     EXCEPTION_RFID_OPEN_FAIL,
   };
+
+  typedef enum {
+	  RET_PASS,
+	  RET_FAIL_NOREG,
+	  RET_FAIL_BLACK_LIST,
+	  RET_FAIL_PANALTY,
+  } RET_TYPE;
+
   class EventListener {
   public:
     //virtual void onRFSerialNumber(char* serial) = 0;
@@ -119,7 +127,7 @@ private:
   //void _cb_ServerTimeGet(void* arg);
   static void cbRebootTimer(void* arg);
   const char* debug_str(AuthMode m);
-  void processAuthResult(bool result, const char* sound_path, string msg);
+  void processAuthResult(RET_TYPE result, string msg);
   bool createWebService();
 
 
