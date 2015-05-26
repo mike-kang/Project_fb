@@ -27,6 +27,7 @@ public:
   typedef enum {
 	  RET_PASS,
 	  RET_FAIL_NOREG,
+	  RET_FAIL_NODATA,
 	  RET_FAIL_BLACK_LIST,
 	  RET_FAIL_PANALTY,
   } RET_TYPE;

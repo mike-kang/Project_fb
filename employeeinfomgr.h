@@ -107,6 +107,8 @@ private:
 
   map<string, EmployeeInfo*> m_arrEmployee;
   map<string, EmployeeInfo*> m_arrEmployee_4;
+  map<string, string> m_arrPinnoUsercode;
+  
   //string m_lastSyncTime_tmp;
   string m_lastSyncTime;
   Mutex mtx;

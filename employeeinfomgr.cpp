@@ -170,6 +170,23 @@ bool EmployeeInfoMgr::getInfo(const char* usercode, EmployeeInfo** ei)
     
 }
 
+const char* EmployeeInfoMgr::getUsercode(const char* pinno, EmployeeInfo** ei)
+{
+  map<string, string>::iterator itr = m_arrPinnoUsercode.find(pinno);
+  if(itr == m_arrPinnoUsercode.end())
+    return NULL;
+
+  map<string, EmployeeInfo*>::iterator itr2 = m_arrEmployee.find(itr->second);
+  if(itr2 == m_arrEmployee.end()){
+    LOGE("getUsercode: no founded!\n");
+    return NULL;
+  }
+  *ei = itr2->second;
+    
+  return itr->second.c_str();
+    
+}
+
 bool EmployeeInfoMgr::checkValidate()
 {
   char* err;
@@ -219,6 +236,7 @@ void EmployeeInfoMgr::initCache()
     else
       m_arrEmployee_4.insert(pair<string, EmployeeInfo*>(usercode, ei));
 #ifdef FEATURE_FINGER_IMAGE
+    m_arrPinnoUsercode.insert(pair<string, string>(ei->pinno, usercode)); 
     userenable = static_cast<const unsigned char*>(sqlite3_column_blob(stmt,7));
     if(userenable){
       ei->userenable = new unsigned char[USERENABLE_SIZE];
@@ -439,7 +457,7 @@ void EmployeeInfoMgr::insertEmployee(vector<pair<string, EmployeeInfo*> >& elems
       m_arrEmployee.insert(elems[i]);
     else
       m_arrEmployee_4.insert(elems[i]);
-    
+    m_arrPinnoUsercode.insert(pair<string, string>(ei->pinno, usercode)); 
     //db
     string& usercode = elems[i].first;
     EmployeeInfo* ei = elems[i].second;
@@ -553,6 +571,7 @@ void EmployeeInfoMgr::deleteEmployee(vector<pair<string, EmployeeInfo*> >& elems
     EmployeeInfo* ei = elems[i].second;
 
     //cache
+    m_arrPinnoUsercode.erase(ei->pin_no);
     if(usercode.length() == 16){
       delete m_arrEmployee[usercode];
       m_arrEmployee.erase(usercode);

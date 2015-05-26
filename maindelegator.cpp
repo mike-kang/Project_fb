@@ -173,17 +173,19 @@ const char* MainDelegator::debug_str(AuthMode m)
 }
 
 
-void MainDelegator::processAuthResult(RET_TYPE result, string msg)
+void MainDelegator::processAuthResult(RET_TYPE result, string msg, string pinno)
 {
   bool bImagePass = false;
 
   switch(result){
     case RET_PASS:
+      m_outCount = 0;
+      m_timeSheetMgr->insert(pinno);
       if(m_bSound)
         m_wp->play("SoundFiles/authok.wav");
       m_Relay->on(1500);
       m_greenLed->on(1500);
-      m_el->onMessage("Msg", str_success);
+      m_el->onMessage("Msg", msg);
       m_el->onImage(true);
       break;
       
@@ -229,6 +231,15 @@ void MainDelegator::processAuthResult(RET_TYPE result, string msg)
       }
       break;
       
+    case RET_FAIL_NODATA:
+      m_el->onEmployeeInfo("", "", "");
+      if(m_bSound)
+        m_wp->play("SoundFiles/authfail.wav");
+      m_redLed->on(1500);
+      m_el->onMessage("Msg", msg);
+      m_el->onImage(false);
+      break;
+
     case RET_FAIL_BLACK_LIST:
       if(m_bSound)
         m_wp->play("SoundFiles/authcheck.wav");
@@ -248,14 +259,16 @@ void MainDelegator::processAuthResult(RET_TYPE result, string msg)
   }
 }
 
-bool MainDelegator::checkByUsercode(const char* usercode)
+RET_TYPE MainDelegator::check(const char* usercode, const EmployeeInfoMgr::EmployeeInfo* ei, string& msg)
 {
   string str_usercode(usercode);
+  RET_TYPE ret = RET_PASS;
 
   if(m_bDisplayEmployeeInfo){
     //cout << "pinno: " << ei->pin_no << endl;
     m_el->onEmployeeInfo(ei->company_name, ei->lab_name, ei->pin_no);
   }
+  
   if(m_admin1 == usercode){
     LOGV("Mode Change : %s -> AM_NORMAL\n", debug_str(m_authMode));   
     m_authMode = AM_NORMAL;
@@ -273,19 +286,21 @@ bool MainDelegator::checkByUsercode(const char* usercode)
     LOGV("admin4\n");   
     ; // todo
   }
-
-  if(m_bCheck){
+  else if(m_bCheck){
     if(ei->blacklistinfo != ""){
       LOGV("blacklist: %s\n", ei->blacklistinfo.c_str());   
-      processAuthResult(false, "SoundFiles/authcheck.wav", str_prohibition_entrance + ei->blacklistinfo);
-      goto end;
+      ret = RET_FAIL_BLACK_LIST;
+      msg = str_prohibition_entrance + ei->blacklistinfo;
     }
-    if(ei->pnt_cnt >= 3){
+    else if(ei->pnt_cnt >= 3){
       LOGV("penalty count: %d\n", ei->pnt_cnt);   
-      processAuthResult(false, "SoundFiles/authcheck.wav", str_prohibition_entrance_3out);
-      goto end;
+      ret = RET_FAIL_PANALTY;
     }
   }
+  else
+    msg = str_usercode + str_success;
+
+  return ret;
 }
 
 void MainDelegator::onScanData(const char* usercode)
@@ -293,9 +308,12 @@ void MainDelegator::onScanData(const char* usercode)
   LOGI("onScanData %s +++\n", usercode);
   char* imgBuf = NULL;;
   int imgLength = 0;
-  static int out_count = 0;
+  //static int out_count = 0;
   string msg;
   const char* pinNo;
+  RET_TYPE result;
+  EmployeeInfoMgr::EmployeeInfo* ei;
+  string str_usercode;
   
   m_bProcessingAuth = true;
 
@@ -303,7 +321,6 @@ void MainDelegator::onScanData(const char* usercode)
   m_greenLed->off();
   m_redLed->off();
 
-#ifdef FEATURE_FINGER_IMAGE
   if(m_bPinFirstCheck){
     pinNo = m_el->onGetPinNo();
     if(strlen(pinNo) == 0){
@@ -311,94 +328,39 @@ void MainDelegator::onScanData(const char* usercode)
       goto end;
     }
   }    
-#endif  
   if(usercode){ //verify success
-    string str_usercode(usercode);
-    EmployeeInfoMgr::EmployeeInfo* ei;
+    str_usercode = usercode;
     bool ret = m_employInfoMgr->getInfo(usercode, &ei);
 
     if(!ret){
       LOGE("get employee info fail!\n");
-      m_el->onEmployeeInfo("", "", "");
-      processAuthResult(false, "SoundFiles/authfail.wav", str_usercode + str_nodata);
-      goto end;
+      result = RET_FAIL_NODATA;
+      msg = str_usercode + str_nodata;
     }
-
-    if(m_bDisplayEmployeeInfo){
-      //cout << "pinno: " << ei->pin_no << endl;
-      m_el->onEmployeeInfo(ei->company_name, ei->lab_name, ei->pin_no);
-    }
-    if(m_admin1 == usercode){
-      LOGV("Mode Change : %s -> AM_NORMAL\n", debug_str(m_authMode));   
-      m_authMode = AM_NORMAL;
-      out_count = 0;
-    }
-    else if(m_admin2 == usercode){
-      LOGV("Mode Change : %s -> AM_PASS_NOREGISTOR\n", debug_str(m_authMode));   
-      m_authMode = AM_PASS_NOREGISTOR;
-    }
-    else if(m_admin3 == usercode){
-      LOGV("Mode Change : %s -> AM_PASS_THREEOUT\n", debug_str(m_authMode));   
-      m_authMode = AM_PASS_THREEOUT;
-    }
-    else if(m_admin4 == usercode){
-      LOGV("admin4\n");   
-      ; // todo
-    }
-
-    if(m_bCheck){
-      if(ei->blacklistinfo != ""){
-        LOGV("blacklist: %s\n", ei->blacklistinfo.c_str());   
-        processAuthResult(false, "SoundFiles/authcheck.wav", str_prohibition_entrance + ei->blacklistinfo);
-        goto end;
-      }
-      if(ei->pnt_cnt >= 3){
-        LOGV("penalty count: %d\n", ei->pnt_cnt);   
-        processAuthResult(false, "SoundFiles/authcheck.wav", str_prohibition_entrance_3out);
-        goto end;
-      }
-    }
-    
-    processAuthResult(true, "SoundFiles/authok.wav", str_usercode + str_success);
-    m_outCount = 0;
-    m_timeSheetMgr->insert(ei->pin_no);
- 
+    else
+      result = check(usercode, ei, msg);
   }
   else {
     //verify fail
     //second check by pinno
-#ifdef FEATURE_FINGER_IMAGE
-    if(m_bPinFirstCheck){
-      pinNo = m_el->onGetPinNo();
-      if(strlen(pinNo) == 0){
-        m_el->onWarning(str_pinno_title, str_pinno);
-        goto end;
-      }
-    }    
-#endif  
-    
-    m_el->onEmployeeInfo("", "", "");
-    switch(m_authMode){
-      case AM_NORMAL:
-        processAuthResult(false, "SoundFiles/authfail.wav", str_fail);
-        break;
-        
-      case AM_PASS_NOREGISTOR:
-        processAuthResult(true, "SoundFiles/authok.wav", str_success);
-        break;
-
-      case AM_PASS_THREEOUT:
-        if(m_outCount < 2){
-          m_outCount++;
-          processAuthResult(false, "SoundFiles/authfail.wav", str_fail);
-        }
-        else{
-          processAuthResult(true, "SoundFiles/authok.wav", str_success);
-          m_outCount = 0;
-        }
-        break;
-        
+    pinNo = m_el->onGetPinNo();
+    if(strlen(pinNo) == 0){
+      m_el->onWarning(str_pinno_title, str_pinno);
+      goto end;
     }
+    if(!m_employInfoMgr->getUsercode(pinNo, &ei)){
+      LOGE("get employee info fail!\n");
+      result = RET_FAIL_NODATA;
+      msg = pinNo + str_nodata;
+    }
+    else{
+      
+      DataComp(ei->userenable, 
+
+    }
+      
+      
+        
   }
 
 end:
