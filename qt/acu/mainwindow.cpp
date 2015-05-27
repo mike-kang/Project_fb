@@ -40,7 +40,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->labelImage->setText("");  //logo or pass/fail
 
     m_qlePinNo = ui->lineEditPinNo;
-    m_qlePinNo->setText("1234");
+    m_qlePinNo->setText("");
     m_qlePinNo->setValidator(new QIntValidator(m_qlePinNo));
 	
     insertTable(Embed);
@@ -294,7 +294,7 @@ void MainWindow::cleanInfo()
   ui->labelName->setText("");
   ui->labelImage->setPixmap(m_pm_logo);
   ui->labelMsg->setText("");
-  //ui->labelPinNo->setText("");
+  m_qlePinNo->setText("");
   m_timerEmployeeInfo->stop();
 }
 

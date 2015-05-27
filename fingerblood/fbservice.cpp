@@ -23,32 +23,31 @@ FBService::FBService(const char* path, Serial::Baud baud, IFBService::IFBService
   m_thread = new Thread<FBService>(&FBService::run, this, "FBServiceThread");
 
 #ifdef FEATURE_FINGER_IMAGE
-  void* handle;
   char *libpath = "./libcompareVIMG.so";
   
   if(!filesystem::file_exist(libpath))
     libpath = "./libcompareVIMG_default.so";
   
-  handle = dlopen(libpath, RTLD_LAZY);
-  if(!handle){
+  m_libhandle = dlopen(libpath, RTLD_LAZY);
+  if(!m_libhandle){
     printf("dlopen error %s: %s\n", libpath, dlerror());
     throw 0;
   }
   dlerror();
-  m_compare = (int (*)(const unsigned char*, const unsigned char*))dlsym(handle, "DataComp");
+  m_compare = (funcType)dlsym(m_libhandle, "DataComp");
   printf("addr %x\n", m_compare);
   char* errmsg;
   if((errmsg = dlerror()) != NULL){
     printf("dlsym error %s: %s\n", "DataComp", errmsg);
     throw 1;
   }
-  dlclose(handle);
   
 #endif
 }
 
 FBService::~FBService()
 {
+  dlclose(m_libhandle);
   delete m_serial;
   delete m_protocol;
   delete m_tmrScan;

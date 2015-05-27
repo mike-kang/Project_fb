@@ -18,6 +18,7 @@ using namespace tools;
 #ifdef FEATURE_FINGER_IMAGE
 #define FINGER_IMAGE_SIZE 838
 #endif	
+typedef int (*funcType)(const unsigned char*, const unsigned char*);
 
 class FBService : public IFBService{
 public:
@@ -89,8 +90,10 @@ private:
   
 #ifdef FEATURE_FINGER_IMAGE
   unsigned char m_fingerImage[FINGER_IMAGE_SIZE];
-  int (*m_compare)(const unsigned char* /*from DB*/, const unsigned char* /*by VIMG*/); 
+  funcType m_compare; 
   int m_compareThreshold;
+  
+  void* m_libhandle;
 #endif	
 };
 
