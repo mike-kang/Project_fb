@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include "tools/network.h"
+#include <unistd.h>
 
 using namespace tools;
 using namespace web;

@@ -82,6 +82,7 @@ public:
   bool updateLocalDBfromServer(); //from Server
   bool getInfo(const char* serialNumber, EmployeeInfo** ei);
   //std::map<string, EmployeeInfo*>& getEmployeeList();
+  const char* getUsercode(const char* pinno, EmployeeInfo** ei);
   
 private:  
   bool OpenOrCreateLocalDB();

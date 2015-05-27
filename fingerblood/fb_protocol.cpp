@@ -232,7 +232,7 @@ bool FBProtocol::user(list<string>& li)
 }
 
 #ifdef FEATURE_FINGER_IMAGE
-bool FBProtocol::vimg(char* buf)
+bool FBProtocol::vimg(unsigned char* buf)
 {
   char status;
   byte* receive_buf; 

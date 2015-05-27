@@ -25,13 +25,13 @@ public:
     EXCEPTION_RFID_OPEN_FAIL,
   };
 
-  typedef enum {
+  enum RET_TYPE{
 	  RET_PASS,
 	  RET_FAIL_NOREG,
 	  RET_FAIL_NODATA,
 	  RET_FAIL_BLACK_LIST,
 	  RET_FAIL_PANALTY,
-  } RET_TYPE;
+  };
 
   class EventListener {
   public:
@@ -65,8 +65,9 @@ public:
     AM_PASS_NOREGISTOR,
     AM_PASS_THREEOUT,
   };
+  virtual bool onScanStarted(bool bValid);
   virtual void onScanData(const char* buf);
-  virtual const char* onGetFingerImg(const char* usercode);
+  virtual const unsigned char* onGetFingerImg(const char* usercode);
   virtual bool onNeedDeviceKey(char* id, char* key);
   virtual void onNeedUserCodeList(std::vector<pair<const char*, unsigned char*> >& arr_16, std::vector<pair<const char*, unsigned char*> >& arr_4);
   virtual void onSync(IFBService::IFBServiceEventListener::SyncStatus status, int index);
@@ -132,6 +133,7 @@ private:
   const char* debug_str(AuthMode m);
   void processAuthResult(RET_TYPE result, string msg);
   bool createWebService();
+  RET_TYPE checkByUsercode(const char* usercode, const EmployeeInfoMgr::EmployeeInfo* ei, string& msg);
 
 
   Thread<MainDelegator> *m_thread;

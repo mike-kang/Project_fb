@@ -65,7 +65,7 @@ public:
   bool dele(const char* usercode);
   bool optf(byte* data);
 #ifdef FEATURE_FINGER_IMAGE
-  bool vimg(char* buf);
+  bool vimg(unsigned char* buf);
 #endif
 
 

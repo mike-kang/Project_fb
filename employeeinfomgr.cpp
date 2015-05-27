@@ -236,7 +236,7 @@ void EmployeeInfoMgr::initCache()
     else
       m_arrEmployee_4.insert(pair<string, EmployeeInfo*>(usercode, ei));
 #ifdef FEATURE_FINGER_IMAGE
-    m_arrPinnoUsercode.insert(pair<string, string>(ei->pinno, usercode)); 
+    m_arrPinnoUsercode.insert(pair<string, string>(ei->pin_no, usercode)); 
     userenable = static_cast<const unsigned char*>(sqlite3_column_blob(stmt,7));
     if(userenable){
       ei->userenable = new unsigned char[USERENABLE_SIZE];
@@ -457,10 +457,11 @@ void EmployeeInfoMgr::insertEmployee(vector<pair<string, EmployeeInfo*> >& elems
       m_arrEmployee.insert(elems[i]);
     else
       m_arrEmployee_4.insert(elems[i]);
-    m_arrPinnoUsercode.insert(pair<string, string>(ei->pinno, usercode)); 
-    //db
+    
     string& usercode = elems[i].first;
     EmployeeInfo* ei = elems[i].second;
+    m_arrPinnoUsercode.insert(pair<string, string>(ei->pin_no, usercode)); 
+    //db
     const char* strUsercode = usercode.c_str();
     sqlite3_bind_text(stmt, 1, ei->company_name.c_str(), ei->company_name.length(), SQLITE_STATIC);
     sqlite3_bind_text(stmt, 2, ei->lab_name.c_str(), ei->lab_name.length(), SQLITE_STATIC);

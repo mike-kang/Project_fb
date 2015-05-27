@@ -20,8 +20,9 @@ public:
       SS_FAIL,
       SS_SUCCESS,
     };
+    virtual bool onScanStarted(bool bValid) = 0;
     virtual void onScanData(const char* buf) = 0;
-    virtual const char* onGetFingerImg(const char* usercode) = 0;
+    virtual const unsigned char* onGetFingerImg(const char* usercode) = 0;
     virtual bool onNeedDeviceKey(char* id, char* key) = 0;
     virtual void onNeedUserCodeList(std::vector<std::pair<const char*, unsigned char*> >& arr_16, std::vector<std::pair<const char*, unsigned char*> >& arr_4) = 0;
     virtual void onSync(IFBService::IFBServiceEventListener::SyncStatus status, int index=0) = 0;
@@ -49,7 +50,7 @@ public:
   std::vector<std::string>* arrDelete) = 0; //only async
   //virtual void update(std::vector<std::pair<const char*, unsigned char*> >& arrSave, std::vector<string>& arrDelete) = 0;
 #ifdef FEATURE_FINGER_IMAGE
-  virtual char* request_getScanImage() = 0; //only sync
+  virtual unsigned char* request_getScanImage() = 0; //only sync
   virtual void setCompareThreshold(int val) = 0;
 #endif
 };

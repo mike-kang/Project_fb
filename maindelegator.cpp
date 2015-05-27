@@ -173,14 +173,13 @@ const char* MainDelegator::debug_str(AuthMode m)
 }
 
 
-void MainDelegator::processAuthResult(RET_TYPE result, string msg, string pinno)
+void MainDelegator::processAuthResult(RET_TYPE result, string msg)
 {
   bool bImagePass = false;
 
   switch(result){
     case RET_PASS:
       m_outCount = 0;
-      m_timeSheetMgr->insert(pinno);
       if(m_bSound)
         m_wp->play("SoundFiles/authok.wav");
       m_Relay->on(1500);
@@ -259,7 +258,7 @@ void MainDelegator::processAuthResult(RET_TYPE result, string msg, string pinno)
   }
 }
 
-RET_TYPE MainDelegator::check(const char* usercode, const EmployeeInfoMgr::EmployeeInfo* ei, string& msg)
+MainDelegator::RET_TYPE MainDelegator::checkByUsercode(const char* usercode, const EmployeeInfoMgr::EmployeeInfo* ei, string& msg)
 {
   string str_usercode(usercode);
   RET_TYPE ret = RET_PASS;
@@ -303,6 +302,21 @@ RET_TYPE MainDelegator::check(const char* usercode, const EmployeeInfoMgr::Emplo
   return ret;
 }
 
+bool MainDelegator::onScanStarted(bool bValid)
+{
+  const char* pinNo;
+  m_bProcessingAuth = true;
+  if(bValid && m_bPinFirstCheck || !bValid){
+    pinNo = m_el->onGetPinNo();
+    if(strlen(pinNo) == 0){
+      m_el->onWarning(str_pinno_title, str_pinno);
+      m_bProcessingAuth = false;
+      return false;
+    }
+  }  
+  return true;
+}
+
 void MainDelegator::onScanData(const char* usercode)
 {
   LOGI("onScanData %s +++\n", usercode);
@@ -310,26 +324,16 @@ void MainDelegator::onScanData(const char* usercode)
   //int imgLength = 0;
   //static int out_count = 0;
   string msg;
-  const char* pinNo;
   RET_TYPE result;
   EmployeeInfoMgr::EmployeeInfo* ei;
   string str_usercode;
-  string str_pinno;
+  //string str_pinno;
   
-  m_bProcessingAuth = true;
 
   m_wp->stop();
   m_greenLed->off();
   m_redLed->off();
 
-  if(m_bPinFirstCheck){
-    pinNo = m_el->onGetPinNo();
-    if(strlen(pinNo) == 0){
-      m_el->onWarning(str_pinno_title, str_pinno);
-      goto end;
-    }
-  }    
-  
   if(usercode){ //verify success
     str_usercode = usercode;
     bool ret = m_employInfoMgr->getInfo(usercode, &ei);
@@ -340,25 +344,22 @@ void MainDelegator::onScanData(const char* usercode)
       msg = str_usercode + str_nodata;
     }
     else{
-      result = check(usercode, ei, msg);
-      str_pinno = ei->pin_no;
+      result = checkByUsercode(usercode, ei, msg);
+      if(result == RET_PASS)
+        m_timeSheetMgr->insert(ei->pin_no);
     }
-
-    
   }
   else {
     //verify fail
-    //second check by pinno
+    result = RET_FAIL_NOREG;
   }
-  processAuthResult(result, msg, str_pinno);
+  processAuthResult(result, msg);
 
-
-end:
   LOGI("onScanData ---\n");
   m_bProcessingAuth = false;
 }
 
-const char* MainDelegator::onGetFingerImg(const char* usercode)
+const unsigned char* MainDelegator::onGetFingerImg(const char* usercode)
 {
   LOGI("onGetFingerImg +++\n");
   char* imgBuf = NULL;;
@@ -380,7 +381,7 @@ const char* MainDelegator::onGetFingerImg(const char* usercode)
     LOGE("get employee info fail!\n");
     result = RET_FAIL_NODATA;
     msg = pinNo + str_nodata;
-    processAuthResult(result, msg, pinNo);
+    processAuthResult(result, msg);
     return NULL;
   }
 
@@ -932,7 +933,7 @@ MainDelegator::MainDelegator(EventListener* el, const char* configPath) : m_el(e
   
   m_fbs = new FBService(m_settings->get("FB::PORT").c_str(), Serial::SB38400, this, m_bCheckUsercode4);
 #ifdef FEATURE_FINGER_IMAGE
-  m_fbs->setCompareThreshold(m_settings->getInt("FB::COMP_THRESHOLD");
+  m_fbs->setCompareThreshold(m_settings->getInt("FB::COMP_THRESHOLD"));
 #endif
   if(!checkAndRunFBService())
     bNeedDeferredTimer = true;

@@ -224,7 +224,7 @@ void MainWindow::onImage(bool val)
 
 const char* MainWindow::onGetPinNo()
 {
-  cout << "onGetPinPn" << endl;
+  cout << "onGetPinNo" << endl;
   return m_qlePinNo->text().toStdString().c_str();
 }
 

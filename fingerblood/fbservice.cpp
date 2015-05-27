@@ -35,7 +35,8 @@ FBService::FBService(const char* path, Serial::Baud baud, IFBService::IFBService
     throw 0;
   }
   dlerror();
-  m_compare = (int (*)(const char*, const char*))dlsym(handle, "DataComp");
+  m_compare = (int (*)(const unsigned char*, const unsigned char*))dlsym(handle, "DataComp");
+  printf("addr %x\n", m_compare);
   char* errmsg;
   if((errmsg = dlerror()) != NULL){
     printf("dlsym error %s: %s\n", "DataComp", errmsg);
@@ -327,14 +328,14 @@ void FBService::request_update(vector<unsigned char*>* arrSave, vector<string>* 
 
 #ifdef FEATURE_FINGER_IMAGE
 struct getScanImageClient_t {
-  char* m_imageBuf;
+  unsigned char* m_imageBuf;
   bool m_ret;
   Semaphore m_SemCompleteProcessEvent;
-  getScanImageClient_t(char* imageBuf):m_imageBuf(imageBuf), m_ret(false), m_SemCompleteProcessEvent(0)
+  getScanImageClient_t(unsigned char* imageBuf):m_imageBuf(imageBuf), m_ret(false), m_SemCompleteProcessEvent(0)
   {
   }
 };
-char* FBService::request_getScanImage() //only sync
+unsigned char* FBService::request_getScanImage() //only sync
 {
   LOGV("request_getScanImage\n");
   getScanImageClient_t* client = new getScanImageClient_t(m_fingerImage);
@@ -630,21 +631,22 @@ void FBService::onScan(void* arg)
     }
     else if (state == S_SCAN_READY){
       if(bLong && ret == 'A'){
-        m_fn->onScanData(buf);
+        if(m_fn->onScanStarted(true))
+          m_fn->onScanData(buf);
         state = S_SCAN_INIT;
       }
       else if(ret == 'B'){
-        
-        const char* imgBuf = m_fn->onGetFingerImg(buf);
-        if(imgBuf){
-          if(m_protocol->vimg(m_fingerImage)){
-            if(m_compare(imgBuf, m_fingerImage) >= m_compareThreshold)
-              m_fn->onScanData(buf);
-            else
-              m_fn->onScanData(NULL);
+        if(m_fn->onScanStarted(false)){
+          const unsigned char* imgBuf = m_fn->onGetFingerImg(buf);
+          if(imgBuf){
+            if(m_protocol->vimg(m_fingerImage)){
+              if((*m_compare)(imgBuf, m_fingerImage) >= m_compareThreshold)
+                m_fn->onScanData(buf);
+              else
+                m_fn->onScanData(NULL);
+            }
           }
         }
-          
         state = S_SCAN_INIT;
       }
     }
