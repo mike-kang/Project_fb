@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <fstream>
 #include <signal.h>
+#include <dlfcn.h>
+#include "tools/filesystem.h"
 
 using namespace std;
 using namespace tools;
@@ -20,6 +22,28 @@ FBService::FBService(const char* path, Serial::Baud baud, IFBService::IFBService
   m_tmrScan = new Timer(cbTimerScan, this);
   m_thread = new Thread<FBService>(&FBService::run, this, "FBServiceThread");
 
+#ifdef FEATURE_FINGER_IMAGE
+  void* handle;
+  char *libpath = "./libcompareVIMG.so";
+  
+  if(!filesystem::file_exist(libpath))
+    libpath = "./libcompareVIMG_default.so";
+  
+  handle = dlopen(libpath, RTLD_LAZY);
+  if(!handle){
+    printf("dlopen error %s: %s\n", libpath, dlerror());
+    throw 0;
+  }
+  dlerror();
+  m_compare = (int (*)(const char*, const char*))dlsym(handle, "DataComp");
+  char* errmsg;
+  if((errmsg = dlerror()) != NULL){
+    printf("dlsym error %s: %s\n", "DataComp", errmsg);
+    throw 1;
+  }
+  dlclose(handle);
+  
+#endif
 }
 
 FBService::~FBService()
@@ -610,7 +634,17 @@ void FBService::onScan(void* arg)
         state = S_SCAN_INIT;
       }
       else if(ret == 'B'){
-        m_fn->onScanData(NULL);
+        
+        const char* imgBuf = m_fn->onGetFingerImg(buf);
+        if(imgBuf){
+          if(m_protocol->vimg(m_fingerImage)){
+            if(m_compare(imgBuf, m_fingerImage) >= m_compareThreshold)
+              m_fn->onScanData(buf);
+            else
+              m_fn->onScanData(NULL);
+          }
+        }
+          
         state = S_SCAN_INIT;
       }
     }
@@ -718,6 +752,11 @@ void FBService::onGetScanImage(void* arg)
 
   client->m_SemCompleteProcessEvent.post();
 
+}
+
+void FBService::setCompareThreshold(int val)
+{
+  m_compareThreshold = val;
 }
 #endif
 

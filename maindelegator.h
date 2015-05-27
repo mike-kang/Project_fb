@@ -16,6 +16,7 @@
 #include "employeeinfomgr.h"
 #include "timesheetmgr.h"
 
+#define FEATURE_FINGER_IMAGE
 //class TimeSheetMgr;
 class MainDelegator : public EmployeeInfoMgr::EmployeeInfoMgrListener, public 
 IFBService::IFBServiceEventListener, TimeSheetMgr::TimeSheetMgrEventListener {
@@ -65,6 +66,7 @@ public:
     AM_PASS_THREEOUT,
   };
   virtual void onScanData(const char* buf);
+  virtual const char* onGetFingerImg(const char* usercode);
   virtual bool onNeedDeviceKey(char* id, char* key);
   virtual void onNeedUserCodeList(std::vector<pair<const char*, unsigned char*> >& arr_16, std::vector<pair<const char*, unsigned char*> >& arr_4);
   virtual void onSync(IFBService::IFBServiceEventListener::SyncStatus status, int index);

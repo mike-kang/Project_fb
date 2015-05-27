@@ -297,23 +297,24 @@ RET_TYPE MainDelegator::check(const char* usercode, const EmployeeInfoMgr::Emplo
       ret = RET_FAIL_PANALTY;
     }
   }
-  else
+  else{
     msg = str_usercode + str_success;
-
+  }
   return ret;
 }
 
 void MainDelegator::onScanData(const char* usercode)
 {
   LOGI("onScanData %s +++\n", usercode);
-  char* imgBuf = NULL;;
-  int imgLength = 0;
+  //char* imgBuf = NULL;;
+  //int imgLength = 0;
   //static int out_count = 0;
   string msg;
   const char* pinNo;
   RET_TYPE result;
   EmployeeInfoMgr::EmployeeInfo* ei;
   string str_usercode;
+  string str_pinno;
   
   m_bProcessingAuth = true;
 
@@ -328,6 +329,7 @@ void MainDelegator::onScanData(const char* usercode)
       goto end;
     }
   }    
+  
   if(usercode){ //verify success
     str_usercode = usercode;
     bool ret = m_employInfoMgr->getInfo(usercode, &ei);
@@ -337,35 +339,53 @@ void MainDelegator::onScanData(const char* usercode)
       result = RET_FAIL_NODATA;
       msg = str_usercode + str_nodata;
     }
-    else
+    else{
       result = check(usercode, ei, msg);
+      str_pinno = ei->pin_no;
+    }
+
+    
   }
   else {
     //verify fail
     //second check by pinno
-    pinNo = m_el->onGetPinNo();
-    if(strlen(pinNo) == 0){
-      m_el->onWarning(str_pinno_title, str_pinno);
-      goto end;
-    }
-    if(!m_employInfoMgr->getUsercode(pinNo, &ei)){
-      LOGE("get employee info fail!\n");
-      result = RET_FAIL_NODATA;
-      msg = pinNo + str_nodata;
-    }
-    else{
-      
-      DataComp(ei->userenable, 
-
-    }
-      
-      
-        
   }
+  processAuthResult(result, msg, str_pinno);
+
 
 end:
   LOGI("onScanData ---\n");
   m_bProcessingAuth = false;
+}
+
+const char* MainDelegator::onGetFingerImg(const char* usercode)
+{
+  LOGI("onGetFingerImg +++\n");
+  char* imgBuf = NULL;;
+  int imgLength = 0;
+  //static int out_count = 0;
+  string msg;
+  const char* pinNo;
+  RET_TYPE result;
+  EmployeeInfoMgr::EmployeeInfo* ei;
+  string str_usercode;
+
+  pinNo = m_el->onGetPinNo();
+  if(strlen(pinNo) == 0){
+    m_el->onWarning(str_pinno_title, str_pinno);
+    return NULL;
+  }
+  
+  if(!m_employInfoMgr->getUsercode(pinNo, &ei)){
+    LOGE("get employee info fail!\n");
+    result = RET_FAIL_NODATA;
+    msg = pinNo + str_nodata;
+    processAuthResult(result, msg, pinNo);
+    return NULL;
+  }
+
+  return ei->userenable;
+  
 }
 
 bool MainDelegator::onNeedDeviceKey(char* id, char* key)
@@ -911,7 +931,9 @@ MainDelegator::MainDelegator(EventListener* el, const char* configPath) : m_el(e
   m_employInfoMgr = new EmployeeInfoMgr(m_settings, m_ws, this);
   
   m_fbs = new FBService(m_settings->get("FB::PORT").c_str(), Serial::SB38400, this, m_bCheckUsercode4);
-
+#ifdef FEATURE_FINGER_IMAGE
+  m_fbs->setCompareThreshold(m_settings->getInt("FB::COMP_THRESHOLD");
+#endif
   if(!checkAndRunFBService())
     bNeedDeferredTimer = true;
 

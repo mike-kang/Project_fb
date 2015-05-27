@@ -13,7 +13,7 @@ OBJS = $(SRCS:.cpp=.o)
 all :  $(EXE)
 
 $(EXE) : ${OBJS} 
-	g++ -o $@ ${OBJS} -L.. -L../tools -ltool -lpthread -lrt 
+	g++ -o $@ ${OBJS} -L.. -L../tools -ltool -lpthread -lrt -ldl
 
 
 

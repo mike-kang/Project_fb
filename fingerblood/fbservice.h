@@ -39,6 +39,7 @@ public:
   //virtual void update(std::vector<std::pair<const char*, unsigned char*> >& arrSave, std::vector<string>& arrDelete);
 #ifdef FEATURE_FINGER_IMAGE
   virtual char* request_getScanImage(); //only sync
+  virtual void setCompareThreshold(int val);
 #endif
 
 private:  
@@ -88,6 +89,8 @@ private:
   
 #ifdef FEATURE_FINGER_IMAGE
 	char m_fingerImage[FINGER_IMAGE_SIZE];
+  int (*m_compare)(const char* /*from DB*/, const char* /*by VIMG*/); 
+  int m_compareThreshold;
 #endif	
 };
 

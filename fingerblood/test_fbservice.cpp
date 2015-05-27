@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include "tools/timer.h"
 #include "tools/log.h"
+#include <unistd.h>
 
 using namespace std;
 using namespace tools;

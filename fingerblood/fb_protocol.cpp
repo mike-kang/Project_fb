@@ -5,6 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include "tools/utils.h"
+#include <unistd.h>
 
 using namespace std;
 using namespace tools;
