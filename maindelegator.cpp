@@ -334,7 +334,8 @@ void MainDelegator::onScanData(const char* usercode, const unsigned char* vimg)
   m_greenLed->off();
   m_redLed->off();
 
-  m_el->onFingerImage(vimg, 838);
+  if(m_bDisplayVIMG)
+    m_el->onFingerImage(vimg, 838);
 
   if(usercode){ //verify success
     str_usercode = usercode;
