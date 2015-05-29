@@ -14,7 +14,7 @@ public:
   virtual void onStatus(std::string status)
   {
   }
-  virtual void onImage(bool)
+  virtual void onResultImage(bool)
   {
   }
 };

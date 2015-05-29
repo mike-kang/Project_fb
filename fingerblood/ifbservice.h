@@ -23,6 +23,7 @@ public:
     virtual bool onScanStarted(bool bValid) = 0;
     virtual void onScanData(const char* buf) = 0;
     virtual const unsigned char* onGetFingerImg(const char* usercode) = 0;
+    virtual void onVIMG(const unsigned char* img, int len) = 0;
     virtual bool onNeedDeviceKey(char* id, char* key) = 0;
     virtual void onNeedUserCodeList(std::vector<std::pair<const char*, unsigned char*> >& arr_16, std::vector<std::pair<const char*, unsigned char*> >& arr_4) = 0;
     virtual void onSync(IFBService::IFBServiceEventListener::SyncStatus status, int index=0) = 0;

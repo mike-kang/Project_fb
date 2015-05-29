@@ -37,9 +37,10 @@ public:
     virtual void onLogo(std::string data);
     virtual void onEmployeeInfo(std::string CoName, std::string Name, std::string PinNo);
     virtual void onStatus(std::string status);
-    virtual void onImage(bool val);
+    virtual void onResultImage(bool val);
     virtual const char* onGetPinNo();
     virtual void onWarning(std::string msg1, std::string msg2);
+    virtual void onFingerImage(const unsigned char* img, int len);
 
     void runMainDelegator(const char* config);
     
@@ -51,8 +52,9 @@ signals:
     void sigEndSync();
     void sigStartUpdate();
     void sigEndUpdate();
-    void employeeInfo();
-    void resultImage();
+    void sigEmployeeInfo();
+    void sigResultImage();
+    void sigFingerImage(const unsigned char*, int);
     void sigWarning();
     
 private slots:
@@ -65,6 +67,7 @@ private slots:
     void cleanInfo();
     void displayResultImage();
     void warning();
+    void fingerImage(const unsigned char*, int);
     
 private:
     Ui::MainWindow *ui;

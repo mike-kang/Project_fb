@@ -639,6 +639,8 @@ void FBService::onScan(void* arg)
           const unsigned char* imgBuf = m_fn->onGetFingerImg(buf);
           if(imgBuf){
             if(m_protocol->vimg(m_fingerImage)){
+              cout << "finger image" << endl;
+              m_fn->onVIMG(m_fingerImage, FINGER_IMAGE_SIZE);
               if((*m_compare)(imgBuf, m_fingerImage) >= m_compareThreshold)
                 m_fn->onScanData(buf);
               else

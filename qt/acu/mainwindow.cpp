@@ -83,11 +83,13 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(timer, SIGNAL(timeout()), this, SLOT(updateTime()));
     timer->start(1000);
     
-    connect(this, SIGNAL(employeeInfo()), this, SLOT(updateEmployeeInfo()));
-    connect(this, SIGNAL(resultImage()), this, SLOT(displayResultImage()));
+    connect(this, SIGNAL(sigEmployeeInfo()), this, SLOT(updateEmployeeInfo()));
+    connect(this, SIGNAL(sigResultImage()), this, SLOT(displayResultImage()));
 
     m_timerEmployeeInfo = new QTimer(this);
     connect(m_timerEmployeeInfo, SIGNAL(timeout()), this, SLOT(cleanInfo()));
+    connect(this, SIGNAL(sigFingerImage(const unsigned char*, int)), this, SLOT(fingerImage(const unsigned char*, int)));
+    
     qDebug() << "MainWindow ---";
 
 
@@ -111,7 +113,7 @@ void MainWindow::onEmployeeInfo(std::string CoName, std::string Name, std::strin
   m_Name = QString::fromLocal8Bit(Name.c_str());
   //m_PinNo = PinNo.c_str();
     
-  emit employeeInfo();
+  emit sigEmployeeInfo();
 }
 
 void MainWindow::onSyncStart()
@@ -212,14 +214,14 @@ void MainWindow::onStatus(std::string status)
   QMetaObject::invokeMethod(m_statusLabel, "setText", Q_ARG(QString, status.c_str()));
 }
 
-void MainWindow::onImage(bool val)
+void MainWindow::onResultImage(bool val)
 {
-  cout << "onImage" << endl;
+  cout << "onResultImage" << endl;
   if(val)
     m_pm_auth = &m_pm_auth_pass;
   else
     m_pm_auth = &m_pm_auth_fail;
-  emit resultImage();
+  emit sigResultImage();
 }
 
 const char* MainWindow::onGetPinNo()
@@ -233,6 +235,12 @@ void MainWindow::onWarning(std::string msg1, std::string msg2)
   cout << "onWarning:" << msg1 << endl;
   m_warningDialog.setTexts(msg1, msg2);
   emit sigWarning();
+}
+
+void MainWindow::onFingerImage(const unsigned char* img, int len)
+{
+  cout << "onFingerImage" << endl;
+  emit sigFingerImage(img, len);
 }
 
 void MainWindow::warning()
@@ -295,6 +303,7 @@ void MainWindow::cleanInfo()
   ui->labelImage->setPixmap(m_pm_logo);
   ui->labelMsg->setText("");
   m_qlePinNo->setText("");
+  ui->labelVIMG->setVisible(false);
   m_timerEmployeeInfo->stop();
 }
 
@@ -306,6 +315,17 @@ void MainWindow::displayResultImage()
   if(m_timerEmployeeInfo->isActive())
     m_timerEmployeeInfo->stop();
   m_timerEmployeeInfo->start(5000);
+}
+
+void MainWindow::fingerImage(const unsigned char* img, int len)
+{
+  cout << "fingerImage" << endl;
+  QPixmap p;
+  p.loadFromData(img, len);
+  //p.rotated(90);
+  
+  ui->labelVIMG->setVisible(true);
+  ui->labelVIMG->setPixmap(p);
 }
 
 

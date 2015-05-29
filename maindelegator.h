@@ -53,9 +53,11 @@ public:
     virtual void onLogo(std::string data) = 0;
     virtual void onEmployeeInfo(std::string CoName, std::string Name, std::string PinNo) = 0;
     virtual void onStatus(std::string status) = 0;
-    virtual void onImage(bool) = 0;
+    virtual void onResultImage(bool) = 0;
     virtual const char* onGetPinNo() = 0;
     virtual void onWarning(std::string msg1, std::string msg2) = 0;
+    virtual void onFingerImage(const unsigned char* img, int len) = 0;
+    
   };
   enum Ret {
     RET_SUCCESS,
@@ -68,6 +70,7 @@ public:
   virtual bool onScanStarted(bool bValid);
   virtual void onScanData(const char* buf);
   virtual const unsigned char* onGetFingerImg(const char* usercode);
+  virtual void onVIMG(const unsigned char* img, int len);
   virtual bool onNeedDeviceKey(char* id, char* key);
   virtual void onNeedUserCodeList(std::vector<pair<const char*, unsigned char*> >& arr_16, std::vector<pair<const char*, unsigned char*> >& arr_4);
   virtual void onSync(IFBService::IFBServiceEventListener::SyncStatus status, int index);

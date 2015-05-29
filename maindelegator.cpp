@@ -185,7 +185,7 @@ void MainDelegator::processAuthResult(RET_TYPE result, string msg)
       m_Relay->on(1500);
       m_greenLed->on(1500);
       m_el->onMessage("Msg", msg);
-      m_el->onImage(true);
+      m_el->onResultImage(true);
       break;
       
     case RET_FAIL_NOREG:
@@ -195,7 +195,7 @@ void MainDelegator::processAuthResult(RET_TYPE result, string msg)
             m_wp->play("SoundFiles/authfail.wav");
           m_redLed->on(1500);
           m_el->onMessage("Msg", str_fail);
-          m_el->onImage(false);
+          m_el->onResultImage(false);
           break;
           
         case AM_PASS_NOREGISTOR:
@@ -204,7 +204,7 @@ void MainDelegator::processAuthResult(RET_TYPE result, string msg)
           m_Relay->on(1500);
           m_greenLed->on(1500);
           m_el->onMessage("Msg", str_success);
-          m_el->onImage(true);
+          m_el->onResultImage(true);
           break;
       
         case AM_PASS_THREEOUT:
@@ -214,7 +214,7 @@ void MainDelegator::processAuthResult(RET_TYPE result, string msg)
               m_wp->play("SoundFiles/authfail.wav");
             m_redLed->on(1500);
             m_el->onMessage("Msg", str_fail);
-            m_el->onImage(false);
+            m_el->onResultImage(false);
           }
           else{
             if(m_bSound)
@@ -222,7 +222,7 @@ void MainDelegator::processAuthResult(RET_TYPE result, string msg)
             m_Relay->on(1500);
             m_greenLed->on(1500);
             m_el->onMessage("Msg", str_success);
-            m_el->onImage(true);
+            m_el->onResultImage(true);
             m_outCount = 0;
           }
           break;
@@ -236,7 +236,7 @@ void MainDelegator::processAuthResult(RET_TYPE result, string msg)
         m_wp->play("SoundFiles/authfail.wav");
       m_redLed->on(1500);
       m_el->onMessage("Msg", msg);
-      m_el->onImage(false);
+      m_el->onResultImage(false);
       break;
 
     case RET_FAIL_BLACK_LIST:
@@ -244,7 +244,7 @@ void MainDelegator::processAuthResult(RET_TYPE result, string msg)
         m_wp->play("SoundFiles/authcheck.wav");
       m_redLed->on(1500);
       m_el->onMessage("Msg", str_prohibition_entrance_3out);
-      m_el->onImage(false);
+      m_el->onResultImage(false);
       break;
 
     case RET_FAIL_PANALTY:
@@ -252,7 +252,7 @@ void MainDelegator::processAuthResult(RET_TYPE result, string msg)
         m_wp->play("SoundFiles/authcheck.wav");
       m_redLed->on(1500);
       m_el->onMessage("Msg", msg);
-      m_el->onImage(false);
+      m_el->onResultImage(false);
       break;
 
   }
@@ -387,6 +387,11 @@ const unsigned char* MainDelegator::onGetFingerImg(const char* usercode)
 
   return ei->userenable;
   
+}
+
+void MainDelegator::onVIMG(const unsigned char* img, int len)
+{
+  m_el->onFingerImage(img, len);
 }
 
 bool MainDelegator::onNeedDeviceKey(char* id, char* key)
