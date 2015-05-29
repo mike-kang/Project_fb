@@ -269,7 +269,7 @@
       <x>170</x>
       <y>110</y>
       <width>121</width>
-      <height>101</height>
+      <height>81</height>
      </rect>
     </property>
     <property name="frameShape">
@@ -379,14 +379,14 @@
    <widget class="QLabel" name="labelVIMG">
     <property name="geometry">
      <rect>
-      <x>130</x>
-      <y>160</y>
-      <width>151</width>
-      <height>41</height>
+      <x>170</x>
+      <y>130</y>
+      <width>61</width>
+      <height>61</height>
      </rect>
     </property>
     <property name="text">
-     <string>TextLabel</string>
+     <string/>
     </property>
    </widget>
   </widget>

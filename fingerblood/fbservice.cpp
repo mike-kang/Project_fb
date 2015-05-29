@@ -620,6 +620,8 @@ void FBService::onScan(void* arg)
   char buf[17];
   buf[16] = '\0';
   bool bLong;
+  bool bImage;
+  unsigned char* vimg;
   try{
     ret = m_protocol->stat(buf, bLong);
     //printf("result %c %d\n", ret, bLong);
@@ -630,21 +632,24 @@ void FBService::onScan(void* arg)
     }
     else if (state == S_SCAN_READY){
       if(bLong && ret == 'A'){
+        bImage = m_protocol->vimg(m_fingerImage);
+        vimg = bImage? m_fingerImage: NULL;
         if(m_fn->onScanStarted(true))
-          m_fn->onScanData(buf);
+          m_fn->onScanData(buf, vimg);
         state = S_SCAN_INIT;
       }
       else if(ret == 'B'){
+        bImage = m_protocol->vimg(m_fingerImage);
+        vimg = bImage? m_fingerImage: NULL;
         if(m_fn->onScanStarted(false)){
           const unsigned char* imgBuf = m_fn->onGetFingerImg(buf);
           if(imgBuf){
-            if(m_protocol->vimg(m_fingerImage)){
+            if(bImage){
               cout << "finger image" << endl;
-              m_fn->onVIMG(m_fingerImage, FINGER_IMAGE_SIZE);
               if((*m_compare)(imgBuf, m_fingerImage) >= m_compareThreshold)
-                m_fn->onScanData(buf);
+                m_fn->onScanData(buf, vimg);
               else
-                m_fn->onScanData(NULL);
+                m_fn->onScanData(NULL, vimg);
             }
           }
         }

@@ -68,7 +68,7 @@ public:
     AM_PASS_THREEOUT,
   };
   virtual bool onScanStarted(bool bValid);
-  virtual void onScanData(const char* buf);
+  virtual void onScanData(const char* buf, const unsigned char* vimg);
   virtual const unsigned char* onGetFingerImg(const char* usercode);
   virtual void onVIMG(const unsigned char* img, int len);
   virtual bool onNeedDeviceKey(char* id, char* key);

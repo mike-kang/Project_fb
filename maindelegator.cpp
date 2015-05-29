@@ -317,7 +317,7 @@ bool MainDelegator::onScanStarted(bool bValid)
   return true;
 }
 
-void MainDelegator::onScanData(const char* usercode)
+void MainDelegator::onScanData(const char* usercode, const unsigned char* vimg)
 {
   LOGI("onScanData %s +++\n", usercode);
   //char* imgBuf = NULL;;
@@ -333,6 +333,8 @@ void MainDelegator::onScanData(const char* usercode)
   m_wp->stop();
   m_greenLed->off();
   m_redLed->off();
+
+  m_el->onFingerImage(vimg, 838);
 
   if(usercode){ //verify success
     str_usercode = usercode;
@@ -1014,7 +1016,7 @@ void MainDelegator::cbTestTimer(void* arg)
   MainDelegator* my = (MainDelegator*)arg;
   
   if(my->m_signo == SIGUSR1)
-    my->onScanData(my->m_test_serial_number.c_str());
+    my->onScanData(my->m_test_serial_number.c_str(), NULL);
   else{
     my->m_fbs->request_saveUsercode("/home/pi/Project_fb/fingerblood/FID0000000000000012.bin");
   }

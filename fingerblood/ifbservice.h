@@ -21,7 +21,7 @@ public:
       SS_SUCCESS,
     };
     virtual bool onScanStarted(bool bValid) = 0;
-    virtual void onScanData(const char* buf) = 0;
+    virtual void onScanData(const char* buf, const unsigned char* vimg) = 0;
     virtual const unsigned char* onGetFingerImg(const char* usercode) = 0;
     virtual void onVIMG(const unsigned char* img, int len) = 0;
     virtual bool onNeedDeviceKey(char* id, char* key) = 0;
