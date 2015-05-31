@@ -14,13 +14,15 @@ SOURCES += main.cpp\
         mainwindow.cpp \
         syncdialog.cpp \
         updatedialog.cpp \
-    warningdialog.cpp
+    warningdialog.cpp \
+    qpinnoedit.cpp
 
 
 HEADERS  += mainwindow.h \
     syncdialog.h \
     updatedialog.h \
-    warningdialog.h
+    warningdialog.h \
+    qpinnoedit.h
 
 FORMS    += mainwindow.ui \
     syncdialog.ui \

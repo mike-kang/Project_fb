@@ -359,7 +359,7 @@
      <string>/</string>
     </property>
    </widget>
-   <widget class="QLineEdit" name="lineEditPinNo">
+   <widget class="QPinNoEdit" name="lineEditPinNo">
     <property name="geometry">
      <rect>
       <x>74</x>
@@ -400,6 +400,13 @@
   </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>QPinNoEdit</class>
+   <extends>QLineEdit</extends>
+   <header>qpinnoedit.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
