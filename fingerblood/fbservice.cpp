@@ -658,8 +658,9 @@ void FBService::onScan(void* arg)
           m_fn->onVIMG(m_fingerImage, FINGER_IMAGE_SIZE);
         if(m_fn->onScanStarted(false)){
           const char* usercode;
-          const char* clientData;
+          char* clientData;
           const unsigned char* imgBuf = m_fn->onGetFingerImg(usercode, clientData);
+          
           if(imgBuf){
             if(bImage){
               int comp = (*m_compare)(imgBuf, m_fingerImage);
@@ -670,8 +671,8 @@ void FBService::onScan(void* arg)
                 m_fn->onScanData(NULL);
             }
           }
-          
-          if(bImage && m_vimgSaveFile){
+
+          if(bImage && clientData && m_vimgSaveFile){
             DateTime dt;
             sprintf(filename, "VIMG/PINNO%s_%s.dat", clientData, dt.toString2()); 
             std::ofstream oOut(filename);

@@ -69,7 +69,7 @@ public:
   };
   virtual bool onScanStarted(bool bValid);
   virtual void onScanData(const char* buf);
-  virtual const unsigned char* onGetFingerImg(const char*& usercode, const char*&);
+  virtual const unsigned char* onGetFingerImg(const char*& usercode, char*&);
   virtual void onVIMG(const unsigned char* img, int len);
   virtual bool onNeedDeviceKey(char* id, char* key);
   virtual void onNeedUserCodeList(std::vector<pair<const char*, unsigned char*> >& arr_16, std::vector<pair<const char*, unsigned char*> >& arr_4);

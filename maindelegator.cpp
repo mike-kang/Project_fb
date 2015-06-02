@@ -360,7 +360,7 @@ void MainDelegator::onScanData(const char* usercode)
   m_bProcessingAuth = false;
 }
 
-const unsigned char* MainDelegator::onGetFingerImg(const char*& usercode, const char*& pinno)
+const unsigned char* MainDelegator::onGetFingerImg(const char*& usercode, char*& pinno)
 {
   LOGI("onGetFingerImg +++\n");
   char* imgBuf = NULL;;
@@ -376,21 +376,23 @@ const unsigned char* MainDelegator::onGetFingerImg(const char*& usercode, const 
 
   pinNo = m_el->onGetPinNo();
   if(strlen(pinNo) == 0){
+    pinno = NULL;
     m_el->onWarning(str_pinno_title, str_pinno);
     return NULL;
   }
 
+  strcpy(_pinNo, pinNo);
+  pinno = _pinNo;
+  
   usercode = m_employInfoMgr->getUsercode(pinNo, &ei);
+
   if(!usercode){
     LOGE("get employee info fail!\n");
     result = RET_FAIL_NODATA;
-    msg = pinNo + str_nodata;
+    msg = _pinNo + str_nodata;
     processAuthResult(result, msg);
     return NULL;
   }
-  
-  strcpy(_pinNo, pinNo);
-  pinno = _pinNo;
   
   return ei->userenable;
   

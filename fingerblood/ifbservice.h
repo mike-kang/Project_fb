@@ -22,7 +22,7 @@ public:
     };
     virtual bool onScanStarted(bool bValid /* usercode valid */ ) = 0;
     virtual void onScanData(const char* buf) = 0;
-    virtual const unsigned char* onGetFingerImg(const char*& usercode, const char*&) = 0;
+    virtual const unsigned char* onGetFingerImg(const char*& usercode, char*&) = 0;
     virtual void onVIMG(const unsigned char* img, int len) = 0;
     virtual bool onNeedDeviceKey(char* id, char* key) = 0;
     virtual void onNeedUserCodeList(std::vector<std::pair<const char*, unsigned char*> >& arr_16, std::vector<std::pair<const char*, unsigned char*> >& arr_4) = 0;
