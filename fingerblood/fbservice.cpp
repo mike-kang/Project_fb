@@ -23,6 +23,9 @@ FBService::FBService(const char* path, Serial::Baud baud, IFBService::IFBService
   m_tmrScan = new Timer(cbTimerScan, this);
   m_thread = new Thread<FBService>(&FBService::run, this, "FBServiceThread");
 
+  if(!filesystem::file_exist("VIMG"))
+    filesystem::dir_create("VIMG");
+
 #ifdef FEATURE_FINGER_IMAGE
   char *libpath = "./libcompareVIMG.so";
   
@@ -641,7 +644,7 @@ void FBService::onScan(void* arg)
           m_fn->onScanData(buf);
         if(bImage && m_vimgSaveFile){
           DateTime dt;
-          sprintf(filename, "FID%s_%s.dat", buf, dt.toString2()); 
+          sprintf(filename, "VIMG/FID%s_%s.dat", buf, dt.toString2()); 
           std::ofstream oOut(filename);
           oOut.write(reinterpret_cast<char*>(m_fingerImage), FINGER_IMAGE_SIZE);
           oOut.close();
@@ -670,7 +673,7 @@ void FBService::onScan(void* arg)
           
           if(bImage && m_vimgSaveFile){
             DateTime dt;
-            sprintf(filename, "PINNO%s_%s.dat", clientData, dt.toString2()); 
+            sprintf(filename, "VIMG/PINNO%s_%s.dat", clientData, dt.toString2()); 
             std::ofstream oOut(filename);
             oOut.write(reinterpret_cast<char*>(m_fingerImage), FINGER_IMAGE_SIZE);
             oOut.close();
