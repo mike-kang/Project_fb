@@ -10,11 +10,13 @@
 #include "updatedialog.h"
 #include "warningdialog.h"
 #include <QMovie>
+#include <QTransform>
 
 namespace Ui {
 class MainWindow;
 }
 
+class QTransform;
 
 class MainWindow : public QMainWindow, public MainDelegator::EventListener
 {
@@ -66,8 +68,10 @@ private slots:
     void updateEmployeeInfo();
     void cleanInfo();
     void displayResultImage();
+    void restoreLogo();
     void warning();
     void fingerImage(const unsigned char*, int);
+    void cleanFingerImage();
     
 private:
     Ui::MainWindow *ui;
@@ -83,6 +87,7 @@ private:
     QPixmap m_pm_auth_fail;
     QPixmap* m_pm_auth;
     QTimer *m_timerEmployeeInfo;
+    QTimer *m_timerVIMG;
     static QTextCodec * m_codec;
     SyncDialog m_syncDialog;
     UpdateDialog m_updateDialog;
@@ -90,6 +95,7 @@ private:
     QMovie *m_aninfinger;
     //const char* m_updatetime;
     QLineEdit *m_qlePinNo;
+    QTransform m_trans;
 };
 
 #endif // MAINWINDOW_H

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "../timer.h"
 #include <iostream>
+#include <unistd.h>
 
 using namespace std;
 using namespace tools;

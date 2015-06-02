@@ -9,7 +9,6 @@
 #include <QPixmap>
 #include <QMessageBox>
 
-
 #define insertTable(tag)  labelTable.insert(pair<std::string, QLabel*>(#tag, ui->label##tag)) 
 
 using namespace std;
@@ -20,77 +19,80 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow) , m_syncDialog(this), m_updateDialog(this)
 {
-    //m_codec = QTextCodec::codecForName("UTF-8"); //UTF-8
-    QTextCodec::setCodecForLocale(QTextCodec::codecForName("UTF-8"));
+  //m_codec = QTextCodec::codecForName("UTF-8"); //UTF-8
+  QTextCodec::setCodecForLocale(QTextCodec::codecForName("UTF-8"));
 
-    ui->setupUi(this);
-    m_statusLabel = new QLabel;
-    statusBar()->addWidget(m_statusLabel);
+  ui->setupUi(this);
+  m_statusLabel = new QLabel;
+  statusBar()->addWidget(m_statusLabel);
 
-    ui->labelEmbed->setText("");
-    ui->labelGateNo->setText("");
-    ui->labelNetwork->setText("");
-    ui->labelFID->setText("");
-    ui->labelDownload->setText("");
-    //ui->labelUpload->setText("");
-    ui->labelMsg->setText("");
-    ui->labelCoName->setText("");
-    ui->labelName->setText("");
-    //ui->labelPinNo->setText("");
-    ui->labelImage->setText("");  //logo or pass/fail
+  ui->labelEmbed->setText("");
+  ui->labelGateNo->setText("");
+  ui->labelNetwork->setText("");
+  ui->labelFID->setText("");
+  ui->labelDownload->setText("");
+  //ui->labelUpload->setText("");
+  ui->labelMsg->setText("");
+  ui->labelCoName->setText("");
+  ui->labelName->setText("");
+  //ui->labelPinNo->setText("");
+  ui->labelImage->setText("");  //logo or pass/fail
 
-    m_qlePinNo = ui->lineEditPinNo;
-    m_qlePinNo->setText("");
-    m_qlePinNo->setValidator(new QIntValidator(m_qlePinNo));
-	
-    insertTable(Embed);
-    insertTable(GateNo);
-    insertTable(Network);
-    insertTable(FID);
-    //insertTable(CoName);
-    //insertTable(Name);
-    //insertTable(PinNo);
-    //insertTable(RfidNo);
-    //insertTable(Result);
-    insertTable(Msg);
-    insertTable(Download);
-    insertTable(UploadFilesCount);
-    insertTable(UploadCacheCount);
-    m_img_buf = NULL;
-    m_aninfinger = new QMovie("/home/pi/acufb/Images/finger.gif");
-    ui->labelAnimation->setMovie(m_aninfinger);
-    m_aninfinger->start();
+  m_qlePinNo = ui->lineEditPinNo;
+  m_qlePinNo->setText("");
+  m_qlePinNo->setValidator(new QIntValidator(m_qlePinNo));
 
-    m_pm_auth_pass = QPixmap(":/Images/authok.jpg");
-    m_pm_auth_fail = QPixmap(":/Images/authfail.jpg");
+  insertTable(Embed);
+  insertTable(GateNo);
+  insertTable(Network);
+  insertTable(FID);
+  //insertTable(CoName);
+  //insertTable(Name);
+  //insertTable(PinNo);
+  //insertTable(RfidNo);
+  //insertTable(Result);
+  insertTable(Msg);
+  insertTable(Download);
+  insertTable(UploadFilesCount);
+  insertTable(UploadCacheCount);
+  m_img_buf = NULL;
+  m_aninfinger = new QMovie("/home/pi/acufb/Images/finger.gif");
+  ui->labelAnimation->setMovie(m_aninfinger);
+  m_aninfinger->start();
 
-    //connect(this, SIGNAL(sigStartSync()), &m_syncDialog, SLOT(exec()));
-    connect(this, SIGNAL(sigStartSync()), this, SLOT(startSync()));
-    connect(this, SIGNAL(sigEndSync()), this, SLOT(endSync()));
-    connect(this, SIGNAL(sigStartUpdate()), this, SLOT(startUpdate()));
-    connect(this, SIGNAL(sigEndUpdate()), this, SLOT(endUpdate()));
-    connect(this, SIGNAL(sigWarning()), this, SLOT(warning()));
+  m_pm_auth_pass = QPixmap(":/Images/authok.jpg");
+  m_pm_auth_fail = QPixmap(":/Images/authfail.jpg");
 
-    //MainDelegator* md = MainDelegator::createInstance(this);
-    //md->setEventListener(this);
+  //connect(this, SIGNAL(sigStartSync()), &m_syncDialog, SLOT(exec()));
+  connect(this, SIGNAL(sigStartSync()), this, SLOT(startSync()));
+  connect(this, SIGNAL(sigEndSync()), this, SLOT(endSync()));
+  connect(this, SIGNAL(sigStartUpdate()), this, SLOT(startUpdate()));
+  connect(this, SIGNAL(sigEndUpdate()), this, SLOT(endUpdate()));
+  connect(this, SIGNAL(sigWarning()), this, SLOT(warning()));
 
-    //QDate* date = new QDate();
-    QDateTime curDate = QDateTime::currentDateTime();   // 시스템에서 현재 날짜 가져오기
-    QString date_string = curDate.toString("yyyy-MM-dd hh:mm:ss"); // QDate 타입을 QString 타입으로 변환
-    qDebug() << "current DateTime:" << date_string;
+  //MainDelegator* md = MainDelegator::createInstance(this);
+  //md->setEventListener(this);
 
-    QTimer *timer = new QTimer(this);
-    connect(timer, SIGNAL(timeout()), this, SLOT(updateTime()));
-    timer->start(1000);
-    
-    connect(this, SIGNAL(sigEmployeeInfo()), this, SLOT(updateEmployeeInfo()));
-    connect(this, SIGNAL(sigResultImage()), this, SLOT(displayResultImage()));
+  //QDate* date = new QDate();
+  QDateTime curDate = QDateTime::currentDateTime();   // 시스템에서 현재 날짜 가져오기
+  QString date_string = curDate.toString("yyyy-MM-dd hh:mm:ss"); // QDate 타입을 QString 타입으로 변환
+  qDebug() << "current DateTime:" << date_string;
 
-    m_timerEmployeeInfo = new QTimer(this);
-    connect(m_timerEmployeeInfo, SIGNAL(timeout()), this, SLOT(cleanInfo()));
-    connect(this, SIGNAL(sigFingerImage(const unsigned char*, int)), this, SLOT(fingerImage(const unsigned char*, int)));
-    
-    qDebug() << "MainWindow ---";
+  QTimer *timer = new QTimer(this);
+  connect(timer, SIGNAL(timeout()), this, SLOT(updateTime()));
+  timer->start(1000);
+  
+  connect(this, SIGNAL(sigEmployeeInfo()), this, SLOT(updateEmployeeInfo()));
+  connect(this, SIGNAL(sigResultImage()), this, SLOT(displayResultImage()));
+
+  //m_timerEmployeeInfo = new QTimer(this);
+  //connect(m_timerEmployeeInfo, SIGNAL(timeout()), this, SLOT(cleanInfo()));
+  connect(this, SIGNAL(sigFingerImage(const unsigned char*, int)), this, SLOT(fingerImage(const unsigned char*, int)));
+
+  m_trans.rotate(90);
+  m_trans.scale(2.0, 2.0);
+  
+  qDebug() << "MainWindow ---";
 
 
 }
@@ -98,6 +100,8 @@ MainWindow::MainWindow(QWidget *parent) :
 MainWindow::~MainWindow()
 {
     delete ui;
+    delete m_timerEmployeeInfo;
+    delete m_timerVIMG;
 }
 
 void MainWindow::runMainDelegator(const char* config)
@@ -288,7 +292,8 @@ void MainWindow::updateEmployeeInfo()
   //static QPixmap* pix = NULL;
   //if(m_timerEmployeeInfo->isActive())
   //  m_timerEmployeeInfo->stop();
-  m_timerEmployeeInfo->start(5000);
+  //m_timerEmployeeInfo->start(5000);
+  QTimer::singleShot(5000, this, SLOT(cleanInfo()));
   ui->labelCoName->setText(m_CoName);
   ui->labelName->setText(m_Name);
   //ui->labelPinNo->setText(m_PinNo);
@@ -300,32 +305,43 @@ void MainWindow::cleanInfo()
   qDebug() << "cleanEmployeeInfo";
   ui->labelCoName->setText("");
   ui->labelName->setText("");
-  ui->labelImage->setPixmap(m_pm_logo);
   ui->labelMsg->setText("");
-  m_qlePinNo->setText("");
-  ui->labelVIMG->setVisible(false);
-  m_timerEmployeeInfo->stop();
+  //m_timerEmployeeInfo->stop();
 }
 
 void MainWindow::displayResultImage()
 {
-  //ui->labelImage->setPixmap(m_Name);
+  qDebug() << "displayResultImage";
   QMetaObject::invokeMethod(ui->labelImage, "setPixmap", Q_ARG(QPixmap, *m_pm_auth));
   
-  if(m_timerEmployeeInfo->isActive())
-    m_timerEmployeeInfo->stop();
-  m_timerEmployeeInfo->start(5000);
+  QTimer::singleShot(3000, this, SLOT(restoreLogo()));
 }
+
+
+void MainWindow::restoreLogo()
+{
+  m_qlePinNo->setText("");
+  ui->labelImage->setPixmap(m_pm_logo);
+}
+
 
 void MainWindow::fingerImage(const unsigned char* img, int len)
 {
   cout << "fingerImage" << endl;
-  QPixmap p;
+  QPixmap p, p2;
   p.loadFromData(img, len);
+  p2 = p.transformed(m_trans);
   //p.rotated(90);
   
   ui->labelVIMG->setVisible(true);
-  ui->labelVIMG->setPixmap(p);
+  ui->labelVIMG->setPixmap(p2);
+  QTimer::singleShot(3000, this, SLOT(cleanFingerImage()));
+  
+}
+
+void MainWindow::cleanFingerImage()
+{
+  ui->labelVIMG->setVisible(false);
 }
 
 

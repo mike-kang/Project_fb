@@ -41,6 +41,7 @@ public:
 #ifdef FEATURE_FINGER_IMAGE
   virtual unsigned char* request_getScanImage(); //only sync
   virtual void setCompareThreshold(int val);
+  virtual void setSaveVIMG(bool val);
 #endif
 
 private:  
@@ -92,6 +93,7 @@ private:
   unsigned char m_fingerImage[FINGER_IMAGE_SIZE];
   funcType m_compare; 
   int m_compareThreshold;
+  bool m_vimgSaveFile;
   
   void* m_libhandle;
 #endif	

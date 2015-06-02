@@ -28,7 +28,7 @@ char* getString(char *buf, int type)
   else if(type == 1)  
     sprintf(buf, "%4d-%02d-%02d-%d", st.wYear, st.wMonth, st.wDay, (st.wHour *60+ st.wMinute)*60 + st.wSecond);
   else if(type == 2)  
-    sprintf(buf, "%4d%02d%02d_%d%d%d", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);
+    sprintf(buf, "%4d%02d%02d %d%d%d", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);
   return buf;
 }
 #else
@@ -87,6 +87,13 @@ char* DateTime::toString(char c)
   sprintf(buf, "%4d-%02d-%02d%c%02d:%02d:%02d", m_year, m_month, m_day, c, m_hour, m_minute, m_second);
   return buf;  
 }
+char* DateTime::toString2()
+{
+  sprintf(buf, "%4d%02d%02d_%02d%02d%02d", m_year, m_month, m_day, m_hour, m_minute, m_second);
+  return buf;  
+}
+
+
 
 namespace tools {
 bool operator == (const DateTime& lh, const DateTime& rh)

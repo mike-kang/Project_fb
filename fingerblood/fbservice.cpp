@@ -5,6 +5,7 @@
 #include <signal.h>
 #include <dlfcn.h>
 #include "tools/filesystem.h"
+#include "tools/datetime.h"
 
 using namespace std;
 using namespace tools;
@@ -622,6 +623,7 @@ void FBService::onScan(void* arg)
   bool bLong;
   bool bImage;
   unsigned char* vimg;
+  char filename[255];
   try{
     ret = m_protocol->stat(buf, bLong);
     //printf("result %c %d\n", ret, bLong);
@@ -633,24 +635,45 @@ void FBService::onScan(void* arg)
     else if (state == S_SCAN_READY){
       if(bLong && ret == 'A'){
         bImage = m_protocol->vimg(m_fingerImage);
-        vimg = bImage? m_fingerImage: NULL;
+        if(bImage)
+          m_fn->onVIMG(m_fingerImage, FINGER_IMAGE_SIZE);
         if(m_fn->onScanStarted(true))
-          m_fn->onScanData(buf, vimg);
+          m_fn->onScanData(buf);
+        if(bImage && m_vimgSaveFile){
+          DateTime dt;
+          sprintf(filename, "FID%s_%s.dat", buf, dt.toString2()); 
+          std::ofstream oOut(filename);
+          oOut.write(reinterpret_cast<char*>(m_fingerImage), FINGER_IMAGE_SIZE);
+          oOut.close();
+        }
+          
         state = S_SCAN_INIT;
       }
       else if(ret == 'B'){
         bImage = m_protocol->vimg(m_fingerImage);
-        vimg = bImage? m_fingerImage: NULL;
+        if(bImage)
+          m_fn->onVIMG(m_fingerImage, FINGER_IMAGE_SIZE);
         if(m_fn->onScanStarted(false)){
-          const unsigned char* imgBuf = m_fn->onGetFingerImg(buf);
+          const char* usercode;
+          const char* clientData;
+          const unsigned char* imgBuf = m_fn->onGetFingerImg(usercode, clientData);
           if(imgBuf){
             if(bImage){
-              cout << "finger image" << endl;
-              if((*m_compare)(imgBuf, m_fingerImage) >= m_compareThreshold)
-                m_fn->onScanData(buf, vimg);
+              int comp = (*m_compare)(imgBuf, m_fingerImage);
+              LOGI("VIMG compare val=%d, threshold=%d\n", comp, m_compareThreshold);
+              if( comp >= m_compareThreshold)
+                m_fn->onScanData(usercode);
               else
-                m_fn->onScanData(NULL, vimg);
+                m_fn->onScanData(NULL);
             }
+          }
+          
+          if(bImage && m_vimgSaveFile){
+            DateTime dt;
+            sprintf(filename, "PINNO%s_%s.dat", clientData, dt.toString2()); 
+            std::ofstream oOut(filename);
+            oOut.write(reinterpret_cast<char*>(m_fingerImage), FINGER_IMAGE_SIZE);
+            oOut.close();
           }
         }
         state = S_SCAN_INIT;
@@ -766,6 +789,11 @@ void FBService::setCompareThreshold(int val)
 {
   m_compareThreshold = val;
 }
+void FBService::setSaveVIMG(bool val)
+{
+  m_vimgSaveFile = val;
+}
+
 #endif
 
 

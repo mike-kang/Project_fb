@@ -1,5 +1,5 @@
 
-all : test_network  test_base64  test_timer
+all : test_network  test_base64  test_timer test_datetime
 
 LFLAGS = -L.. -ltool -lpthread -lrt
 
@@ -7,6 +7,9 @@ test_network : ../network.o test_network.o
 	g++ -g -o $@ $^ $(LFLAGS)
 	
 test_timer : test_timer.o
+	g++ -g -o $@ $^ $(LFLAGS)
+
+test_datetime : test_datetime.o
 	g++ -g -o $@ $^ $(LFLAGS)
 
 test_base64 : test_base64.o
