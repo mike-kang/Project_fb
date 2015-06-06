@@ -317,7 +317,7 @@ bool MainDelegator::onScanStarted(bool bValid)
   return true;
 }
 
-void MainDelegator::onScanData(const char* usercode, const unsigned char* vimg)
+void MainDelegator::onScanData(const char* usercode)
 {
   LOGI("onScanData %s +++\n", usercode);
   //char* imgBuf = NULL;;
@@ -334,8 +334,6 @@ void MainDelegator::onScanData(const char* usercode, const unsigned char* vimg)
   m_greenLed->off();
   m_redLed->off();
 
-  if(m_bDisplayVIMG)
-    m_el->onFingerImage(vimg, 838);
 
   if(usercode){ //verify success
     str_usercode = usercode;
@@ -362,7 +360,7 @@ void MainDelegator::onScanData(const char* usercode, const unsigned char* vimg)
   m_bProcessingAuth = false;
 }
 
-const unsigned char* MainDelegator::onGetFingerImg(const char* usercode)
+const unsigned char* MainDelegator::onGetFingerImg(const char*& usercode, char*& pinno)
 {
   LOGI("onGetFingerImg +++\n");
   char* imgBuf = NULL;;
@@ -370,31 +368,40 @@ const unsigned char* MainDelegator::onGetFingerImg(const char* usercode)
   //static int out_count = 0;
   string msg;
   const char* pinNo;
+  static char _pinNo[17];
   RET_TYPE result;
   EmployeeInfoMgr::EmployeeInfo* ei;
   string str_usercode;
+  //const char* _usercode;
 
   pinNo = m_el->onGetPinNo();
   if(strlen(pinNo) == 0){
+    pinno = NULL;
     m_el->onWarning(str_pinno_title, str_pinno);
     return NULL;
   }
+
+  strcpy(_pinNo, pinNo);
+  pinno = _pinNo;
   
-  if(!m_employInfoMgr->getUsercode(pinNo, &ei)){
+  usercode = m_employInfoMgr->getUsercode(pinNo, &ei);
+
+  if(!usercode){
     LOGE("get employee info fail!\n");
     result = RET_FAIL_NODATA;
-    msg = pinNo + str_nodata;
+    msg = _pinNo + str_nodata;
     processAuthResult(result, msg);
     return NULL;
   }
-
+  
   return ei->userenable;
   
 }
 
 void MainDelegator::onVIMG(const unsigned char* img, int len)
 {
-  m_el->onFingerImage(img, len);
+  if(m_bDisplayVIMG)
+    m_el->onFingerImage(img, len);
 }
 
 bool MainDelegator::onNeedDeviceKey(char* id, char* key)
@@ -942,6 +949,7 @@ MainDelegator::MainDelegator(EventListener* el, const char* configPath) : m_el(e
   m_fbs = new FBService(m_settings->get("FB::PORT").c_str(), Serial::SB38400, this, m_bCheckUsercode4);
 #ifdef FEATURE_FINGER_IMAGE
   m_fbs->setCompareThreshold(m_settings->getInt("FB::COMP_THRESHOLD"));
+  m_fbs->setSaveVIMG(m_settings->getBool("FB::VIMG_SAVE_FILE"));
 #endif
   if(!checkAndRunFBService())
     bNeedDeferredTimer = true;
@@ -1017,7 +1025,7 @@ void MainDelegator::cbTestTimer(void* arg)
   MainDelegator* my = (MainDelegator*)arg;
   
   if(my->m_signo == SIGUSR1)
-    my->onScanData(my->m_test_serial_number.c_str(), NULL);
+    my->onScanData(my->m_test_serial_number.c_str());
   else{
     my->m_fbs->request_saveUsercode("/home/pi/Project_fb/fingerblood/FID0000000000000012.bin");
   }

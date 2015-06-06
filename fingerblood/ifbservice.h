@@ -21,8 +21,8 @@ public:
       SS_SUCCESS,
     };
     virtual bool onScanStarted(bool bValid /* usercode valid */ ) = 0;
-    virtual void onScanData(const char* buf, const unsigned char* vimg) = 0;
-    virtual const unsigned char* onGetFingerImg(const char* usercode) = 0;
+    virtual void onScanData(const char* buf) = 0;
+    virtual const unsigned char* onGetFingerImg(const char*& usercode, char*&) = 0;
     virtual void onVIMG(const unsigned char* img, int len) = 0;
     virtual bool onNeedDeviceKey(char* id, char* key) = 0;
     virtual void onNeedUserCodeList(std::vector<std::pair<const char*, unsigned char*> >& arr_16, std::vector<std::pair<const char*, unsigned char*> >& arr_4) = 0;
@@ -53,6 +53,7 @@ public:
 #ifdef FEATURE_FINGER_IMAGE
   virtual unsigned char* request_getScanImage() = 0; //only sync
   virtual void setCompareThreshold(int val) = 0;
+  virtual void setSaveVIMG(bool val) = 0;
 #endif
 };
 

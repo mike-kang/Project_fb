@@ -24,6 +24,7 @@ public:
   void now();
   char* toString();
   char* toString(char);
+  char* toString2();
 private:
   int m_year;
   int m_month;

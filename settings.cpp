@@ -70,6 +70,7 @@ Settings::Settings(const char* filename)
      mapBoolInsert(FB, CHECK_CODE_4, false);
 #ifdef FEATURE_FINGER_IMAGE
      mapIntInsert(FB, COMP_THRESHOLD, 50);  // 300 ms
+     mapBoolInsert(FB, VIMG_SAVE_FILE, true);
 #endif 
 
      //FB_KEY
@@ -154,6 +155,7 @@ Settings::Settings(const char* filename)
   mapBoolInsertFromReader(FB, CHECK_CODE_4, false);
 #ifdef FEATURE_FINGER_IMAGE
   mapIntInsertFromReader(FB, COMP_THRESHOLD, 50);  // 300 ms
+  mapBoolInsertFromReader(FB, VIMG_SAVE_FILE, true);
 #endif
 
   //FB_KEY
