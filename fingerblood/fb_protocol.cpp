@@ -110,7 +110,7 @@ bool FBProtocol::stop()
   byte* receive_buf; 
 
   try {
-    receive_buf = processCommand("STOP", 10000);  //with Exception
+    receive_buf = processCommand("STOP", 5000);  //with Exception
     status = receive_buf[STATUS];
     delete receive_buf;
     if(status != 'A'){

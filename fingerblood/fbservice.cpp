@@ -379,7 +379,8 @@ void FBService::onOpenDevice(void* arg)
     goto error;
   }
   
-  m_protocol->stop();
+  if(!m_protocol->stop())
+    goto error;
   
   ver = getVersion();
   if(!ver){
