@@ -451,6 +451,9 @@ void MainDelegator::onSync(IFBService::IFBServiceEventListener::SyncStatus statu
       if(m_bTimeAvailable){
         m_employInfoMgr->updateLocalDBfromServer();
       }
+      else
+        m_bFBInitModuleSyncCompleteButNotUpdate = true;
+      /*
       else if(!m_timer){
         m_timer = new Timer(cbTimer, this);
         int interval = m_settings->getInt("App::TIMER_INTERVAL");
@@ -459,6 +462,7 @@ void MainDelegator::onSync(IFBService::IFBServiceEventListener::SyncStatus statu
         
         m_fbs->request_startScan(300);
       }
+      */
       break;
     case SS_FAIL:
       cout << "onSync SS_FAIL" << endl;
@@ -691,7 +695,10 @@ void MainDelegator::cbTimerDeferredInit(void* arg)
   if(!my->m_ws){
     if(my->createWebService()){
       if(my->checkServerAlive()){
-        my->m_bTimeAvailable = my->getSeverTime();
+        if(my->m_bTimeAvailable = my->getSeverTime())
+          if(my->m_bFBInitModuleSyncCompleteButNotUpdate){
+            my->m_employInfoMgr->updateLocalDBfromServer();
+          }
       }
     }
     else
@@ -878,7 +885,8 @@ bool MainDelegator::SettingInit(const char* configPath)
   return true;
 }
 
-MainDelegator::MainDelegator(EventListener* el, const char* configPath) : m_el(el), m_bProcessingAuth(false), m_bFBServiceRunning(false), m_bSyncDeviceAndModule(false), m_timer_deferredInit(NULL), m_timer(NULL), m_ws(NULL)
+MainDelegator::MainDelegator(EventListener* el, const char* configPath) : m_el(el), m_bProcessingAuth(false), m_bFBServiceRunning(false), m_bSyncDeviceAndModule(false)
+                                                                          , m_timer_deferredInit(NULL), m_timer(NULL), m_ws(NULL), m_bTimeAvailable(false), m_bFBInitModuleSyncCompleteButNotUpdate(false)
 {
   bool ret;
   bool bNeedDeferredTimer = false;

@@ -228,7 +228,7 @@ private:
   bool m_bTestSignal; //for debug
   int m_signo; //for debug
   bool m_bUploadTimesheetDisable; //for test
-  
+  bool m_bFBInitModuleSyncCompleteButNotUpdate;
 
   //int m_timesheetFilesCount, m_timesheetCacheCount;
 };
