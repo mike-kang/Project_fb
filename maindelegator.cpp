@@ -687,22 +687,34 @@ bool MainDelegator::checkAndRunFBService()
 void MainDelegator::cbTimerDeferredInit(void* arg)
 {
   MainDelegator* my = (MainDelegator*)arg;
-  bool repeat = false;
+  bool repeat = true;
+  static bool bFBServiceInit = false;
+  static bool bUpdateLocalDB = false;
+  LOGV("cbTimerDeferredInit\n");
 
-  if(!my->checkAndRunFBService())
-    repeat = true;
+  if(!bFBServiceInit)
+    bFBServiceInit = my->checkAndRunFBService();
 
-  if(!my->m_ws){
-    if(my->createWebService()){
+  if(!bUpdateLocalDB){
+    if(!my->m_ws){
+      my->createWebService();
+    }
+
+    if(my->m_ws){
       if(my->checkServerAlive()){
-        if(my->m_bTimeAvailable = my->getSeverTime())
+        if(my->m_bTimeAvailable = my->getSeverTime()){
           if(my->m_bFBInitModuleSyncCompleteButNotUpdate){
-            my->m_employInfoMgr->updateLocalDBfromServer();
+            bUpdateLocalDB = my->m_employInfoMgr->updateLocalDBfromServer();
           }
+          else
+            bUpdateLocalDB = true;
+        }
       }
     }
-    else
-      repeat = true;
+  }
+
+  if(bFBServiceInit && bUpdateLocalDB){
+    repeat = false;
   }
   
   if(repeat){
