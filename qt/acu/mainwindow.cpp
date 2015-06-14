@@ -312,15 +312,15 @@ void MainWindow::cleanInfo()
 void MainWindow::displayResultImage()
 {
   qDebug() << "displayResultImage";
-  QMetaObject::invokeMethod(ui->labelImage, "setPixmap", Q_ARG(QPixmap, *m_pm_auth));
-  
+  ui->labelImage->setPixmap(*m_pm_auth);
+  m_qlePinNo->setText("");
   QTimer::singleShot(3000, this, SLOT(restoreLogo()));
 }
 
 
 void MainWindow::restoreLogo()
 {
-  m_qlePinNo->setText("");
+  //m_qlePinNo->setText("");
   ui->labelImage->setPixmap(m_pm_logo);
 }
 
