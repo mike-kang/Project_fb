@@ -62,6 +62,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
   m_pm_auth_pass = QPixmap(":/Images/authok.jpg");
   m_pm_auth_fail = QPixmap(":/Images/authfail.jpg");
+  m_pm_logo = QPixmap("Images/logo.bmp");
 
   //connect(this, SIGNAL(sigStartSync()), &m_syncDialog, SLOT(exec()));
   connect(this, SIGNAL(sigStartSync()), this, SLOT(startSync()));
@@ -200,16 +201,7 @@ void MainWindow::onMessage(std::string tag, std::string data)
 
 void MainWindow::onLogo(std::string data)
 {
-  if(data == "LT"){
-    m_pm_logo = QPixmap(":/Images/logo_lt.bmp");
-  }
-  else{
-    m_pm_logo = QPixmap(":/Images/logo.bmp");
-  }
-  
-  //m_pm_logo = m_pm_logo.scaled(img->
   ui->labelImage->setPixmap(m_pm_logo);
-  //ui->labelImage->setPixmap(m_pm_auth_pass);
 }
 
 void MainWindow::onStatus(std::string status)
