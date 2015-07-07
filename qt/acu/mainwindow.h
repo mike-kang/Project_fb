@@ -72,6 +72,7 @@ private slots:
     void warning();
     void fingerImage(const unsigned char*, int);
     void cleanFingerImage();
+    void doSecurityNumber(QString);
     
 private:
     Ui::MainWindow *ui;
@@ -96,6 +97,7 @@ private:
     //const char* m_updatetime;
     QLineEdit *m_qlePinNo;
     QTransform m_trans;
+    MainDelegator* m_md;
 };
 
 #endif // MAINWINDOW_H

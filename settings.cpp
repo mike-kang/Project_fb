@@ -50,6 +50,7 @@ Settings::Settings(const char* filename)
 #endif 
      mapBoolInsert(App, TEST_SIGNAL, false);
      mapBoolInsert(App, UPLOAD_TIMESHEET_DISABLE, false);
+     mapStrInsert(App, SECURITY_NUMBER, );
 
      //Action
      mapBoolInsert(Action, CAPTURE, true);
@@ -135,6 +136,7 @@ Settings::Settings(const char* filename)
 #endif
   mapBoolInsertFromReader(App, TEST_SIGNAL, false);
   mapBoolInsertFromReader(App, UPLOAD_TIMESHEET_DISABLE, false);
+  mapStrInsertFromReader(App, SECURITY_NUMBER, );
 
   //Action
   mapBoolInsertFromReader(Action, CAPTURE, true);

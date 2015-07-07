@@ -89,6 +89,8 @@ MainWindow::MainWindow(QWidget *parent) :
   //m_timerEmployeeInfo = new QTimer(this);
   //connect(m_timerEmployeeInfo, SIGNAL(timeout()), this, SLOT(cleanInfo()));
   connect(this, SIGNAL(sigFingerImage(const unsigned char*, int)), this, SLOT(fingerImage(const unsigned char*, int)));
+  connect(m_qlePinNo, SIGNAL(sigPinNo(QString)), this, SLOT(doSecurityNumber(QString)));
+  
 
   m_trans.rotate(90);
   m_trans.scale(2.0, 2.0);
@@ -109,7 +111,7 @@ void MainWindow::runMainDelegator(const char* config)
 {
   cout << config << endl;
   
-  MainDelegator* md = MainDelegator::createInstance(this, config);
+  m_md = MainDelegator::createInstance(this, config);
 }
 
 void MainWindow::onEmployeeInfo(std::string CoName, std::string Name, std::string PinNo)
@@ -336,4 +338,10 @@ void MainWindow::cleanFingerImage()
   ui->labelVIMG->setVisible(false);
 }
 
+void MainWindow::doSecurityNumber(QString pinno)
+{
+  //qDebug() << pinno;
+  m_md->passPinNo(pinno.toStdString());
+
+}
 

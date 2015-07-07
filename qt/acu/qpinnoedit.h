@@ -11,7 +11,8 @@ public:
     bool event(QEvent* event);
     
 signals:
-    
+    void sigPinNo(QString pinno);
+
 public slots:
     
 };

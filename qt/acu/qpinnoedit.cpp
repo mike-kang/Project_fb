@@ -12,12 +12,13 @@ bool QPinNoEdit::event(QEvent* event)
 {
   if(event->type() == QEvent::KeyPress){
     QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
+    //qDebug() << keyEvent->key();
     if(keyEvent->key() == Qt::Key_Asterisk) {
-      QString s = text();
-      if(s.length() > 0){
-        setText(s.left(s.length()-1));
-      }
-        
+      backspace();
+    }
+    else if(keyEvent->key() == Qt::Key_NumberSign) {
+      emit sigPinNo(text());
+      clear();
     }
     return QLineEdit::event(event);    
   }

@@ -851,6 +851,7 @@ bool MainDelegator::SettingInit(const char* configPath)
   m_bDisplayVIMG = m_settings->getBool("App::DISPLAY_VIMG");
   m_bTestSignal = m_settings->getBool("App::TEST_SIGNAL");
   m_bUploadTimesheetDisable = m_settings->getBool("App::UPLOAD_TIMESHEET_DISABLE");; //for test
+  m_securityNumber = m_settings->get("App::SECURITY_NUMBER");
 
   //Action
   m_bCapture = m_settings->getBool("Action::CAPTURE");
@@ -1206,3 +1207,13 @@ void MainDelegator::setRebootTimer(const char* time_buf)
   m_RebootTimer->start(diff);
 
 }
+
+void MainDelegator::passPinNo(string pinno)
+{
+  LOGI("passPinNo\n");
+
+  if(m_securityNumber == pinno)
+    processAuthResult(RET_PASS, str_success);
+
+}
+

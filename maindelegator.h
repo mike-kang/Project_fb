@@ -100,7 +100,8 @@ public:
 //request
   //bool request_processRfidSerialData(char* serialnum, int timelimit);
   void setEventListener(EventListener* el){ m_el = el; }
-
+  void passPinNo(string pinno);
+  
 private:
   static MainDelegator* my;
   MainDelegator(EventListener* el, const char* configPath);
@@ -196,7 +197,7 @@ private:
   string m_admin2;
   string m_admin3;
   string m_admin4;
-
+  string m_securityNumber;
   //fb
   int m_fbCheckInterval; //ms
   string m_fbPort; // /dev/ttyUSB0
