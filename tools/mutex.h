@@ -27,7 +27,7 @@ public:
   
   Mutex(const Mutex& m):m_p(m.m_p)
   {
-    //cout << "Mutex copy " << (int)m_p << endl;
+    cout << "Mutex copy " << (int*)m_p << endl;
   };
 
   void lock()
@@ -81,6 +81,7 @@ public:
     DeleteCriticalSection(m_p);
 #else
     pthread_mutex_destroy(m_p);
+	delete m_p;
 #endif
   };
 private:
