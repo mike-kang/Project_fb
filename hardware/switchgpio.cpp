@@ -19,7 +19,11 @@ using namespace tools;
 void SwitchGpio::cbOnTimer(void* arg)
 {
   SwitchGpio* my = (SwitchGpio*)arg;
+  my->mtx.lock();
   my->write(false);
+  delete my->m_timer;
+  my->m_timer = NULL;
+  my->mtx.unlock();
 }
 void SwitchGpio::cbOnArrayTimer(int i, void* arg)
 {
@@ -32,23 +36,29 @@ void SwitchGpio::cbOnArrayTimer(int i, void* arg)
 
 void SwitchGpio::on(int t) //ms
 {
+  mtx.lock();
   m_timer = new Timer(cbOnTimer, this);
   m_timer->start(t/1000, t%1000);
   on();
+  mtx.unlock();
 }
 
 void SwitchGpio::on(int* arr, bool repeat)
 {
+  mtx.lock();
   m_timer = new Timer(cbOnArrayTimer, this);
   m_timer->start(arr, repeat);
   on();
+  mtx.unlock();
 }
 
 void SwitchGpio::off()
 { 
+  mtx.lock();
   if(m_timer && m_timer->IsActive())
     m_timer->stop();
   write(false);
+  mtx.unlock();
 }
 
 

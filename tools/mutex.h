@@ -81,7 +81,7 @@ public:
     DeleteCriticalSection(m_p);
 #else
     pthread_mutex_destroy(m_p);
-	delete m_p;
+    delete m_p;
 #endif
   };
 private:

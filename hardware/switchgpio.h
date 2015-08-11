@@ -18,6 +18,7 @@ private:
   static void cbOnTimer(void* arg);
   static void cbOnArrayTimer(int i, void* arg);
   tools::Timer* m_timer;
+  Mutex mtx;
 };
 
 #endif
