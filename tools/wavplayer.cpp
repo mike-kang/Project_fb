@@ -7,11 +7,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "log.h"
+#include "wavplayeralsa.h"
 
 using namespace tools;
 using namespace media;
 
 #define LOG_TAG "WavPlayer"
+
 
 WavPlayer* WavPlayer::my = NULL;
 
@@ -23,50 +25,33 @@ WavPlayer* WavPlayer::createInstance()
   return my;
 }
 
-//static
-void WavPlayer::signal_handler(int signo)
+//SND_PCM_ACCESS_RW_INTERLEAVED
+//SND_PCM_FORMAT_S16_LE
+//MONO
+//sample rate = 44100
+WavPlayer::WavPlayer()
 {
-  int status;
-  if(signo == SIGCHLD){
-    LOGV("signal_handler SIGCHLD\n");
-    wait(&status);
-    my->m_AudioPid = 0;
+  if(alsa_init()){
+    LOGE("init fail\n");
+    throw 1;
   }
 }
 
-WavPlayer::WavPlayer():m_AudioPid(0)
+WavPlayer::~WavPlayer()
 {
-  signal(SIGCHLD, signal_handler);
+  alsa_destroy();
 }
 
 void WavPlayer::play(const char* filename)
 {
-  int pid;
-  if((pid = fork()) == -1){
-    LOGE("fork fail:%s\n", strerror(errno));
-    return;
-  }
-  if(!pid){ //child
-    printf("aplay %s\n", filename);
-    char* const args[] = { "aplay", (char*)filename, NULL};
-    int ret = execv("/usr/bin/aplay", args);
-    if(ret == -1){
-      printf("execv fail:%s(%d)\n", strerror(errno), errno);
-      exit(EXIT_FAILURE);
-    }
-  }
-  else{ //parent
-    m_AudioPid = pid;
-    
-  }
+  //printf("WavPlayer::play\n");
+  alsa_play(filename);
 }
 
 void WavPlayer::stop()
 {
-  LOGE("stop:%d\n", m_AudioPid);
-
-  if(m_AudioPid)
-    kill(m_AudioPid, SIGTERM);
+  LOGE("stop\n");
+  alsa_stop();
 }
   
 

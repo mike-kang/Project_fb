@@ -12,11 +12,9 @@ public:
   
 private:
   WavPlayer();
-  static void signal_handler(int signo);
+  ~WavPlayer();
   
   static WavPlayer* my;
-  pid_t m_AudioPid;
-  //snd_pcm_t *m_handle;
 };
 
 }
