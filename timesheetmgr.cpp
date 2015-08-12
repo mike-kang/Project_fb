@@ -122,7 +122,9 @@ bool TimeSheetMgr::upload()
   for(vector<string*>::size_type i=0; i < filelist.size(); i++){
     delete filelist[i];
   }
-  
+
+  mtx.lock();
+
   // 2. send list
   for(list<TimeSheet*>::iterator itr = m_listTS.begin(); itr != m_listTS.end(); itr++){
     bool ret = false;
@@ -139,7 +141,6 @@ bool TimeSheetMgr::upload()
     vector_erase.push_back(itr);
   }
 
-  mtx.lock();
   for(vector<list<TimeSheet*>::iterator>::size_type i=0; i< vector_erase.size(); i++){
     delete *vector_erase[i];
     m_listTS.erase(vector_erase[i]);
