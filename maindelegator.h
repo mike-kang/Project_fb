@@ -89,6 +89,7 @@ public:
   virtual void onEmployeeMgrUpdateTime(const char* updatetime);
   virtual void onEmployeeMgrUpdateEnd(vector<unsigned char*>* arrSave, vector<string>* arrDelete);
   virtual void onEmployeeCountChanged(int length_16, int length_4);
+  virtual void onEmployeeDBInfo(EmployeeInfoMgr::DBInfo di);
 
   virtual void onTimeSheetFileCountChanged(int count);
   virtual void onTimeSheetCacheCountChanged(int count);

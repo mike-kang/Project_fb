@@ -606,11 +606,19 @@ void FBService::onFormat(void* arg)
   LOGV("format +++\n");
   try{
     m_protocol->init();
-    m_fn->onFormat(true);
+
+    if(!arg)
+      m_fn->onFormat(true);
+    else{
+      syncClient_t* client = (syncClient_t*)arg;
+      client->m_SemCompleteProcessEvent.post();
+    }
+      
   }
   catch(FBProtocol::Exception e){
     LOGE("[format]exception fail! %d\n", e);
-    m_fn->onFormat(false);
+    if(!arg)
+      m_fn->onFormat(false);
   }
   LOGV("format ---\n");
 }

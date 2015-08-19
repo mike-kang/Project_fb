@@ -50,12 +50,15 @@ EmployeeInfoMgr::EmployeeInfoMgr(Settings* settings, web::IWebService* ws, Emplo
     m_sEmbedCd = "0000000008";
     m_check_code = false;
   }
+  /*
   for(int i=0;i<3;i++){
     if(db_ok = OpenOrCreateLocalDB())
       break;
   }
   if(!db_ok)
     throw EXCEPTION_DB;
+    
+*/
   
 }
 
@@ -64,7 +67,7 @@ void EmployeeInfoMgr::setServer(web::IWebService* ws)
   m_ws = ws;
 }
 
-bool EmployeeInfoMgr::OpenOrCreateLocalDB()
+int EmployeeInfoMgr::OpenOrCreateLocalDB()
 {
   char* err;
 
@@ -73,7 +76,7 @@ bool EmployeeInfoMgr::OpenOrCreateLocalDB()
   int rc = sqlite3_open(DB_NAME,&m_db) ;
   if (rc != SQLITE_OK) {
     printf("Failed to open database : %s\n", sqlite3_errmsg(m_db));
-    return false;
+    return -1;
   }
   printf("Opened db %s OK!\n", DB_NAME);
   
@@ -85,7 +88,7 @@ bool EmployeeInfoMgr::OpenOrCreateLocalDB()
       LOGE("checkValidate fail!\n");
       sqlite3_close(m_db);
       filesystem::file_delete(DB_NAME);
-      return false;
+      return -1;
     }
   }
   
@@ -94,19 +97,22 @@ bool EmployeeInfoMgr::OpenOrCreateLocalDB()
     rc = sqlite3_exec(m_db, CREATE_TABLE_EMPLOYEE, NULL, NULL, &err);
     if (rc != SQLITE_OK) {
       printf("Failed to creat table : %s\n", err);
-      return false;
+      return -1;
     }
     rc = sqlite3_exec(m_db, CREATE_TABLE_TIME, NULL, NULL, &err);
     if (rc != SQLITE_OK) {
       printf("Failed to creat table : %s\n", err);
-      return false;
+      return -1;
     }
+    
+    return DI_NODATA;
   }
   else{
     initCache();
+    
   }
   
-  return true;
+  return DI_READY;
 }
 
 // 
@@ -269,6 +275,7 @@ void EmployeeInfoMgr::updateLocalDB(char *xml_buf)
 }
 */
 
+//private
 void EmployeeInfoMgr::run_updateLocalDB()
 {
   LOGV("run_updateLocalDB\n");
@@ -434,6 +441,8 @@ end:
     LOGE("Failed to update : %s\n", err);
   }
   m_eil->onEmployeeMgrUpdateTime(m_lastSyncTime.c_str());
+
+  m_eil->onEmployeeDBInfo(DI_READY);
 
   m_bUpdateThreadRunning = false;
   LOGV("updateLocalDB ---\n");

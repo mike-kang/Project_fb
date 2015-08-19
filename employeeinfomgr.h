@@ -29,6 +29,10 @@ public:
 #endif	
     EXCEPTION_DB,
   };
+  enum DBInfo {
+    DI_READY,
+    DI_NODATA,
+  };
   struct EmployeeInfo {
     //display
     std::string company_name;
@@ -66,6 +70,7 @@ public:
     virtual void onEmployeeMgrUpdateTime(const char* updatetime) = 0;
     virtual void onEmployeeMgrUpdateEnd(vector<unsigned char*>* arrSave, vector<string>* arrDelete) = 0;
     virtual void onEmployeeCountChanged(int length_16, int length_4) = 0;
+    virtual void onEmployeeDBInfo(DBInfo di) = 0;
   };
 
 
@@ -83,9 +88,9 @@ public:
   bool getInfo(const char* serialNumber, EmployeeInfo** ei);
   //std::map<string, EmployeeInfo*>& getEmployeeList();
   const char* getUsercode(const char* pinno, EmployeeInfo** ei);
-  
+  int OpenOrCreateLocalDB();
+
 private:  
-  bool OpenOrCreateLocalDB();
   bool checkValidate();
   void initCache();
   void insertEmployee(vector<pair<string, EmployeeInfo*> >& elems);

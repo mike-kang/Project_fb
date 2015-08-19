@@ -470,26 +470,31 @@ void MainDelegator::onSync(IFBService::IFBServiceEventListener::SyncStatus statu
       break;
   }
 }
-
+//FBService -> MainDelegator
 void MainDelegator::onFormat(bool ret)
 {
   LOGV("onformat %d\n", ret);
 }
+//FBService -> MainDelegator
 void MainDelegator::onUpdateBegin(int save_count, int delete_count)
 {
   m_el->onUpdateFBBegin(delete_count, save_count);
 }
+//FBService -> MainDelegator
 void MainDelegator::onUpdateSave(int index)
 {
   m_el->onUpdateFBSaveIndex(index);
 }
+//FBService -> MainDelegator
 void MainDelegator::onUpdateDelete(int index)
 {
   m_el->onUpdateFBDeleteIndex(index);
 }
+//FBService -> MainDelegator
 void MainDelegator::onUpdateEnd()
 {
   m_el->onUpdateFBEnd();
+  /*
   if(!m_timer){
     m_timer = new Timer(cbTimer, this);
     int interval = m_settings->getInt("App::TIMER_INTERVAL");
@@ -498,6 +503,7 @@ void MainDelegator::onUpdateEnd()
     
     m_fbs->request_startScan(300);
   }
+  */
 }
 
 /*
@@ -529,11 +535,12 @@ void MainDelegator::onEmployeeMgrUpdateStart()
 void MainDelegator::onEmployeeMgrUpdateCount(int delete_count, int update_count, int insert_count)
 {
   LOGV("onEmployeeMgrUpdateCount delete:%d update:%d insert:%d\n", delete_count, update_count, insert_count);
-  
+  /*
   if(insert_count || update_count || delete_count){
     m_el->onUpdateStart();
     m_el->onUpdateCount(delete_count, update_count, insert_count);
   }
+  */
 }
 /*
 void MainDelegator::onEmployeeMgrUpdateInsert(const unsigned char* userdata, int index)
@@ -569,6 +576,7 @@ void MainDelegator::onEmployeeMgrUpdateEnd(vector<unsigned char*>* arrSave, vect
     //m_fbs->request_update(arrSave, arrDelete);  //async
   }
   else{
+    /*
     if(!m_timer){
       m_timer = new Timer(cbTimer, this);
       int interval = m_settings->getInt("App::TIMER_INTERVAL");
@@ -577,6 +585,7 @@ void MainDelegator::onEmployeeMgrUpdateEnd(vector<unsigned char*>* arrSave, vect
       
       m_fbs->request_startScan(300);
     }
+    */
   }
 }
 
@@ -586,6 +595,29 @@ void MainDelegator::onEmployeeCountChanged(int length_16, int length_4)
     m_el->onMessage("Download", utils::itoa(length_16 + length_4, 10));
   else
     m_el->onMessage("Download", utils::itoa(length_16, 10));
+}
+
+void MainDelegator::onEmployeeDBInfo(EmployeeInfoMgr::DBInfo di)
+{
+  LOGV("onEmployeeDBInfo %d\n", di);
+  switch(di){
+  case EmployeeInfoMgr::DI_READY:
+    if(!m_timer){
+      m_timer = new Timer(cbTimer, this);
+      int interval = m_settings->getInt("App::TIMER_INTERVAL");
+      LOGI("timer interval= %d\n", interval);
+      m_timer->start(interval, true);
+      
+      m_fbs->request_startScan(300);
+    }
+    break;
+  case EmployeeInfoMgr::DI_NODATA:
+    if(m_bTimeAvailable){
+      m_employInfoMgr->updateLocalDBfromServer();
+    }
+    break;
+  }
+  
 }
 
 void MainDelegator::onTimeSheetFileCountChanged(int count)
@@ -675,6 +707,15 @@ bool MainDelegator::checkAndRunFBService()
       m_fbs->request_buzzer(m_settings->getBool("FB::BUZZER"));
       m_fbs->request_format_sync();
       //m_fbs->request_sync();
+      
+      if(!m_timer){
+        m_timer = new Timer(cbTimer, this);
+        int interval = m_settings->getInt("App::TIMER_INTERVAL");
+        LOGI("timer interval= %d\n", interval);
+        m_timer->start(interval, true);
+        
+        m_fbs->request_startScan(300);
+      }
     }
     else{
       m_el->onMessage("FID", "FID Off");
@@ -968,6 +1009,7 @@ MainDelegator::MainDelegator(EventListener* el, const char* configPath) : m_el(e
   }
   //m_bTimeAvailable = true;  //test
   m_employInfoMgr = new EmployeeInfoMgr(m_settings, m_ws, this);
+  int di = m_employInfoMgr->OpenOrCreateLocalDB();
   
   m_fbs = new FBService(m_settings->get("FB::PORT").c_str(), Serial::SB38400, this, m_bCheckUsercode4);
 #ifdef FEATURE_FINGER_IMAGE
@@ -978,6 +1020,23 @@ MainDelegator::MainDelegator(EventListener* el, const char* configPath) : m_el(e
     bNeedDeferredTimer = true;
 
   //m_timesheetFilesCount = m_timesheetCacheCount = 0;
+  switch(di){
+  case 0: //EmployeeInfoMgr::DI_READY:
+    if(!m_timer){
+      m_timer = new Timer(cbTimer, this);
+      int interval = m_settings->getInt("App::TIMER_INTERVAL");
+      LOGI("timer interval= %d\n", interval);
+      m_timer->start(interval, true);
+      
+      m_fbs->request_startScan(300);
+    }
+    break;
+  case 1: //EmployeeInfoMgr::DI_NODATA:
+    if(m_bTimeAvailable){
+      m_employInfoMgr->updateLocalDBfromServer();
+    }
+    break;
+  }
 
   m_timeSheetMgr = new TimeSheetMgr(m_settings, m_ws, this);
 
