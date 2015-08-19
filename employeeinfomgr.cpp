@@ -17,11 +17,11 @@ using namespace web;
 #define EMPLOYEE_FILE "employee.xml"
 #define DB_NAME "employee.db"
 #ifdef FEATURE_FINGER_IMAGE
-#define CREATE_TABLE_EMPLOYEE "create table employee( company TEXT, name TEXT, pinno INTEGER, usercode TEXT, userdata BLOB, blacklistinfo TEXT, pntcnt INTEGER, fingerimage BLOB)"
+#define CREATE_TABLE_EMPLOYEE "create table employee( company TEXT, name TEXT, pinno TEXT, usercode TEXT, userdata BLOB, blacklistinfo TEXT, pntcnt INTEGER, fingerimage BLOB)"
 #define INSERT_EMPLOYEE "insert into employee(company, name, pinno, usercode, userdata, blacklistinfo, pntcnt, fingerimage) values (?,?,?,?,?,?,?,?)"
 #define UPDATE_EMPLOYEE "update employee set company=?, name=?, usercode=?, userdata=?, blacklistinfo=?, pntcnt=?, fingerimage=? where pinno=?"
 #else
-#define CREATE_TABLE_EMPLOYEE "create table employee( company TEXT, name TEXT, pinno INTEGER, usercode TEXT, userdata BLOB, blacklistinfo TEXT, pntcnt INTEGER)"
+#define CREATE_TABLE_EMPLOYEE "create table employee( company TEXT, name TEXT, pinno TEXT, usercode TEXT, userdata BLOB, blacklistinfo TEXT, pntcnt INTEGER)"
 
 #define INSERT_EMPLOYEE "insert into employee(company, name, pinno, usercode, userdata, blacklistinfo, pntcnt) values (?,?,?,?,?,?,?)"
 #define UPDATE_EMPLOYEE "update employee set company=?, name=?, usercode=?, userdata=?, blacklistinfo=?, pntcnt=? where pinno=?"

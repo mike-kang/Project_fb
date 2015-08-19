@@ -565,8 +565,9 @@ void MainDelegator::onEmployeeMgrUpdateTime(const char* updatetime)
 void MainDelegator::onEmployeeMgrUpdateEnd(vector<unsigned char*>* arrSave, vector<string>* arrDelete)
 {
   LOGV("onEmployeeMgrUpdateEnd\n");
-  if(arrSave || arrDelete)
-    m_fbs->request_update(arrSave, arrDelete);  //async
+  if(arrSave || arrDelete){
+    //m_fbs->request_update(arrSave, arrDelete);  //async
+  }
   else{
     if(!m_timer){
       m_timer = new Timer(cbTimer, this);
@@ -672,7 +673,8 @@ bool MainDelegator::checkAndRunFBService()
     if(m_bFBServiceRunning){
       m_el->onMessage("FID", "FID On");
       m_fbs->request_buzzer(m_settings->getBool("FB::BUZZER"));
-      m_fbs->request_sync();
+      m_fbs->request_format_sync();
+      //m_fbs->request_sync();
     }
     else{
       m_el->onMessage("FID", "FID Off");

@@ -40,6 +40,7 @@ public:
   virtual void request_sync(void) = 0; //only async
   virtual bool request_getList(std::list<std::string>* li) = 0; //only sync
   virtual void request_format() = 0; //only async
+  virtual bool request_format_sync() = 0; //only sync
   virtual void request_startScan(int interval) = 0; //only async
   virtual void request_stopScan() = 0; //only async
   virtual void request_buzzer(bool val) = 0; //only async

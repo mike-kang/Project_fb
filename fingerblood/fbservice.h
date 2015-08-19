@@ -29,6 +29,7 @@ public:
   virtual void request_sync(void); //only async
   virtual bool request_getList(list<string>* li); //only sync
   virtual void request_format(); //only async
+  virtual bool request_format_sync();
   virtual void request_startScan(int interval); //only async
   virtual void request_stopScan(); //only async
   virtual void request_buzzer(bool val); //only async

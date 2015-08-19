@@ -27,7 +27,7 @@ FBService::FBService(const char* path, Serial::Baud baud, IFBService::IFBService
     filesystem::dir_create("VIMG");
 
 #ifdef FEATURE_FINGER_IMAGE
-  char *libpath = "./libcompareVIMG.so";
+  const char *libpath = "./libcompareVIMG.so";
   
   if(!filesystem::file_exist(libpath))
     libpath = "./libcompareVIMG_default.so";
@@ -182,11 +182,31 @@ bool FBService::request_getList(list<string>* li) //only sync
   return client->m_ret;
 }
 
-void FBService::request_format() //only async
+void FBService::request_format()
 {
   LOGV("request_format\n");
+  
   TEvent<FBService>* e = new TEvent<FBService>(&FBService::onFormat, NULL);
   m_eventQ.push(e);
+}
+
+bool FBService::request_format_sync()
+{
+  LOGV("request_format_sync\n");
+  syncClient_t* client = new syncClient_t();
+  
+  TEvent<FBService>* e = new TEvent<FBService>(&FBService::onFormat, (void*)client);
+  m_eventQ.push(e);
+
+  int ret = client->m_SemCompleteProcessEvent.timedwait(10);  //blocking for maxWaitTime.
+  LOGV("request_format_sync end waiting\n");
+  if(ret < 0){
+    LOGE("request_format_sync time expired\n");
+    delete client;
+    return false;
+  }
+  delete client;
+  return true;
 }
 
 struct startScanClient_t {
@@ -434,6 +454,7 @@ void FBService::saveForce(const byte* buf, int length)
   }
 }
 
+//local DB와 지정맥 모듈내 DB 와의 sync를 맞춘다.(기준은 local DB)
 void FBService::onSync(void* arg)
 {
   //m_sync_running = true;
