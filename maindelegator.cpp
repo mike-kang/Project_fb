@@ -400,6 +400,8 @@ const unsigned char* MainDelegator::onGetFingerImg(const char*& usercode, char*&
 
 void MainDelegator::onVIMG(const unsigned char* img, int len)
 {
+  cout << "onVIMG:"  << endl;
+
   if(m_bDisplayVIMG)
     m_el->onFingerImage(img, len);
 }
@@ -591,6 +593,8 @@ void MainDelegator::onEmployeeMgrUpdateEnd(vector<unsigned char*>* arrSave, vect
 
 void MainDelegator::onEmployeeCountChanged(int length_16, int length_4)
 {
+  LOGV("onEmployeeCountChanged L16:%d, L4:%d\n", length_16, length_4);
+
   if(!m_bCheckUsercode4)
     m_el->onMessage("Download", utils::itoa(length_16 + length_4, 10));
   else
@@ -704,10 +708,12 @@ bool MainDelegator::checkAndRunFBService()
     m_bFBServiceRunning = m_fbs->request_openDevice(m_settings->getBool("FB::CHECK_DEVICE_ID"));
     if(m_bFBServiceRunning){
       m_el->onMessage("FID", "FID On");
-      m_fbs->request_buzzer(m_settings->getBool("FB::BUZZER"));
-      m_fbs->request_format_sync();
+     
+      //m_fbs->request_format_sync();
       //m_fbs->request_sync();
-      
+      m_fbs->request_buzzer(m_settings->getBool("FB::BUZZER"));
+
+      /*
       if(!m_timer){
         m_timer = new Timer(cbTimer, this);
         int interval = m_settings->getInt("App::TIMER_INTERVAL");
@@ -716,6 +722,7 @@ bool MainDelegator::checkAndRunFBService()
         
         m_fbs->request_startScan(300);
       }
+      */
     }
     else{
       m_el->onMessage("FID", "FID Off");
